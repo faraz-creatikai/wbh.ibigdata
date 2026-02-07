@@ -86,7 +86,7 @@ export default function CustomerFollowupAdd() {
         Description: "",
       });
       setErrors({});
-      router.push("/followups/customer");
+      router.push("/customer");
       return;
     }
 
