@@ -84,7 +84,7 @@ export default function CustomerFollowups() {
         PropertyType: { id: "", name: "" },
         City: { id: "", name: "" },
         Location: { id: "", name: "" },
-        SubLocation: { id: "", name: ""},
+        SubLocation: { id: "", name: "" },
     });
 
     // 🔹 Fetch All Followups
@@ -109,9 +109,19 @@ export default function CustomerFollowups() {
     }, [searchParams, followupData]);
     const getFollowups = async () => {
         const data = await getAllCustomerFollowups();
-        // console.log(" data of luffy , ", data)
+        console.log(" data of luffy , ", data, " length ", data?.length)
         if (data) {
-            setFollowupData(data.map((item: any) => {
+            const filteredData = data.filter((item, index, arr) => {
+                if (!item.customer?._id) return false;
+
+                return (
+                    arr.findIndex(
+                        t => t.customer?._id === item.customer?._id
+                    ) === index
+                );
+            });
+
+            setFollowupData(filteredData.map((item: any) => {
                 const date = new Date(item.updatedAt);
                 const formattedDate =
                     date.getDate().toString().padStart(2, "0") + "-" +
@@ -193,7 +203,17 @@ export default function CustomerFollowups() {
 
         const data = await getFilteredFollowups(queryParams.toString());
         console.log("filtered followups ", data)
-        if (data) setFollowupData(data.map((item: any) => {
+        if (data){
+            const filteredData=data.filter((item, index, arr) => {
+                if (!item.customer?._id) return false;
+
+                return (
+                    arr.findIndex(
+                        t => t.customer?._id === item.customer?._id
+                    ) === index
+                );
+            });
+            setFollowupData(filteredData.map((item: any) => {
             const date = new Date(item.updatedAt);
             const formattedDate =
                 date.getDate().toString().padStart(2, "0") + "-" +
@@ -208,6 +228,7 @@ export default function CustomerFollowups() {
                 Date: formattedDate,
             }
         }));
+    }
     };
 
     const clearFilter = async () => {
@@ -229,7 +250,7 @@ export default function CustomerFollowups() {
             PropertyType: { id: "", name: "" },
             City: { id: "", name: "" },
             Location: { id: "", name: "" },
-            SubLocation: { id: "", name: ""},   
+            SubLocation: { id: "", name: "" },
         });
         await getFollowups();
     };
@@ -340,7 +361,7 @@ export default function CustomerFollowups() {
             setFieldOptions(prev => ({ ...prev, Location: [] }));
             setFilters(prev => ({ ...prev, Location: [] }));
         }
-        if( cityId && locationId) {
+        if (cityId && locationId) {
             fetchSubLocation(cityId, locationId);
         } else {
             setFieldOptions(prev => ({ ...prev, SubLocation: [] }));
@@ -371,15 +392,15 @@ export default function CustomerFollowups() {
         }
     };
 
-      const fetchSubLocation = async (cityId: string, locationId: string) => {
+    const fetchSubLocation = async (cityId: string, locationId: string) => {
         try {
-          const res = await getsubLocationByCityLoc(cityId, locationId);
-          setFieldOptions((prev) => ({ ...prev, SubLocation: res || [] }));
+            const res = await getsubLocationByCityLoc(cityId, locationId);
+            setFieldOptions((prev) => ({ ...prev, SubLocation: res || [] }));
         } catch (error) {
-          console.error("Error fetching sublocation:", error);
-          setFieldOptions((prev) => ({ ...prev, SubLocation: [] }));
+            console.error("Error fetching sublocation:", error);
+            setFieldOptions((prev) => ({ ...prev, SubLocation: [] }));
         }
-      };
+    };
 
 
     const campaign = ['Buyer', 'Seller', 'Rent Out', 'Rent In', 'Hostel/PG', 'Agents', 'Services', 'Others', 'Guest House', 'Happy Stay'];
@@ -400,6 +421,14 @@ export default function CustomerFollowups() {
     {
         key: "Date", label: "Date"
     },]
+
+
+    /*follow up filter : 
+                                            .filter(
+                                                (item, index, arr) =>
+                                                    arr.findIndex((row) => row.customerid === item.customerid) === index //keeps only first occurrence
+                                            )
+                                            */
 
     return (
         <ProtectedRoute>
@@ -832,78 +861,73 @@ export default function CustomerFollowups() {
                                 </thead>
                                 <tbody>
                                     {currentRows.length > 0 ? (
-                                        currentRows
-                                            .filter(
-                                                (item, index, arr) =>
-                                                    arr.findIndex((row) => row.customerid === item.customerid) === index //keeps only first occurrence
-                                            )
-                                            .map((item, index) => (
-                                                <tr
-                                                    key={item._id}
-                                                    className="border-t hover:bg-[#f7f6f3] transition-all duration-200"
+                                        currentRows.map((item, index) => (
+                                            <tr
+                                                key={item._id}
+                                                className="border-t hover:bg-[#f7f6f3] transition-all duration-200"
+                                            >
+                                                <td
+                                                    className="px-4 py-3  border border-gray-200 text-[var(--color-primary)] cursor-pointer hover:underline"
+                                                    onClick={() => {
+                                                        setIsFollowupDialogOpen(true);
+                                                        handleFollowups(item.customerid);
+                                                    }}
                                                 >
-                                                    <td
-                                                        className="px-4 py-3  border border-gray-200 text-[var(--color-primary)] cursor-pointer hover:underline"
+                                                    Follow UP
+                                                </td>
+                                                <td className="px-4 py-3  border border-gray-200">{indexOfFirstRow + index + 1}</td>
+                                                <td className="px-4 py-3  border border-gray-200">{item.Name}</td>
+                                                <td className="px-4 py-3  border border-gray-200">{item.ContactNumber}</td>
+                                                <td className="px-4 py-3  border border-gray-200">{item.User}</td>
+                                                <td className="px-4 py-3  border border-gray-200">{item.Date}</td>
+                                                <td className="px-4 py-2  flex gap-2 items-center">
+                                                    <Button
+                                                        sx={{
+                                                            backgroundColor: "#E8F5E9",
+                                                            color: "var(--color-primary)",
+                                                            minWidth: "32px",
+                                                            height: "32px",
+                                                            borderRadius: "8px",
+                                                        }}
+                                                        onClick={() => addFollowup(item.customerid)}
+                                                    >
+                                                        <MdAdd />
+                                                    </Button>
+
+                                                    <Button
+                                                        sx={{
+                                                            backgroundColor: "#E8F5E9",
+                                                            color: "var(--color-primary)",
+                                                            minWidth: "32px",
+                                                            height: "32px",
+                                                            borderRadius: "8px",
+                                                        }}
+                                                        onClick={() => editFollowup(item.customerid)}
+                                                    >
+                                                        <MdEdit />
+                                                    </Button>
+
+                                                    <Button
+                                                        sx={{
+                                                            backgroundColor: "#FDECEA",
+                                                            color: "#C62828",
+                                                            minWidth: "32px",
+                                                            height: "32px",
+                                                            borderRadius: "8px",
+                                                        }}
                                                         onClick={() => {
-                                                            setIsFollowupDialogOpen(true);
-                                                            handleFollowups(item.customerid);
+                                                            setIsDeleteDialogOpen(true);
+                                                            setDeleteDialogData({
+                                                                id: item.customerid,
+                                                                ContactNumber: item.ContactNumber
+                                                            });
                                                         }}
                                                     >
-                                                        Follow UP
-                                                    </td>
-                                                    <td className="px-4 py-3  border border-gray-200">{indexOfFirstRow + index + 1}</td>
-                                                    <td className="px-4 py-3  border border-gray-200">{item.Name}</td>
-                                                    <td className="px-4 py-3  border border-gray-200">{item.ContactNumber}</td>
-                                                    <td className="px-4 py-3  border border-gray-200">{item.User}</td>
-                                                    <td className="px-4 py-3  border border-gray-200">{item.Date}</td>
-                                                    <td className="px-4 py-2  flex gap-2 items-center">
-                                                        <Button
-                                                            sx={{
-                                                                backgroundColor: "#E8F5E9",
-                                                                color: "var(--color-primary)",
-                                                                minWidth: "32px",
-                                                                height: "32px",
-                                                                borderRadius: "8px",
-                                                            }}
-                                                            onClick={() => addFollowup(item.customerid)}
-                                                        >
-                                                            <MdAdd />
-                                                        </Button>
-
-                                                        <Button
-                                                            sx={{
-                                                                backgroundColor: "#E8F5E9",
-                                                                color: "var(--color-primary)",
-                                                                minWidth: "32px",
-                                                                height: "32px",
-                                                                borderRadius: "8px",
-                                                            }}
-                                                            onClick={() => editFollowup(item.customerid)}
-                                                        >
-                                                            <MdEdit />
-                                                        </Button>
-
-                                                        <Button
-                                                            sx={{
-                                                                backgroundColor: "#FDECEA",
-                                                                color: "#C62828",
-                                                                minWidth: "32px",
-                                                                height: "32px",
-                                                                borderRadius: "8px",
-                                                            }}
-                                                            onClick={() => {
-                                                                setIsDeleteDialogOpen(true);
-                                                                setDeleteDialogData({
-                                                                    id: item.customerid,
-                                                                    ContactNumber: item.ContactNumber
-                                                                });
-                                                            }}
-                                                        >
-                                                            <MdDelete />
-                                                        </Button>
-                                                    </td>
-                                                </tr>
-                                            ))
+                                                        <MdDelete />
+                                                    </Button>
+                                                </td>
+                                            </tr>
+                                        ))
                                     ) : (
                                         <tr>
                                             <td colSpan={6} className="text-center py-4 text-gray-500">
