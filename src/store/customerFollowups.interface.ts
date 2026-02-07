@@ -1,4 +1,4 @@
-import { customerAllDataInterface } from "./customer.interface";
+import { customerAllDataInterface, customerGetDataInterface } from "./customer.interface";
 
 export interface customerFollowupAllDataInterface {
     _id?: string;
@@ -11,6 +11,7 @@ export interface customerFollowupAllDataInterface {
 
 export interface customerFollowupGetDataInterface {
     _id: string;
+    customer?: customerGetDataInterface;
     customerid:string;
     StatusType?:string;
     Name: string;
