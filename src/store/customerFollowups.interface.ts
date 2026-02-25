@@ -7,6 +7,7 @@ export interface customerFollowupAllDataInterface {
     StatusType:string;
     FollowupNextDate:string;
     Description:string;
+    Name?:string;
 }
 
 export interface customerFollowupGetDataInterface {

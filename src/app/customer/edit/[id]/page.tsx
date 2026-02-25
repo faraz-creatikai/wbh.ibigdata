@@ -143,6 +143,7 @@ export default function CustomerEdit() {
             id: data.SubLocation?._id || "",
             name: data.SubLocation?.Name || ""
           },
+          Address: data.Adderess || "",
           CustomerDate: data?.CustomerDate,
           CustomerImage: [],
           SitePlan: {} as File,
@@ -455,10 +456,10 @@ export default function CustomerEdit() {
 
         </div>
 
-        <div className="bg-white backdrop-blur-lg p-10 max-sm:px-5 w-full rounded-3xl shadow-2xl h-auto">
+        <div className="bg-white max-sm:dark:bg-[var(--color-childbgdark)] backdrop-blur-lg p-10 max-sm:px-5 w-full rounded-3xl shadow-2xl h-auto">
           <form onSubmit={(e) => e.preventDefault()} className="w-full">
-            <div className="mb-8 text-left border-b pb-4 border-gray-200">
-              <h1 className="text-3xl max-sm:text-2xl font-extrabold text-[var(--color-secondary-darker)] leading-tight tracking-tight">
+            <div className="mb-8 text-left border-b pb-4 border-gray-200 max-sm:dark:border-gray-700">
+              <h1 className="text-3xl max-sm:text-2xl font-extrabold text-[var(--color-secondary-darker)] max-sm:dark:text-[var(--color-primary)] leading-tight tracking-tight">
                 Edit <span className="text-[var(--color-primary)]">Customer Information</span>
               </h1>
             </div>
@@ -560,6 +561,7 @@ export default function CustomerEdit() {
                   }
                 }}
                 error={errors.Location}
+                isSearchable
               />
               <ObjectSelect
                 options={Array.isArray(fieldOptions?.SubLocation) ? fieldOptions.SubLocation : []}
@@ -577,6 +579,7 @@ export default function CustomerEdit() {
                   }
                 }}
                 error={errors.SubLocation}
+                isSearchable
               />
               <InputField className=" max-sm:hidden" label={getLabel("Area", "Area")} name="Area" value={customerData.Area} onChange={handleInputChange} />
               <InputField className=" max-sm:hidden" label={getLabel("Address", "Address")} name="Address" value={customerData.Address} onChange={handleInputChange} />
@@ -591,7 +594,7 @@ export default function CustomerEdit() {
               <InputField className=" max-sm:hidden" label={getLabel("CustomerYear", "Customer Year")} name="CustomerYear" value={customerData.CustomerYear} onChange={handleInputChange} />
               <SingleSelect className=" max-sm:hidden" options={Array.isArray(fieldOptions?.Price) ? fieldOptions.Price : []} label={getLabel("Price", "Price")} value={customerData.Price} onChange={(v) => handleSelectChange("Price", v)} />
               <InputField className=" max-sm:hidden" label={getLabel("URL", "URL")} name="URL" value={customerData.URL ?? ""} onChange={handleInputChange} />
-              <InputField className=" max-sm:hidden" label={getLabel("Other", "Others")} name="Others" value={customerData.Other} onChange={handleInputChange} />
+              <InputField className=" max-sm:hidden" label={getLabel("Other", "Others")} name="Other" value={customerData.Other} onChange={handleInputChange} />
               <TextareaField label={getLabel("Description", "Description")} name="Description" value={customerData.Description} onChange={handleInputChange} />
               <InputField className=" max-sm:hidden" label={getLabel("Video", "Video")} name="Video" value={customerData.Video} onChange={handleInputChange} />
               <InputField className=" max-sm:hidden" label={getLabel("GoogleMap", "Google Map")} name="GoogleMap" value={customerData.GoogleMap} onChange={handleInputChange} />
@@ -653,12 +656,12 @@ const FileUpload: React.FC<{
   onRemove?: (index: number) => void;
 }> = ({ label, multiple, previews = [], onChange, onRemove }) => (
   <div className="flex flex-col">
-    <label className="font-semibold text-gray-700 mb-2">{label}</label>
+    <label className="font-semibold text-gray-700 max-sm:dark:text-gray-400 mb-2">{label}</label>
     <input
       type="file"
       multiple={multiple}
       onChange={onChange}
-      className="border border-gray-300 rounded-md p-2"
+      className="border border-gray-300 max-sm:dark:border-gray-700 max-sm:dark:text-gray-400 rounded-md p-2"
     />
     {previews.length > 0 && (
       <div className="flex flex-wrap gap-3 mt-3">
