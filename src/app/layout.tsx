@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   const isAdminPage = pathname === "/admin" || pathname === "/register";
 
 
-/*   const [toggleTheme, setToggleTheme] = useState(false); */
+  /*   const [toggleTheme, setToggleTheme] = useState(false); */
 
   useEffect(() => {
     if (Router && "prefetch" in Router) {
@@ -74,24 +74,91 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                             <SidebarInset className="flex flex-col flex-1 min-h-screen overflow-hidden">
 
                               {/* Navbar */}
-                              <header className="flex items-center gap-2 shrink-0 bg-white max-sm:fixed max-sm:top-0 max-sm:left-0 max-sm:w-full max-sm:bg-[var(--color-primary)] text-gray-800 px-4 pl-0 shadow-sm z-10">
-                                <div className="flex items-center gap-2 ml-2 max-sm:hidden ">
+                              {/* ─────────────────────────────────────────────────────────────────────────
+    DROP-IN REPLACEMENT FOR <header>
+    All components (MobileHamburger, Navbar, SidebarTrigger, Separator, Link)
+    are preserved exactly. Only the shell design changes.
+───────────────────────────────────────────────────────────────────────── */}
+
+                              <header className="flex items-center shrink-0 z-50 bg-white dark:bg-[var(--color-childbgdark)] border-b border-gray-100 dark:border-white/[0.06] shadow-sm max-sm:fixed max-sm:top-0 max-sm:left-0 max-sm:w-full max-sm:bg-transparent max-sm:border-0 max-sm:shadow-none">
+
+                                {/* ── Desktop: sidebar trigger ───────────────────────────────────────── */}
+                                <div className="flex items-center dark:text-slate-300 gap-2 ml-2 max-sm:hidden">
                                   <SidebarTrigger className="ml-1 cursor-pointer" />
-                                  <Separator
-                                    orientation="vertical"
-                                    className="mr-2 data-[orientation=vertical]:h-4"
-                                  />
+                                  <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
                                 </div>
 
-                                <MobileHamburger />
+                                {/* ══════════════════════════════════════════════════════════════════════
+      MOBILE HEADER — completely new dark charcoal glass design
+  ══════════════════════════════════════════════════════════════════════ */}
+                                <div className="sm:hidden relative w-full flex items-center gap-0 overflow-hidden bg-slate-100/90  dark:bg-[#0f1117]">
 
-                                <Link href={"/dashboard"} className=" text-white cursor-pointer font-extrabold text-shadow-2xs text-shadow-black text-xl py-1 sm:hidden">
-                                  Dashboard
-                                </Link>
-                               
-                                <div className="ml-auto w-full">
+                                  {/* Subtle grid texture */}
+                                  <div
+                                    className="pointer-events-none absolute inset-0 opacity-[0.04]"
+                                    style={{
+                                      backgroundImage:
+                                        "linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)",
+                                      backgroundSize: "20px 20px",
+                                    }}
+                                  />
+
+                                  {/* Brand accent glow — bottom-left */}
+                                  <div
+                                    className="pointer-events-none absolute -bottom-6 -left-6 w-28 h-28 rounded-full blur-2xl opacity-20"
+                                    style={{ backgroundColor: "var(--color-primary)" }}
+                                  />
+
+                                  {/* Top hairline in brand color */}
+                                  <div
+                                    className="absolute top-0 inset-x-0 h-[2px]"
+                                    style={{ background: "linear-gradient(90deg, var(--color-primary), transparent 60%)" }}
+                                  />
+
+                                  {/* ── LEFT: Hamburger ─────────────────────────────────────────────── */}
+                                  <div className="relative z-10 pl-1">
+                                    <MobileHamburger />
+                                  </div>
+
+                                  {/* ── CENTER: Logo wordmark ────────────────────────────────────────── */}
+                                  <Link
+                                    href="/dashboard"
+                                    className="relative  flex-1 flex flex-col items-center justify-center py-3 cursor-pointer select-none"
+                                  >
+                                    {/* Wordmark */}
+                                    <div className="flex items-baseline gap-0.5">
+                                      <span className="dark:text-white font-black text-lg tracking-tight leading-none">i</span>
+                                      <span className="font-black text-lg tracking-tight leading-none" style={{ color: "var(--color-secondary)" }}>big</span>
+                                      <span className="dark:text-white font-black text-lg tracking-tight leading-none">data</span>
+                                      {/* Version/type tag */}
+                                      <span
+                                        className="ml-1.5 mb-0.5 self-start text-[7px] font-black tracking-[0.2em] uppercase px-1.5 py-0.5 rounded-full border"
+                                        style={{
+                                          color: "var(--color-secondary)",
+                                          borderColor: "color-mix(in srgb, var(--color-secondary) 40%, transparent)",
+                                          backgroundColor: "color-mix(in srgb, var(--color-secondary) 10%, transparent)",
+                                        }}
+                                      >
+                                        CRM
+                                      </span>
+                                    </div>
+                                    {/* Sub-label */}
+                                    <span className="dark:text-white/30 text-[8px] font-semibold tracking-[0.3em] uppercase mt-0.5">
+                                      WBH Suite
+                                    </span>
+                                  </Link>
+
+                                  {/* ── RIGHT: Navbar ───────────────────────────────────────────────── */}
+                                  <div className="pr-1">
+                                    <Navbar />
+                                  </div>
+                                </div>
+
+                                {/* ── Desktop: Navbar ─────────────────────────────────────────────────── */}
+                                <div className="ml-auto w-full max-sm:hidden">
                                   <Navbar />
                                 </div>
+
                               </header>
 
                               {/* Page Content */}

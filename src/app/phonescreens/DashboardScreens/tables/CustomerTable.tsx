@@ -1,22 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-
 import { motion, AnimatePresence } from "framer-motion";
 import { MdPhone, MdEmail } from "react-icons/md";
 import { FaEye, FaWhatsapp } from "react-icons/fa";
 import { AiOutlineHeart } from "react-icons/ai";
 import { GrFormNext, GrFormPrevious } from "react-icons/gr";
 import { MdEdit, MdDelete, MdAdd } from "react-icons/md";
-
-import { AiOutlineBackward, AiOutlineForward } from "react-icons/ai"
+import { AiOutlineBackward, AiOutlineForward } from "react-icons/ai";
 import { IoIosHeart, IoMdClose } from "react-icons/io";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PopupMenu from "@/app/component/popups/PopupMenu";
 import { GoArrowLeft } from "react-icons/go";
 import CustomerImageSlider from "@/app/component/slides/CustomerImageSlider";
-import { UserPlus } from "lucide-react";
+import { UserPlus, MapPin, Phone } from "lucide-react";
+
 export interface LabelConfig {
     key: string;
     label: string;
@@ -26,7 +25,7 @@ interface LeadsSectionProps<T extends Record<string, any>> {
     leads: T[];
     labelLeads: LabelConfig[];
     allLabelLeads?: LabelConfig[];
-    isCustomerPage?: boolean
+    isCustomerPage?: boolean;
     onAdd?: (id: string) => void;
     onEdit?: (id: string) => void;
     onWhatsappClick?: (lead: T) => void;
@@ -35,8 +34,8 @@ interface LeadsSectionProps<T extends Record<string, any>> {
     onViewFollowup?: (id: string, Name: string) => void;
     onGoogleMapViewAddress?: (Address: string) => void;
     loader?: boolean;
-    hasMoreCustomers?: boolean; // like desktop
-    fetchMore?: () => Promise<void>; // async fetch more
+    hasMoreCustomers?: boolean;
+    fetchMore?: () => Promise<void>;
     duplicateContacts?: Record<string, boolean>;
     onViewDuplicate?: (contactNumber: string) => void;
 }
@@ -67,299 +66,350 @@ export default function CustomerTable<T extends Record<string, any>>({
     const totalPages = Math.ceil(leads.length / itemsperpage);
     const startIndex = (currentPage - 1) * itemsperpage;
     const paginatedLeads = leads.slice(startIndex, startIndex + itemsperpage);
-    /* const [loader, setLoader] = useState(true); */
     const router = useRouter();
 
     const nextPage = async () => {
-        // Normal client-side pagination
-        if (currentPage < totalPages) {
-            setCurrentPage(prev => prev + 1);
-            return;
-        }
-
-        // Last page → fetch more from server (if available)
+        if (currentPage < totalPages) { setCurrentPage(prev => prev + 1); return; }
         if (hasMoreCustomers && fetchMore) {
-            await fetchMore(); // fetchMore should update leads
-            // After leads update, recompute totalPages
+            await fetchMore();
             const newTotalPages = Math.ceil((leads.length + itemsperpage) / itemsperpage);
-            if (currentPage < newTotalPages) {
-                setCurrentPage(prev => prev + 1);
-            }
+            if (currentPage < newTotalPages) setCurrentPage(prev => prev + 1);
         }
     };
 
-
-    const prevPage = () => {
-        if (currentPage > 1) setCurrentPage(currentPage - 1);
-    }
+    const prevPage = () => { if (currentPage > 1) setCurrentPage(currentPage - 1); };
 
     const getDisplayedPages = () => {
         if (totalPages <= 3) return Array.from({ length: totalPages }, (_, i) => i + 1);
-
         if (currentPage === 1) return [1, 2, 3];
         if (currentPage === totalPages) return [totalPages - 2, totalPages - 1, totalPages];
-
         return [currentPage - 1, currentPage, currentPage + 1];
     };
     const pages = getDisplayedPages();
-    /*    useEffect(() => {
-           if (!leads || leads.length === 0) {
-               setLoader(true);
-           } else {
-               setLoader(false);
-           }
-       }, [leads]) */
 
-    const followupRedirect = () => {
-        router.push('/followups/customer');
-    }
+    const followupRedirect = () => { router.push('/followups/customer'); };
 
-
+    // ── Loader ──────────────────────────────────────────────────────────────────
     if (loader) {
-        return <div className=" px-2 pb-4">
-            <div className="w-full flex justify-center items-center py-10 text-lg text-gray-500">
-                Loading Customers...
+        return (
+            <div className="px-3 pb-6 space-y-3">
+                {[...Array(3)].map((_, i) => (
+                    <div key={i} className="rounded-2xl overflow-hidden bg-white dark:bg-[var(--color-childbgdark)] border border-gray-100 dark:border-white/[0.06] animate-pulse">
+                        <div className="h-1 w-full" style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 30%, transparent)" }} />
+                        <div className="p-4 flex gap-3">
+                            <div className="flex-1 space-y-3">
+                                <div className="h-2.5 bg-gray-100 dark:bg-white/10 rounded-full w-3/4" />
+                                <div className="h-2.5 bg-gray-100 dark:bg-white/10 rounded-full w-1/2" />
+                                <div className="h-2.5 bg-gray-100 dark:bg-white/10 rounded-full w-2/3" />
+                            </div>
+                            <div className="w-[88px] h-[66px] rounded-xl bg-gray-100 dark:bg-white/10" />
+                        </div>
+                        <div className="h-11 mx-3 mb-3 rounded-xl bg-gray-50 dark:bg-white/[0.04]" />
+                    </div>
+                ))}
             </div>
-        </div>
+        );
     }
+
     return (
         <>
-            {
-                viewAll && (
-                    <PopupMenu onClose={() => { setViewAll(false) }}>
-                        <div className="  bg-white dark:bg-[var(--color-childbgdark)] relative w-full h-full   flex flex-col">
-                            <button className=" absolute top-3 left-3 cursor-pointer z-[2000] bg-gray-100/50 rounded-full p-1 self-end mb-1 " onClick={() => {
-                                setViewAll(false)
-                                setViewLeadData(null)
-                            }}><GoArrowLeft size={26} /></button>
-                            <CustomerImageSlider
-                                images={
-                                    viewLeadData?.CustomerImage?.length
-                                        ? viewLeadData.CustomerImage
-                                        : ["/siteplan2.png"]
-                                }
-                            />
+            {/* ── Detail popup ──────────────────────────────────────────────────────── */}
+            {viewAll && (
+                <PopupMenu onClose={() => { setViewAll(false); }}>
+                    <div className="bg-white dark:bg-[var(--color-childbgdark)] relative w-full h-full flex flex-col">
+                        {/* Back button */}
+                        <button
+                            className="absolute top-4 left-4 z-[2000] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 dark:bg-black/40 backdrop-blur-md border border-gray-100 dark:border-white/10 shadow-sm"
+                            onClick={() => { setViewAll(false); setViewLeadData(null); }}
+                        >
+                            <GoArrowLeft size={16} className="text-gray-700 dark:text-white" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600 dark:text-white">Back</span>
+                        </button>
 
+                        <CustomerImageSlider
+                            images={viewLeadData?.CustomerImage?.length ? viewLeadData.CustomerImage : ["/siteplan2.png"]}
+                        />
 
-                            <div className=" max-h-[calc(80vh-240px)] absolute top-[380px] w-full bg-white dark:bg-[var(--color-childbgdark)] overflow-y-auto px-4 py-6 rounded-t-3xl ">
-                                <h2 className=" text-2xl font-bold text-center mb-8 text-[var(--color-primary)]">Customer Information</h2>
+                        <div className="max-h-[calc(80vh-240px)] absolute top-[380px] w-full bg-white dark:bg-[var(--color-childbgdark)] overflow-y-auto px-4 py-5 rounded-t-3xl">
+                            {/* Header */}
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="flex-1 h-px bg-gray-100 dark:bg-white/[0.06]" />
+                                <div className="flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "var(--color-primary)" }} />
+                                    <span className="text-[10px] font-black tracking-[0.2em] uppercase" style={{ color: "var(--color-primary)" }}>
+                                        Customer Info
+                                    </span>
+                                </div>
+                                <div className="flex-1 h-px bg-gray-100 dark:bg-white/[0.06]" />
+                            </div>
+
+                            <div className="space-y-2">
                                 {allLabelLeads?.map((item, j) => (
                                     <div
                                         key={j}
-                                        className={`flex ${viewLeadData?.[item.key]?.length > 30 && "flex-col gap-2"} my-1 justify-between p-3 bg-gray-50 dark:bg-[var(--color-secondary-darker)] rounded-lg`}
+                                        className={`relative flex ${viewLeadData?.[item.key]?.length > 30 ? "flex-col gap-1.5" : "items-center justify-between"} p-3 rounded-xl bg-gray-50 dark:bg-[var(--color-secondary-darker)] overflow-hidden`}
                                     >
-                                        <span className="font-semibold text-gray-700 dark:text-[var(--color-txtlight)] text-sm">
+                                        {/* Left accent */}
+                                        <span className="absolute left-0 top-2 bottom-2 w-[2.5px] rounded-r-full" style={{ backgroundColor: "var(--color-primary)", opacity: 0.4 }} />
+
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-[var(--color-txtlight)] pl-1">
                                             {item.label}
                                         </span>
 
                                         {item.label === "Contact No" ? (
-                                            <a
-                                                href={`tel:+91${viewLeadData?.[item.key] ?? ""}`}
-                                                className="text-[var(--color-primary)] font-medium hover:underline text-sm"
-                                            >
+                                            <a href={`tel:+91${viewLeadData?.[item.key] ?? ""}`} className="text-sm font-semibold hover:underline" style={{ color: "var(--color-primary)" }}>
                                                 {viewLeadData?.[item.key] ?? ""}
                                             </a>
                                         ) : item.label === "Address" ? (
-                                            <span
-                                                className="text-[var(--color-primary)] cursor-pointer underline text-sm text-right max-w-[60%]"
-                                            /*  onClick={() => {
-                                               setSelectedAddress(viewLeadData?.[item.key]);
-                                               setIsMapOpen(true);
-                                             }} */
-                                             onClick={() => onGoogleMapViewAddress?.(viewLeadData?.[item.key])}
-                                            >
+                                            <span className="text-sm font-medium underline cursor-pointer text-right" style={{ color: "var(--color-primary)" }} onClick={() => onGoogleMapViewAddress?.(viewLeadData?.[item.key])}>
                                                 {viewLeadData?.[item.key] ?? ""}
                                             </span>
                                         ) : (
-                                            <span className={`text-gray-900 dark:text-[var(--color-txtlight)] font-medium text-right max-w-[60%] text-sm ${(viewLeadData?.[item.key]?.length > 30) && "flex-col gap-2 max-w-full"} `}>
-                                                <p className="  text-left"> {viewLeadData?.[item.key] ?? ""}</p>
+                                            <span className={`text-sm font-medium text-gray-800 dark:text-[var(--color-txtlight)] ${viewLeadData?.[item.key]?.length > 30 ? "w-full" : "text-right max-w-[60%]"}`}>
+                                                {viewLeadData?.[item.key] ?? ""}
                                             </span>
                                         )}
-
                                     </div>
-
                                 ))}
                             </div>
                         </div>
-                    </PopupMenu>
-                )
-            }
-            {/* LEAD CARDS */}
-            <div className="px-0 pb-4">
+                    </div>
+                </PopupMenu>
+            )}
+
+            {/* ── Lead cards ────────────────────────────────────────────────────────── */}
+            <div className="px-3 pb-4 space-y-3">
+
+                {/* Empty state */}
                 {paginatedLeads.length === 0 && (
-                    <div className="w-full flex justify-center items-center py-10 text-lg text-gray-500">
-                        No customer available
+                    <div className="flex flex-col items-center justify-center py-16 gap-3">
+                        <div
+                            className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                            style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)" }}
+                        >
+                            <UserPlus size={22} style={{ color: "var(--color-primary)" }} />
+                        </div>
+                        <p className="text-sm font-semibold text-gray-400 dark:text-gray-500">No customers available</p>
                     </div>
                 )}
-                {paginatedLeads.map((lead, index) => (
-                    <div key={index} className="w-full  bg-white dark:bg-[var(--color-childbgdark)] shadow-md rounded-xl overflow-hidden border border-gray-200 dark:border-none dark:my-2 mb-0">
-                        <div className="bg-[var(--color-primary)] h-2"></div>
 
-                        <div className="flex justify-between items-start p-4">
-                            <div>
+                {paginatedLeads.map((lead, index) => (
+                    <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 14 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.045, duration: 0.22 }}
+                        className="relative w-full bg-white dark:bg-[var(--color-childbgdark)] rounded-2xl overflow-hidden border border-gray-100 dark:border-white/[0.06] shadow-sm"
+                    >
+                        {/* Noise texture overlay */}
+                        <div
+                            className="pointer-events-none absolute inset-0 opacity-[0.015] dark:opacity-[0.03] rounded-2xl"
+                            style={{
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+                            }}
+                        />
+
+                        {/* Top brand stripe with ghost index */}
+                        <div
+                            className="relative h-8 flex items-center justify-between px-4 overflow-hidden"
+                            style={{ backgroundColor: "var(--color-primary)" }}
+                        >
+                            {/* Ghost number watermark */}
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[28px] font-black tabular-nums text-white/10 leading-none select-none pointer-events-none">
+                                {String(startIndex + index + 1).padStart(2, "0")}
+                            </span>
+                            {/* Left dot + label */}
+                            <div className="flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse" />
+                                <span className="text-[9px] font-black tracking-[0.2em] uppercase text-white/60">Customer</span>
+                            </div>
+                            <span className="text-[9px] font-black tabular-nums text-white/40">#{startIndex + index + 1}</span>
+                        </div>
+
+                        {/* ── Card body ─────────────────────────────────────────────── */}
+                        <div className="flex gap-3 p-3.5">
+
+                            {/* Left: lead info */}
+                            <div className="flex-1 min-w-0 space-y-2">
                                 {labelLeads.map((item, j) => (
-                                    <div
-                                        key={j}
-                                        className="mb-2 grid grid-cols-[max-content_auto_1fr] items-center gap-2"
-                                    >
-                                        <span className="font-semibold text-black dark:text-[var(--color-primary-light)]">
+                                    <div key={j} className="flex items-baseline gap-2">
+                                        <span
+                                            className="text-[9px] font-black uppercase tracking-wider shrink-0 w-[68px]"
+                                            style={{ color: "var(--color-primary)", opacity: 0.7 }}
+                                        >
                                             {item.label}
                                         </span>
-
-                                        <span className="text-gray-500">-</span>
-
-                                        <span className="text-gray-700 dark:text-[var(--color-primary-lighter)] break-words line-clamp-2">
+                                        <span className="text-[10px] text-gray-300 dark:text-white/20 shrink-0">·</span>
+                                        <span className="text-xs font-semibold text-gray-800 dark:text-[var(--color-primary-lighter)] truncate">
                                             {String(lead[item.key])}
                                         </span>
                                     </div>
-
                                 ))}
                             </div>
 
-
-
-                            <div className="flex flex-col min-w-[120px]  items-center gap-4 ">
-                                {/* <button className=" cursor-pointer text-sm self-end text-[var(--color-primary)] hover:text-[var(--color-primary-darker)]" onClick={() =>{
-                                     setViewAll(true)
-                                     setViewLeadData(lead)
-                                    }
-                            } >View All</button> */}
-
-
-                                <div className=" bg-gray-300 overflow-hidden dark:bg-[var(--color-secondary-darker)] w-[120px] h-[80px] grid place-items-center rounded-md  self-end">
-                                    <img width={120} className={`  ${lead.SitePlan?.length>0? "w-full object-cover":"w-[60px] h-[60px]"}`} src={lead.SitePlan?.length > 0 ? lead.SitePlan : "/siteplan2.png"} onClick={() => {
-                                        setViewAll(true)
-                                        setViewLeadData(lead)
-                                    }} />
+                            {/* Right: image + actions */}
+                            <div className="flex flex-col items-end gap-2 shrink-0">
+                                {/* Thumbnail */}
+                                <div
+                                    className="w-[80px] h-[60px] rounded-xl overflow-hidden border border-gray-100 dark:border-white/[0.06] cursor-pointer active:scale-95 transition-transform"
+                                    style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 6%, #f3f4f6)" }}
+                                    onClick={() => { setViewAll(true); setViewLeadData(lead); }}
+                                >
+                                    <img
+                                        width={80}
+                                        className={`w-full h-full ${lead.SitePlan?.length > 0 ? "object-cover" : "object-contain p-2 opacity-40"}`}
+                                        src={lead.SitePlan?.length > 0 ? lead.SitePlan : "/siteplan2.png"}
+                                    />
                                 </div>
-                                <div className=" flex justify-between w-full">
 
+                                {/* Action icon row 1 */}
+                                <div className="flex items-center gap-1.5">
                                     <button
-                                        className="p-2 bg-[var(--color-primary-lighter)] dark:bg-[var(--color-primary)] self-end rounded-full shadow"
-                                        onClick={() => {
-                                            onViewFollowup?.(lead._id, lead.Name)
-                                        }}>
-                                        <UserPlus size={18} className="text-[var(--color-primary)] dark:text-white" />
-                                    </button>
-                                    <button
-                                        onClick={() => onFavourite?.(lead)}
-                                        className="p-2 bg-gray-100 dark:bg-[var(--color-primary)] self-end rounded-full shadow"
+                                        className="w-7 h-7 rounded-lg flex items-center justify-center active:scale-90 transition-transform"
+                                        style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 12%, transparent)" }}
+                                        onClick={() => onViewFollowup?.(lead._id, lead.Name)}
                                     >
-
-                                        {lead.isFavourite ? <IoIosHeart size={20} className="text-[var(--color-primary)] dark:text-white" /> : <AiOutlineHeart size={20} className="text-[var(--color-primary)] dark:text-white" />}
+                                        <UserPlus size={13} style={{ color: "var(--color-primary)" }} />
+                                    </button>
+                                    <button
+                                        className="w-7 h-7 rounded-lg bg-gray-50 dark:bg-white/[0.05] flex items-center justify-center active:scale-90 transition-transform"
+                                        onClick={() => onFavourite?.(lead)}
+                                    >
+                                        {lead.isFavourite
+                                            ? <IoIosHeart size={14} style={{ color: "var(--color-primary)" }} />
+                                            : <AiOutlineHeart size={14} className="text-gray-400" />}
                                     </button>
                                 </div>
-                                <div className=" flex justify-between w-full">
+
+                                {/* Action icon row 2 */}
+                                <div className="flex items-center gap-1.5">
                                     {duplicateContacts?.[String(lead.ContactNumber)] ? (
                                         <button
-                                            onClick={() =>
-                                                onViewDuplicate?.(String(lead.ContactNumber))
-                                            }
-                                            className="p-2 bg-[var(--color-primary-lighter)] dark:bg-[var(--color-primary)] self-end rounded-full shadow"
+                                            className="w-7 h-7 rounded-lg flex items-center justify-center active:scale-90 transition-transform"
+                                            style={{ backgroundColor: "color-mix(in srgb, var(--color-primary) 12%, transparent)" }}
+                                            onClick={() => onViewDuplicate?.(String(lead.ContactNumber))}
                                         >
-                                            <FaEye size={18} className="text-[var(--color-primary)] dark:text-white" />
+                                            <FaEye size={12} style={{ color: "var(--color-primary)" }} />
                                         </button>
-                                    ) : <div />}
+                                    ) : <div className="w-7" />}
                                     <button
+                                        className="w-7 h-7 rounded-lg bg-gray-50 dark:bg-white/[0.05] flex items-center justify-center active:scale-90 transition-transform"
                                         onClick={() => onEdit?.(lead._id)}
-                                        className=" p-2 bg-gray-100 dark:bg-[var(--color-primary)]  self-end rounded-full shadow"
                                     >
-                                        <MdEdit size={20} className="text-[var(--color-primary)] dark:text-white" />
-
+                                        <MdEdit size={14} style={{ color: "var(--color-primary)" }} />
                                     </button>
-
                                 </div>
                             </div>
-
                         </div>
 
-                        <div className="bg-[var(--color-primary)] p-3 flex justify-between">
-                            { }
-                            <button onClick={() => onAdd?.(lead._id)} className="text-white border border-white px-3 text-sm py-2 rounded-full">
-                                FOLLOW UP
-                            </button>
-
-
-                            <div className="flex items-center gap-10 max-[320px]:gap-4">
-
-                                <a href={`tel:+91${String(lead["ContactNumber"]) ?? String(lead["ContactNo"]) ?? ""}`} className="" onClick={() => onAdd?.(lead._id)}>
-                                    <MdPhone size={25} className="text-white" />
-                                </a>
-
-
-                                {/* <MdEmail size={20} className="text-white" /> */}
-
-                                {/* <a href={`https://wa.me/+91${String(lead["ContactNumber"]) ?? String(lead["ContactNo"]) ?? ""}`} target="_blank">
-                  <FaWhatsapp size={20} className="text-white" />
-                </a> */}
-
+                        {/* ── Action footer ──────────────────────────────────────────── */}
+                        <div className="mx-3 mb-3 rounded-xl overflow-hidden" style={{ backgroundColor: "var(--color-primary)" }}>
+                            {/* Noise on footer too */}
+                            <div
+                                className="pointer-events-none absolute inset-0 opacity-[0.05]"
+                                style={{
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+                                }}
+                            />
+                            <div className="relative flex items-center justify-between px-3 py-2.5">
+                                {/* Follow up button */}
                                 <button
-                                    onClick={() => onMailClick?.(lead)}
-                                    className="text-white"
+                                    onClick={() => onAdd?.(lead._id)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/15 border border-white/20 active:bg-white/25 transition-colors"
                                 >
-                                    <MdEmail size={25} />
+                                    <UserPlus size={12} className="text-white" />
+                                    <span className="text-[10px] font-black tracking-widest uppercase text-white">Follow Up</span>
                                 </button>
 
-
-                                <button
-                                    onClick={() => onWhatsappClick?.(lead)}
-                                    className="text-white"
-                                >
-                                    <FaWhatsapp size={25} />
-                                </button>
-
-
-
+                                {/* Contact icons */}
+                                <div className="flex items-center gap-2">
+                                    <a
+                                        href={`tel:+91${String(lead["ContactNumber"]) ?? String(lead["ContactNo"]) ?? ""}`}
+                                        className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center active:bg-white/30 transition-colors"
+                                        onClick={() => onAdd?.(lead._id)}
+                                    >
+                                        <MdPhone size={16} className="text-white" />
+                                    </a>
+                                    <button
+                                        onClick={() => onMailClick?.(lead)}
+                                        className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center active:bg-white/30 transition-colors"
+                                    >
+                                        <MdEmail size={16} className="text-white" />
+                                    </button>
+                                    <button
+                                        onClick={() => onWhatsappClick?.(lead)}
+                                        className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center active:bg-white/30 transition-colors"
+                                    >
+                                        <FaWhatsapp size={16} className="text-white" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
                 ))}
-                {/* animated button */}
+
+                {/* ── Pagination ────────────────────────────────────────────────── */}
                 {paginatedLeads.length > 0 && (
-                    <div className="flex items-center justify-center w-full">
-                        <div className="flex items-center space-x-2 p-2  rounded-lg">
-                            <button onClick={() => setCurrentPage(1)} className=" h-[30px] w-[30px] bg-white rounded-full text-sm grid place-items-center"><AiOutlineBackward /> </button>
-                            <button onClick={prevPage}
+                    <div className="flex items-center justify-center pt-2 pb-1">
+                        <div className="flex items-center gap-1.5 bg-white dark:bg-[var(--color-childbgdark)] border border-gray-100 dark:border-white/[0.07] rounded-2xl shadow-sm px-3 py-2">
+                            {/* First */}
+                            <button
+                                onClick={() => setCurrentPage(1)}
+                                className="w-7 h-7 rounded-lg bg-gray-50 dark:bg-white/[0.04] hover:bg-gray-100 dark:hover:bg-white/[0.08] flex items-center justify-center text-gray-400 transition-colors"
+                            >
+                                <AiOutlineBackward size={12} />
+                            </button>
+                            {/* Prev */}
+                            <button
+                                onClick={prevPage}
                                 disabled={currentPage === 1}
-                                className={`h-[30px] w-[30px] bg-white rounded-full text-sm grid place-items-center ${currentPage === 1 ? "bg-gray-200 opacity-50 cursor-not-allowed" : "bg-white "}`}><GrFormPrevious /></button>
+                                className={`w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 transition-colors ${currentPage === 1 ? "opacity-25 cursor-not-allowed" : "bg-gray-50 dark:bg-white/[0.04] hover:bg-gray-100"}`}
+                            >
+                                <GrFormPrevious size={14} />
+                            </button>
+
+                            {/* Page numbers */}
                             <AnimatePresence mode="popLayout">
-                                {pages.map((num, i) => (
+                                {pages.map((num) => (
                                     <motion.button
-                                        key={i}
+                                        key={num}
                                         onClick={() => setCurrentPage(num)}
-                                        className={`h-[30px] w-[30px]  rounded-full text-sm grid place-items-center  ${num === currentPage ? " bg-[var(--color-primary)] text-white w-[35px] h-[35px]" : "bg-white text-black w-[30px] h-[30px]"
-                                            }`}>
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.8 }}
+                                        transition={{ duration: 0.15 }}
+                                        className="rounded-lg text-sm font-bold flex items-center justify-center transition-all"
+                                        style={
+                                            num === currentPage
+                                                ? { width: 32, height: 32, backgroundColor: "var(--color-primary)", color: "#fff" }
+                                                : { width: 28, height: 28, backgroundColor: "transparent", color: "#9ca3af" }
+                                        }
+                                    >
                                         {num}
                                     </motion.button>
                                 ))}
                             </AnimatePresence>
 
+                            {/* Next */}
                             <button
                                 onClick={nextPage}
                                 disabled={!hasMoreCustomers && currentPage === totalPages}
-                                className={`h-[30px] w-[30px] bg-white rounded-full text-sm grid place-items-center ${currentPage === totalPages && !hasMoreCustomers ? "bg-gray-200 opacity-50 cursor-not-allowed" : "bg-white"
-                                    }`}
+                                className={`w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 transition-colors ${(!hasMoreCustomers && currentPage === totalPages) ? "opacity-25 cursor-not-allowed" : "bg-gray-50 dark:bg-white/[0.04] hover:bg-gray-100"}`}
                             >
-                                <GrFormNext />
+                                <GrFormNext size={14} />
                             </button>
-
-                            <button onClick={() => setCurrentPage(totalPages)} className=" h-[30px] w-[30px] bg-white rounded-full text-sm grid place-items-center"><AiOutlineForward /> </button>
+                            {/* Last */}
+                            <button
+                                onClick={() => setCurrentPage(totalPages)}
+                                className="w-7 h-7 rounded-lg bg-gray-50 dark:bg-white/[0.04] hover:bg-gray-100 dark:hover:bg-white/[0.08] flex items-center justify-center text-gray-400 transition-colors"
+                            >
+                                <AiOutlineForward size={12} />
+                            </button>
                         </div>
-                    </div>)}
+                    </div>
+                )}
             </div>
-            {/* <div>
-        <button onClick={prevPage} 
-        disabled = {currentPage === 1}
-          className={`px-2 py-2 rounded-full border
-      ${currentPage === 1 ? "bg-gray-300 cursor-not-allowed" : "bg-[var(--color-primary)] text-white"}
-    `}>prev</button>
-     <button onClick={nextPage} 
-        disabled = {currentPage === totalPages}
-          className={`px-4 py-2 rounded-xl border
-      ${currentPage === totalPages ? "bg-gray-300 cursor-not-allowed" : "bg-[var(--color-primary)] text-white"}
-    `}>next</button>
-      </div> */}
-
         </>
     );
 }
