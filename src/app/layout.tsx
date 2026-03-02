@@ -174,7 +174,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                                 </div>
 
                                 {/* Actual Page */}
-                                <div className=" bg-white max-md:px-2 max-md:py-2 max-sm:mt-[52px]">{children}</div>
+                                <div className="max-md:px-2 max-md:py-2 max-sm:mt-[52px]">{children}</div>
                               </main>
                             </SidebarInset>
                           </div>
