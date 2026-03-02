@@ -173,11 +173,11 @@ export default function MobileHamburger() {
                         backgroundColor: "color-mix(in srgb, var(--color-primary) 10%, transparent)",
                       }}
                     >
-                      Domain
+                      WBH
                     </span>
                   </div>
                   <p className="text-[10px] text-slate-400 dark:text-white/25 font-medium tracking-wider mt-0.5">
-                    Domain Insights, Made Easy
+                    WBH Insights, Made Easy
                   </p>
                 </div>
 

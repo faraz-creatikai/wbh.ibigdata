@@ -107,7 +107,7 @@ const SmallScreenData = () => {
             <div>
               <p className="text-white/60 text-[10px] font-bold tracking-widest uppercase">Welcome back</p>
               <h2 className="text-white text-lg font-black tracking-tight mt-0.5">CRM Dashboard</h2>
-              <p className="text-white/40 text-[10px] mt-0.5">ibigdata · Travel CRM</p>
+              <p className="text-white/40 text-[10px] mt-0.5">ibigdata · WBH CRM</p>
             </div>
             <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center">
               <Activity size={20} className="text-white" />

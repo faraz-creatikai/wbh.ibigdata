@@ -19,6 +19,7 @@ import {
 import FavouriteDialog from "../component/popups/FavouriteDialog";
 import PageHeader from "../component/labels/PageHeader";
 import FavouriteTable from "../phonescreens/DashboardScreens/tables/FavouriteTable";
+import MobilePageTitle from "../component/labels/MobilePageTitle";
 
 interface FavouriteDialogDataInterface {
   id: string;
@@ -154,7 +155,8 @@ export default function FavouritePage() {
         onDelete={handleFavouriteConfirm}
       />
       <div className=" sm:hidden min-h-[calc(100vh-56px)] overflow-auto max-sm:py-2">
-        <h1 className=" text-[var(--color-primary)] font-extrabold text-2xl px-0 mb-4">Favourites</h1>
+        {/* <h1 className=" text-[var(--color-primary)] font-extrabold text-2xl px-0 mb-4">Favourites</h1> */}
+        <MobilePageTitle title="Favourites"  subtitle="Leads"/>
         <FavouriteTable
           leads={favouriteData}
           labelLeads={phonetableheader}

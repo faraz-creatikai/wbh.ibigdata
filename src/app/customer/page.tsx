@@ -62,6 +62,7 @@ import { FollowupDeleteDialogDataInterface } from "@/store/contactFollowups.inte
 import { BsPersonFill } from "react-icons/bs";
 import GoogleMapDialog from "../component/popups/GoogleMapDialogue";
 import CustomerEditDialog from "../component/popups/CustomerEditDialog";
+import MobilePageTitle from "../component/labels/MobilePageTitle";
 
 
 interface DeleteAllDialogDataInterface { }
@@ -1647,10 +1648,11 @@ export default function Customer() {
       {/* Mobile Customer Page */}
       <div className=" sm:hidden min-h-[calc(100vh-56px)] overflow-auto max-sm:py-2">
 
-        <div className=" flex justify-between items-center px-0">
+        {/* <div className=" flex justify-between items-center px-0">
           <h1 className=" text-[var(--color-primary)] font-extrabold text-2xl ">Leads</h1>
 
-        </div>
+        </div> */}
+        <MobilePageTitle title="Leads" />
         <div className=" w-full">
           <DynamicAdvance>
             <ObjectSelect
@@ -2296,448 +2298,442 @@ export default function Customer() {
 
               </div>
             </div>
-            <div className="  relative" ref={scrollRef}>
+{/* ═══════════════════════════════════════════════════════
+    DROP-IN REPLACEMENT — paste this in place of your existing
+    table JSX block (from the outer <div className="relative">
+    all the way through the pagination </div>)
+    All logic, refs, state, handlers are untouched.
+═══════════════════════════════════════════════════════ */}
 
-              <div className=" flex justify-between items-center sticky top-0 left-0 overflow-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden w-full">
-                <div className="flex gap-10 items-center px-3 py-4 min-w-max text-gray-700">
+<div className="relative flex flex-col gap-0" ref={scrollRef}>
 
-                  <label htmlFor="selectall" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer">
-                    <div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
-                    <span className="relative">Select All</span>
-                  </label>
-                  <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
-                    if (selectedCustomers.length <= 0) toast.error("please select atleast 1 customer")
-                    else {
-                      setIsAssignOpen(true);
-                      fetchUsers()
-                    } 0
-                  }}><div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
-                    <span className="relative">Asign To</span></button>
-                  <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
-                    if (selectedCustomers.length <= 0) toast.error("please select atleast 1 customer")
-                    else {
-                      setIsMailAllOpen(true);
-                      fetchEmailTemplates()
-                    }
-                  }}><div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
-                    <span className="relative">Email All</span></button>
-                  <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
-                    if (selectedCustomers.length <= 0) toast.error("please select atleast 1 customer")
-                    else {
-                      setIsWhatsappAllOpen(true);
-                      fetchWhatsappTemplates()
-                    }
-                  }}><div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
-                    <span className="relative">SMS All</span></button>
-                  {/*                 <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer">
-                  <div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
-                  <span className="relative ">Mass Update</span>
-                </button> */}
+  {/* ── TOOLBAR ── */}
+  <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-2.5 bg-white max-sm:dark:bg-gray-950 border-b border-gray-100 max-sm:dark:border-white/[0.06] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 
-                  {
-                    admin?.role !== "user" && <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
-                      if (customerData.length > 0) {
-                        if (selectedCustomers.length < 1) {
-                          const firstPageIds = currentRows.map((c) => c._id);
-                          setSelectedCustomers(firstPageIds);
-                        }
+    {/* Left: action pills */}
+    <div className="flex items-center gap-1.5 min-w-max">
 
-                        setIsDeleteAllDialogOpen(true);
-                        setDeleteAllDialogData({});
-                      }
-                    }}><div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
-                      <span className="relative ">Delete All</span>
-                    </button>
+      {/* Select All — uses a label so the hidden checkbox still works */}
+      <label
+        htmlFor="selectall"
+        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-semibold cursor-pointer select-none transition-all duration-150
+          text-[var(--color-primary)] bg-[var(--color-primary)]/8 hover:bg-[var(--color-primary)] hover:text-white
+          max-sm:dark:bg-[var(--color-primary)]/15 max-sm:dark:hover:bg-[var(--color-primary)]"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="3"/><polyline points="9 11 12 14 22 4"/>
+        </svg>
+        Select All
+      </label>
+      <input id="selectall" type="checkbox" className="hidden"
+        checked={currentRows.length > 0 && currentRows.every((r) => selectedCustomers.includes(r._id))}
+        onChange={handleSelectAll}
+      />
+
+      {[
+        {
+          label: "Assign To",
+          icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+          onClick: () => { if (selectedCustomers.length <= 0) toast.error("please select atleast 1 customer"); else { setIsAssignOpen(true); fetchUsers(); } }
+        },
+        {
+          label: "Email All",
+          icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>,
+          onClick: () => { if (selectedCustomers.length <= 0) toast.error("please select atleast 1 customer"); else { setIsMailAllOpen(true); fetchEmailTemplates(); } }
+        },
+        {
+          label: "SMS All",
+          icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+          onClick: () => { if (selectedCustomers.length <= 0) toast.error("please select atleast 1 customer"); else { setIsWhatsappAllOpen(true); fetchWhatsappTemplates(); } }
+        },
+      ].map(({ label, icon, onClick }) => (
+        <button
+          key={label}
+          type="button"
+          onClick={onClick}
+          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-semibold transition-all duration-150
+            text-gray-600 max-sm:dark:text-white/55 bg-gray-100 max-sm:dark:bg-white/[0.06]
+            hover:bg-[var(--color-primary)] hover:text-white max-sm:dark:hover:bg-[var(--color-primary)] max-sm:dark:hover:text-white"
+        >
+          {icon}
+          {label}
+        </button>
+      ))}
+
+      {admin?.role !== "user" && (
+        <button
+          type="button"
+          onClick={() => {
+            if (customerData.length > 0) {
+              if (selectedCustomers.length < 1) {
+                const firstPageIds = currentRows.map((c) => c._id);
+                setSelectedCustomers(firstPageIds);
+              }
+              setIsDeleteAllDialogOpen(true);
+              setDeleteAllDialogData({});
+            }
+          }}
+          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-semibold transition-all duration-150
+            text-red-500 bg-red-50 max-sm:dark:bg-red-500/10 hover:bg-red-500 hover:text-white"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+          Delete All
+        </button>
+      )}
+    </div>
+
+    {/* Right: meta info */}
+    <div className="flex items-center gap-3 shrink-0">
+      {isFilteredTrigger && (
+        <span className="text-[11px] font-medium text-gray-400 max-sm:dark:text-white/30 bg-gray-50 max-sm:dark:bg-white/[0.04] px-2.5 py-1 rounded-full border border-gray-200 max-sm:dark:border-white/[0.06]">
+          {totalCustomers} found
+        </span>
+      )}
+      {selectedCustomers.length > 0 && (
+        <span className="text-[11px] font-semibold text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2.5 py-1 rounded-full">
+          {selectedCustomers.length} selected
+        </span>
+      )}
+    </div>
+  </div>
+
+  {/* ── TABLE SETTINGS ── */}
+  <Tablesetting columns={columns} setColumns={setColumns} />
+
+  {/* ── TABLE ── */}
+  <div className="max-h-[600px] px-3 w-full overflow-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.200)_transparent] max-sm:dark:[scrollbar-color:rgba(255,255,255,0.1)_transparent]">
+    <table className="table-auto relative w-full text-sm border-separate border-spacing-0">
+
+      {/* Head */}
+      <thead className="sticky top-0 z-[5]">
+        <tr>
+          {/* Checkbox col */}
+          <th className="sticky left-0 z-20 bg-[var(--color-primary)] px-3 py-0 w-10">
+            <input
+              id="selectall"
+              type="checkbox"
+              className="hidden"
+              checked={currentRows.length > 0 && currentRows.every((r) => selectedCustomers.includes(r._id))}
+              onChange={handleSelectAll}
+            />
+          </th>
+
+          {columns.filter(col => col.visible).map((header) => (
+            <th
+              key={header.key}
+              className={[
+                "px-3 py-3.5 text-left text-[11px] font-bold uppercase tracking-[0.08em]",
+                "bg-[var(--color-primary)] text-white/90",
+                "border-b border-[var(--color-primary)]",
+                "whitespace-nowrap",
+                header.key === "sno" ? "sticky left-10 z-20 bg-[var(--color-primary)]" : "",
+              ].join(" ")}
+            >
+              {header.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+
+      {/* Body */}
+      <tbody className="divide-y divide-gray-100 max-sm:dark:divide-white/[0.05]">
+        {customerTableLoader ? (
+          /* Loading rows */
+          Array.from({ length: 6 }).map((_, i) => (
+            <tr key={i} className="animate-pulse">
+              <td className="sticky left-0 bg-white max-sm:dark:bg-gray-950 px-3 py-3.5 w-10">
+                <div className="size-4 rounded bg-gray-100 max-sm:dark:bg-white/[0.07]" />
+              </td>
+              {columns.filter(c => c.visible).map((col) => (
+                <td key={col.key} className="px-3 py-3.5">
+                  <div className="h-3.5 rounded-full bg-gray-100 max-sm:dark:bg-white/[0.07]" style={{ width: `${50 + (i * col.key.length * 3) % 40}%` }} />
+                </td>
+              ))}
+            </tr>
+          ))
+        ) : currentRows.length > 0 ? (
+          currentRows.map((item, index) => (
+            <tr
+              key={item._id}
+              className="group/row bg-white max-sm:dark:bg-gray-950 hover:bg-[var(--color-primary-lighter)] max-sm:dark:hover:bg-gray-800 transition-colors duration-100"
+            >
+              {/* Row checkbox */}
+              <td className="sticky left-0 z-[2] px-3 py-3 bg-white max-sm:dark:bg-gray-950 group-hover/row:bg-[var(--color-primary-lighter)] max-sm:dark:group-hover/row:bg-black/[0.03] transition-colors duration-100 w-10">
+                <input
+                  type="checkbox"
+                  checked={selectedCustomers.includes(item._id)}
+                  onChange={() => handleSelectRow(item._id)}
+                  className="size-4 rounded border-gray-300 max-sm:dark:border-white/20 accent-[var(--color-primary)] cursor-pointer"
+                />
+              </td>
+
+              {columns.filter(col => col.visible).map((col) => {
+                let cellValue;
+                if (col.key.startsWith("cf_")) {
+                  const originalKey = col.key.replace("cf_", "");
+                  cellValue = item.CustomerFields?.[originalKey] ?? "-";
+                } else {
+                  switch (col.key) {
+                    case "sno":
+                      cellValue = (currentTablePage - 1) * rowsPerTablePage + (index + 1);
+                      break;
+                    case "campaign": cellValue = item.Campaign; break;
+                    case "type": cellValue = item.Type; break;
+                    case "subtype": cellValue = item.SubType; break;
+                    case "City": cellValue = item.City; break;
+                    case "Area": cellValue = item.Area; break;
+                    case "Email": cellValue = item.Email; break;
+                    case "Facillities": cellValue = item.Facillities; break;
+                    case "CustomerId": cellValue = item.CustomerId; break;
+                    case "Adderess":
+                      cellValue = (
+                        <span
+                          className="text-[var(--color-primary)] cursor-pointer underline underline-offset-2 decoration-dashed hover:decoration-solid"
+                          onClick={() => { setSelectedAddress(item.Adderess); setIsMapOpen(true); }}
+                        >
+                          {item.Adderess}
+                        </span>
+                      );
+                      break;
+                    case "CustomerYear": cellValue = item.CustomerYear; break;
+                    case "Other": cellValue = item.Other; break;
+                    case "name": cellValue = item.Name; break;
+                    case "description": cellValue = item.Description; break;
+                    case "location": cellValue = item.Location; break;
+                    case "sublocation": cellValue = item.SubLocation; break;
+                    case "contact":
+                      cellValue = item.ContactNumber ? (
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-[13px] font-medium text-gray-800 max-sm:dark:text-white/80 tabular-nums">
+                            {item.ContactNumber}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {[
+                              {
+                                href: `tel:${item.ContactNumber}`,
+                                as: "a",
+                                icon: <FaPhone size={10} />,
+                                color: "text-emerald-600 bg-emerald-50 hover:bg-emerald-600 max-sm:dark:bg-emerald-500/10 max-sm:dark:hover:bg-emerald-500",
+                              },
+                              {
+                                onClick: () => { setSelectedCustomers([item._id]); setSelectUser(item._id); setIsMailAllOpen(true); fetchEmailTemplates(); },
+                                icon: <MdEmail size={11} />,
+                                color: "text-sky-600 bg-sky-50 hover:bg-sky-600 max-sm:dark:bg-sky-500/10 max-sm:dark:hover:bg-sky-500",
+                              },
+                              {
+                                onClick: () => { setSelectedCustomers([item._id]); setSelectUser(item._id); setIsWhatsappAllOpen(true); fetchWhatsappTemplates(); },
+                                icon: <FaWhatsapp size={10} />,
+                                color: "text-green-600 bg-green-50 hover:bg-green-600 max-sm:dark:bg-green-500/10 max-sm:dark:hover:bg-green-500",
+                              },
+                            ].map((btn, bi) =>
+                              btn.href ? (
+                                <a
+                                  key={bi}
+                                  href={btn.href}
+                                  className={`inline-flex items-center justify-center size-6 rounded-md transition-all duration-150 hover:text-white ${btn.color}`}
+                                >
+                                  {btn.icon}
+                                </a>
+                              ) : (
+                                <button
+                                  key={bi}
+                                  type="button"
+                                  onClick={btn.onClick}
+                                  className={`inline-flex items-center justify-center size-6 rounded-md transition-all duration-150 hover:text-white ${btn.color}`}
+                                >
+                                  {btn.icon}
+                                </button>
+                              )
+                            )}
+                            {duplicateContacts[item.ContactNumber] && (
+                              <button
+                                type="button"
+                                onClick={() => { setIsTableDialogOpen(true); handleTableDialogData(item.ContactNumber); }}
+                                className="inline-flex items-center justify-center size-6 rounded-md text-amber-600 bg-amber-50 max-sm:dark:bg-amber-500/10 hover:bg-amber-500 hover:text-white transition-all duration-150"
+                              >
+                                <FaEye size={10} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ) : null;
+                      break;
+                    case "assign": cellValue = item.AssignTo; break;
+                    case "reference": cellValue = item.ReferenceId; break;
+                    case "date": cellValue = item.Date; break;
+                    case "url": cellValue = item.URL; break;
+                    case "video": cellValue = item.Video; break;
+                    case "googlemap": cellValue = item.GoogleMap; break;
+                    case "price": cellValue = item.Price; break;
+                    case "actions":
+                      cellValue = (
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {[
+                            {
+                              icon: <MdAdd size={14} />,
+                              color: "text-[var(--color-primary)] bg-[var(--color-primary)]/8 hover:bg-[var(--color-primary)] max-sm:dark:bg-[var(--color-primary)]/15",
+                              onClick: () => { setSelectedCustomerFollowupId(item._id); setIsFollowupOpen(true); },
+                              title: "Add Follow Up",
+                            },
+                            {
+                              icon: <MdEdit size={13} />,
+                              color: "text-sky-600 bg-sky-50 hover:bg-sky-500 max-sm:dark:bg-sky-500/10",
+                              onClick: () => handleEditClick(item._id),
+                              title: "Edit",
+                            },
+                            {
+                              icon: <MdDelete size={13} />,
+                              color: "text-red-500 bg-red-50 hover:bg-red-500 max-sm:dark:bg-red-500/10",
+                              onClick: () => { setIsDeleteDialogOpen(true); setDialogType("delete"); setDialogData({ id: item._id, customerName: item.Name, ContactNumber: item.ContactNumber }); },
+                              title: "Delete",
+                            },
+                            {
+                              icon: item.isFavourite ? <MdFavorite size={13} /> : <MdFavoriteBorder size={13} />,
+                              color: item.isFavourite
+                                ? "text-pink-500 bg-pink-50 hover:bg-pink-500 max-sm:dark:bg-pink-500/10"
+                                : "text-gray-400 bg-gray-100 hover:bg-pink-500 hover:text-white max-sm:dark:bg-white/[0.06]",
+                              onClick: () => handleFavouriteToggle(item._id, item.Name, item.ContactNumber, item.isFavourite ?? false),
+                              title: "Favourite",
+                            },
+                            {
+                              icon: item.isChecked ? <IoCheckmarkDoneOutline size={13} /> : <IoCheckmark size={13} />,
+                              color: item.isChecked
+                                ? "text-emerald-600 bg-emerald-50 hover:bg-emerald-500 max-sm:dark:bg-emerald-500/10"
+                                : "text-gray-400 bg-gray-100 hover:bg-emerald-500 hover:text-white max-sm:dark:bg-white/[0.06]",
+                              onClick: () => handleChecked({ id: item._id, isChecked: item.isChecked }),
+                              title: "Check",
+                            },
+                            {
+                              icon: <UserPlus size={13} />,
+                              color: "text-violet-600 bg-violet-50 hover:bg-violet-500 max-sm:dark:bg-violet-500/10",
+                              onClick: () => { setIsFollowupDialogOpen(true); handleFollowups(item._id, item.Name); },
+                              title: "Follow Ups",
+                            },
+                          ].map((btn, bi) => (
+                            <button
+                              key={bi}
+                              type="button"
+                              title={btn.title}
+                              onClick={btn.onClick}
+                              className={`inline-flex items-center justify-center size-7 rounded-lg transition-all duration-150 hover:text-white ${btn.color}`}
+                            >
+                              {btn.icon}
+                            </button>
+                          ))}
+                        </div>
+                      );
+                      break;
+                    default: cellValue = null;
                   }
-
-
-                </div>
-                {
-                  isFilteredTrigger && <p className={`text-gray-400 font-light text-xs mx-3  mt-2  flex items-center gap-[1px] `}>
-                    Customers Found {totalCustomers}
-                  </p>
                 }
-                {selectedCustomers.length > 0 && <p className=" text-gray-400 font-extralight text-sm mx-3">selected {selectedCustomers.length}</p>}
+
+                return (
+                  <td
+                    key={col.key}
+                    className={[
+                      "px-3 py-3 text-[13px] text-gray-700 max-sm:dark:text-white/65",
+                      "border-b border-gray-100 max-sm:dark:border-white/[0.05]",
+                      "break-all whitespace-normal align-middle",
+                      col.key !== "sno" ? "min-w-[100px]" : "",
+                      col.key === "description" && item.Description ? "min-w-[160px]" : "",
+                      col.key === "sno" ? "sticky left-10 z-[2] bg-white max-sm:dark:bg-gray-950 group-hover/row:bg-[var(--color-primary)]/[0.03] max-sm:dark:group-hover/row:bg-white/[0.03] transition-colors duration-100 max-w-[60px] font-medium text-gray-400 max-sm:dark:text-white/30 text-xs tabular-nums" : "",
+                      col.key === "type" ? "max-w-[80px]" : "",
+                      col.key === "subtype" ? "max-w-[90px]" : "",
+                      col.key === "contact" ? "max-w-[160px]" : "",
+                      col.key === "reference" ? "max-w-[70px]" : "",
+                      col.key === "date" ? "min-w-[100px]" : "",
+                      col.key === "actions" ? "min-w-[160px]" : "",
+                    ].join(" ")}
+                  >
+                    {cellValue}
+                  </td>
+                );
+              })}
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan={columns.filter(c => c.visible).length + 1} className="py-16 text-center">
+              <div className="flex flex-col items-center gap-2">
+                <div className="size-10 rounded-xl bg-gray-100 max-sm:dark:bg-white/[0.06] flex items-center justify-center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 max-sm:dark:text-white/25">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6M8 11h6"/>
+                  </svg>
+                </div>
+                <span className="text-[13px] text-gray-400 max-sm:dark:text-white/30">No data available</span>
               </div>
-              <Tablesetting columns={columns} setColumns={setColumns} />
-              <div className=" max-h-[600px]  w-full overflow-y-auto">
-                <table className="table-auto relative w-full border-separate border-spacing-0 text-sm border border-gray-200">
-                  <thead className="bg-[var(--color-primary)] h-16 text-white sticky top-0 left-0 z-[5]">
-                    <tr>
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
 
-                      {/* ✅ SELECT ALL CHECKBOX COLUMN */}
-                      <th className="px-2 py-3 border border-[var(--color-secondary-dark)] bg-[var(--color-primary)] sticky left-0 z-20 text-left">
+{/* ── PAGINATION ── */}
+<div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 max-sm:dark:border-white/[0.06] bg-white max-sm:dark:bg-gray-950">
+  <p className="text-[12px] text-gray-400 max-sm:dark:text-white/30 font-medium tabular-nums">
+    Page <span className="text-gray-700 max-sm:dark:text-white/60 font-semibold">{currentTablePage}</span> of <span className="text-gray-700 max-sm:dark:text-white/60 font-semibold">{totalCustomerPage}</span>
+  </p>
 
-                        <input
-                          id="selectall"
-                          type="checkbox"
-                          className="hidden"
-                          checked={
-                            currentRows.length > 0 &&
-                            currentRows.every((r) => selectedCustomers.includes(r._id))
-                          }
-                          onChange={handleSelectAll}
-                        />
-                      </th>
-
-                      {columns
-                        .filter(col => col.visible)
-                        .map((header, index) => (
-                          <th
-                            key={header.key}
-                            className={`px-2 py-3 border border-[var(--color-secondary-dark)] text-left  
-                ${header.key === "sno" ? "sticky left-7.5 z-20 bg-[var(--color-primary)]" : ""}`}
-                          >
-                            {header.label}
-                          </th>
-                        ))}
-
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {customerTableLoader ?
-                      <tr>
-                        <td colSpan={12} className="text-center py-4 text-gray-500">
-                          Loading customers...
-                        </td>
-                      </tr> : currentRows.length > 0 ? (
-                        currentRows.map((item, index) => (
-                          <tr key={item._id} className="border-t hover:bg-[#f7f6f3] transition-all duration-200">
-
-                            {/* ✅ ROW CHECKBOX */}
-                            <td className="px-2 py-3 sticky left-0 bg-white  border border-gray-200">
-                              <input
-                                type="checkbox"
-                                checked={selectedCustomers.includes(item._id)}
-                                onChange={() => handleSelectRow(item._id)}
-                              />
-                            </td>
-
-                            {columns.filter(col => col.visible).map((col) => {
-                              let cellValue;
-                              if (col.key.startsWith("cf_")) {
-                                const originalKey = col.key.replace("cf_", "");
-                                cellValue = item.CustomerFields?.[originalKey] ?? "-";
-                              } else {
-                                switch (col.key) {
-                                  case "sno":
-                                    cellValue = (currentTablePage - 1) * rowsPerTablePage + (index + 1);
-                                    break;
-                                  case "campaign":
-                                    cellValue = item.Campaign;
-                                    break;
-                                  case "type":
-                                    cellValue = item.Type;
-                                    break;
-                                  case "subtype":
-                                    cellValue = item.SubType;
-                                    break;
-                                  case "City":
-
-                                    cellValue = item.City;
-                                    break;
-                                  case "Area":
-                                    cellValue = item.Area;
-                                    break;
-                                  case "Email":
-                                    cellValue = item.Email;
-                                    break;
-
-                                  case "Facillities":
-                                    cellValue = item.Facillities;
-                                    break;
-
-                                  case "CustomerId":
-                                    cellValue = item.CustomerId;
-                                    break;
-                                  case "Adderess":
-                                    cellValue = (<>
-                                      <span
-                                        className="text-blue-600 cursor-pointer underline"
-                                        onClick={() => {
-                                          setSelectedAddress(item.Adderess);
-                                          setIsMapOpen(true);
-                                        }}
-                                      >
-                                        {item.Adderess}
-                                      </span>
-
-                                    </>);
-                                    break;
-                                  case "CustomerYear":
-                                    cellValue = item.CustomerYear;
-                                    break;
-                                  case "Other":
-                                    cellValue = item.Other;
-                                    break;
-                                  case "name":
-                                    cellValue = item.Name;
-                                    break;
-                                  case "description":
-                                    cellValue = item.Description;
-                                    break;
-                                  case "location":
-                                    cellValue = item.Location;
-                                    break;
-                                  case "sublocation":
-                                    cellValue = item.SubLocation;
-                                    break;
-                                  case "contact":
-                                    cellValue = (
-                                      <>
-                                        {item.ContactNumber && (
-                                          <>
-                                            <div className=" text-center">{item.ContactNumber}</div>
-                                            <span className="flex">
-                                              <Button
-                                                component="a"
-                                                href={`tel:${item.ContactNumber}`}
-                                                sx={{
-                                                  backgroundColor: "#E8F5E9",
-                                                  color: "var(--color-primary)",
-                                                  minWidth: "14px",
-                                                  height: "24px",
-                                                  borderRadius: "8px",
-                                                  margin: "4px"
-                                                }}
-                                              >
-                                                <FaPhone size={12} />
-                                              </Button>
-                                              <Button
-                                                sx={{
-                                                  backgroundColor: "#E8F5E9",
-                                                  color: "var(--color-primary)",
-                                                  minWidth: "14px",
-                                                  height: "24px",
-                                                  borderRadius: "8px",
-                                                  margin: "4px"
-                                                }}
-                                                onClick={() => {
-                                                  setSelectedCustomers([item._id]);
-                                                  setSelectUser(item._id);
-                                                  setIsMailAllOpen(true);
-                                                  fetchEmailTemplates();
-                                                }}
-                                              >
-                                                <MdEmail size={14} />
-                                              </Button>
-                                              <Button
-                                                onClick={() => {
-                                                  setSelectedCustomers([item._id]);
-                                                  setSelectUser(item._id);
-                                                  setIsWhatsappAllOpen(true);
-                                                  fetchWhatsappTemplates();
-                                                }}
-                                                sx={{
-                                                  backgroundColor: "#E8F5E9",
-                                                  color: "var(--color-primary)",
-                                                  minWidth: "14px",
-                                                  height: "24px",
-                                                  borderRadius: "8px",
-                                                  margin: "4px"
-                                                }}
-                                              >
-                                                <FaWhatsapp size={14} />
-                                              </Button>
-                                            </span>
-                                            {duplicateContacts[item.ContactNumber] && (
-                                              <span>
-                                                <Button
-                                                  onClick={() => {
-                                                    setIsTableDialogOpen(true);
-                                                    handleTableDialogData(item.ContactNumber);
-                                                  }}
-                                                  sx={{
-                                                    backgroundColor: "#E8F5E9",
-                                                    color: "var(--color-primary)",
-                                                    minWidth: "100px",
-                                                    height: "24px",
-                                                    borderRadius: "8px",
-                                                    margin: "4px"
-                                                  }}
-                                                >
-                                                  <FaEye size={12} />
-                                                </Button>
-                                              </span>
-                                            )}
-                                          </>
-                                        )}
-                                      </>
-                                    );
-                                    break;
-                                  case "assign":
-                                    cellValue = item.AssignTo;
-                                    break;
-                                  case "reference":
-                                    cellValue = item.ReferenceId;
-                                    break;
-                                  case "date":
-                                    cellValue = item.Date;
-                                    break;
-                                  case "url":
-                                    cellValue = item.URL;
-                                    break;
-                                  case "video":
-                                    cellValue = item.Video;
-                                    break;
-                                  case "googlemap":
-                                    cellValue = item.GoogleMap;
-                                    break;
-                                  case "price":
-                                    cellValue = item.Price;
-                                    break;
-
-                                  case "actions":
-                                    cellValue = (
-                                      <div className="grid grid-cols-2 gap-3 items-center h-full">
-                                        <Button
-                                          sx={{ backgroundColor: "#E8F5E9", color: "var(--color-primary)", minWidth: "32px", height: "32px", borderRadius: "8px" }}
-                                          /*  onClick={() => router.push(`/followups/customer/add/${item._id}`)} */
-                                          onClick={() => {
-                                            setSelectedCustomerFollowupId(item._id);
-                                            setIsFollowupOpen(true);
-                                          }}
-                                        >
-                                          <MdAdd />
-                                        </Button>
-                                        <Button
-                                          sx={{ backgroundColor: "#E8F5E9", color: "var(--color-primary)", minWidth: "32px", height: "32px", borderRadius: "8px" }}
-                                          onClick={() => /* router.push(`/customer/edit/${item._id}`) */ handleEditClick(item._id)}
-                                        >
-                                          <MdEdit />
-                                        </Button>
-                                        <Button
-                                          sx={{ backgroundColor: "#FDECEA", color: "#C62828", minWidth: "32px", height: "32px", borderRadius: "8px" }}
-                                          onClick={() => {
-                                            setIsDeleteDialogOpen(true);
-                                            setDialogType("delete");
-                                            setDialogData({
-                                              id: item._id,
-                                              customerName: item.Name,
-                                              ContactNumber: item.ContactNumber,
-                                            });
-                                          }}
-                                        >
-                                          <MdDelete />
-                                        </Button>
-                                        <Button
-                                          sx={{ backgroundColor: "#FFF0F5", color: item.isFavourite ? "#E91E63" : "#C62828", minWidth: "32px", height: "32px", borderRadius: "8px" }}
-                                          onClick={() =>
-                                            handleFavouriteToggle(item._id, item.Name, item.ContactNumber, item.isFavourite ?? false)
-                                          }
-                                        >
-                                          {item.isFavourite ? <MdFavorite /> : <MdFavoriteBorder />}
-                                        </Button>
-                                        <Button
-                                          className=" bg-gray-500"
-                                          sx={{ backgroundColor: item.isChecked ? "#E8F5E9" : "#FFF0F5", color: item.isChecked ? "var(--color-primary)" : "#E91E63", minWidth: "32px", height: "32px", borderRadius: "8px" }}
-                                          onClick={() =>
-                                            handleChecked({ id: item._id, isChecked: item.isChecked })
-                                          }
-                                        >
-                                          {item.isChecked ? <IoCheckmarkDoneOutline size={20} /> : <IoCheckmark size={20} />}
-                                        </Button>
-                                        <Button
-                                          sx={{ backgroundColor: "#E8F5E9", color: "var(--color-primary)", minWidth: "32px", height: "32px", borderRadius: "8px" }}
-                                          onClick={() => {
-                                            setIsFollowupDialogOpen(true);
-                                            handleFollowups(item._id, item.Name);
-                                          }}
-                                        >
-                                          <UserPlus />
-                                        </Button>
-                                      </div>
-                                    );
-                                    break;
-                                  default:
-                                    cellValue = null;
-                                }
-                              }
-
-                              return (
-                                <td key={col.key} className={`px-2 py-3 border border-gray-200 break-all whitespace-normal 
-                                    ${col.key !== "sno" ? "min-w-[100px]" : ""}
-            ${col.key === "description" && item.Description ? "min-w-[160px]" : ""} 
-            ${col.key === "sno" ? "sticky left-7.5  bg-white max-w-[60px]" : ""}
-             ${col.key === "type" ? "max-w-[80px]" : ""}
-             ${col.key === "subtype" ? "max-w-[90px]" : ""} 
-             ${col.key === "contact" ? "max-w-[140px]" : ""} 
-             ${col.key === "reference" ? "max-w-[70px]" : ""}
-              ${col.key === "date" ? "min-w-[100px]" : ""} 
-             ${col.key === "actions" ? "min-w-[90px] align-middle" : ""}
-             `}>
-                                  {cellValue}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={10} className="text-center py-4 w-full text-gray-500">
-                            No data available.
-                          </td>
-                        </tr>
-                      )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            {/* Pagination */}
-            <div className="flex justify-between items-center mt-3 py-3 px-5">
-              <p className="text-sm">
-                Page {currentTablePage} of {totalCustomerPage}
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setCurrentTablePage(1)}
-                  disabled={currentTablePage === 1}
-                  className="p-2 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
-                  title="First page"
-                >
-                  <ChevronsLeft size={16} />
-                </button>
-                <button
-                  onClick={() =>
-                    setCurrentTablePage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentTablePage === 1}
-                  className="px-3 py-1 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
-                >
-                  Prev
-                </button>
-                <button
-                  onClick={async () => {
-                    // normal pagination
-                    if (currentTablePage < totalTablePages) {
-                      setCurrentTablePage(prev => prev + 1);
-                      return;
-                    }
-
-                    // last page → fetch more → then move
-                    if (hasMoreCustomers) {
-                      await fetchMore();
-                      setCurrentTablePage(prev => prev + 1);
-                    }
-                  }}
-                  disabled={!hasMoreCustomers && currentTablePage === totalTablePages}
-                  className="px-3 py-1 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
-                >
-                  Next
-                </button>
-                <button
-                  onClick={handleLastPage}
-                  disabled={currentTablePage === totalTablePages && !hasMoreCustomers}
-                  className="p-2 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
-                  title="Last page"
-                >
-                  <ChevronsRight size={16} />
-                </button>
-
-
-              </div>
-            </div>
+  <div className="flex items-center gap-1.5">
+    {[
+      {
+        icon: <ChevronsLeft size={14} />,
+        onClick: () => setCurrentTablePage(1),
+        disabled: currentTablePage === 1,
+        title: "First page",
+      },
+      {
+        icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>,
+        label: "Prev",
+        onClick: () => setCurrentTablePage((prev) => Math.max(prev - 1, 1)),
+        disabled: currentTablePage === 1,
+      },
+      {
+        icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
+        label: "Next",
+        onClick: async () => {
+          if (currentTablePage < totalTablePages) {
+            setCurrentTablePage(prev => prev + 1);
+            return;
+          }
+          if (hasMoreCustomers) {
+            await fetchMore();
+            setCurrentTablePage(prev => prev + 1);
+          }
+        },
+        disabled: !hasMoreCustomers && currentTablePage === totalTablePages,
+      },
+      {
+        icon: <ChevronsRight size={14} />,
+        onClick: handleLastPage,
+        disabled: currentTablePage === totalTablePages && !hasMoreCustomers,
+        title: "Last page",
+      },
+    ].map((btn, i) => (
+      <button
+        key={i}
+        type="button"
+        onClick={btn.onClick}
+        disabled={btn.disabled}
+        title={btn.title}
+        className={[
+          "inline-flex items-center justify-center gap-1.5 h-8 rounded-lg text-[12px] font-semibold transition-all duration-150",
+          btn.label ? "px-3" : "w-8",
+          btn.disabled
+            ? "text-gray-300 max-sm:dark:text-white/15 cursor-not-allowed bg-gray-50 max-sm:dark:bg-white/[0.02]"
+            : "text-gray-600 max-sm:dark:text-white/55 bg-gray-100 dark:bg-white/[0.06] hover:bg-[var(--color-primary)] hover:text-white",
+        ].join(" ")}
+      >
+        {btn.label && <span>{btn.label}</span>}
+        {btn.icon}
+      </button>
+    ))}
+  </div>
+</div>
           </section>
 
         </div>

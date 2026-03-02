@@ -80,10 +80,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     are preserved exactly. Only the shell design changes.
 ───────────────────────────────────────────────────────────────────────── */}
 
-                              <header className="flex items-center shrink-0 z-50 bg-white dark:bg-[var(--color-childbgdark)] border-b border-gray-100 dark:border-white/[0.06] shadow-sm max-sm:fixed max-sm:top-0 max-sm:left-0 max-sm:w-full max-sm:bg-transparent max-sm:border-0 max-sm:shadow-none">
+                              <header className="flex items-center shrink-0 z-50 bg-white max-sm:dark:bg-[var(--color-childbgdark)] border-b border-gray-100 max-sm:dark:border-white/[0.06] shadow-sm max-sm:fixed max-sm:top-0 max-sm:left-0 max-sm:w-full max-sm:bg-transparent max-sm:border-0 max-sm:shadow-none">
 
                                 {/* ── Desktop: sidebar trigger ───────────────────────────────────────── */}
-                                <div className="flex items-center dark:text-slate-300 gap-2 ml-2 max-sm:hidden">
+                                <div className="flex items-center max-sm:dark:text-slate-300 gap-2 ml-2 max-sm:hidden">
                                   <SidebarTrigger className="ml-1 cursor-pointer" />
                                   <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
                                 </div>
@@ -91,7 +91,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                                 {/* ══════════════════════════════════════════════════════════════════════
       MOBILE HEADER — completely new dark charcoal glass design
   ══════════════════════════════════════════════════════════════════════ */}
-                                <div className="sm:hidden relative w-full flex items-center gap-0 overflow-hidden bg-slate-100/90  dark:bg-[#0f1117]">
+                                <div className="sm:hidden relative w-full flex items-center gap-0 overflow-hidden bg-slate-100/90  max-sm:dark:bg-[#0f1117]">
 
                                   {/* Subtle grid texture */}
                                   <div
@@ -174,7 +174,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                                 </div>
 
                                 {/* Actual Page */}
-                                <div className="p-4 max-md:px-2 max-md:py-2 max-sm:mt-[52px]">{children}</div>
+                                <div className=" bg-white max-md:px-2 max-md:py-2 max-sm:mt-[52px]">{children}</div>
                               </main>
                             </SidebarInset>
                           </div>
