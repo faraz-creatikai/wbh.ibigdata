@@ -673,15 +673,15 @@ export default function ContactFollowups() {
                         {/* TABLE */}
                         <div className=" overflow-auto">
                             <table className="table-auto w-full border-collapse text-sm border border-gray-200">
-                                <thead className="bg-[var(--color-primary)] text-white">
+                                <thead className="bg-[var(--color-primary-light)] text-[var(--color-primary)]">
                                     <tr>
-                                        <th className="px-4 py-3 border border-[var(--color-secondary-dark)] text-left"></th>
-                                        <th className="px-4 py-3 border border-[var(--color-secondary-dark)] text-left">S.No.</th>
-                                        <th className="px-4 py-3 border border-[var(--color-secondary-dark)] text-left">Name</th>
-                                        <th className="px-4 py-3 border border-[var(--color-secondary-dark)] text-left">Contact No</th>
-                                        <th className="px-4 py-3 border border-[var(--color-secondary-dark)] text-left">User</th>
-                                        <th className="px-4 py-3 border border-[var(--color-secondary-dark)] text-left">Date</th>
-                                        <th className="px-4 py-3 border border-[var(--color-secondary-dark)] text-left">Actions</th>
+                                        <th className="px-4 py-3  text-left"></th>
+                                        <th className="px-4 py-3  text-left">S.No.</th>
+                                        <th className="px-4 py-3  text-left">Name</th>
+                                        <th className="px-4 py-3  text-left">Contact No</th>
+                                        <th className="px-4 py-3  text-left">User</th>
+                                        <th className="px-4 py-3  text-left">Date</th>
+                                        <th className="px-4 py-3  text-left">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -697,7 +697,7 @@ export default function ContactFollowups() {
                                                     className="border-t hover:bg-[#f7f6f3] transition-all duration-200"
                                                 >
                                                     <td
-                                                        className="px-4 py-3 border border-gray-200 text-sky-500 cursor-pointer hover:underline"
+                                                        className="px-4 py-3 text-sky-500 cursor-pointer hover:underline"
                                                         onClick={() => {
                                                             setIsFollowupDialogOpen(true);
                                                             handleFollowups(item.contactid);
@@ -705,12 +705,12 @@ export default function ContactFollowups() {
                                                     >
                                                         Follow UP
                                                     </td>
-                                                    <td className="px-4 py-3 border border-gray-200">{indexOfFirstRow + index + 1}</td>
-                                                    <td className="px-4 py-3 border border-gray-200">{item.Name}</td>
-                                                    <td className="px-4 py-3 border border-gray-200">{item.ContactNumber}</td>
-                                                    <td className="px-4 py-3 border border-gray-200">{item.User}</td>
-                                                    <td className="px-4 py-3 border border-gray-200">{item.Date}</td>
-                                                    <td className="px-4 py-2 border-r border-r-gray-200 flex gap-2 items-center">
+                                                    <td className="px-4 py-3">{indexOfFirstRow + index + 1}</td>
+                                                    <td className="px-4 py-3">{item.Name}</td>
+                                                    <td className="px-4 py-3">{item.ContactNumber}</td>
+                                                    <td className="px-4 py-3">{item.User}</td>
+                                                    <td className="px-4 py-3">{item.Date}</td>
+                                                    <td className="px-4 py-2  flex gap-2 items-center">
                                                         <Button
                                                             sx={{
                                                                 backgroundColor: "#E8F5E9",

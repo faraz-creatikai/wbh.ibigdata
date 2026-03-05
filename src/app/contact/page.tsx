@@ -959,7 +959,7 @@ export default function Contacts() {
               </div>
             </div>
             <div className=" overflow-auto">
-              <div className="flex gap-10 items-center px-3 py-4 min-w-max text-gray-700">
+              <div className="flex gap-5 text-[13px] items-center px-3 py-4 min-w-max text-gray-700">
 
                 <label htmlFor="selectall" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer">
                   <div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
@@ -981,7 +981,7 @@ export default function Contacts() {
                   }
                 }}><div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
                   <span className="relative">Email All</span></button>
-                <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
+                <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)]  hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
                   if (selectedContacts.length <= 0) toast.error("please select atleast 1 customer")
                   else {
                     setIsWhatsappAllOpen(true);
@@ -1010,7 +1010,7 @@ export default function Contacts() {
 
               {/* TABLE */}
               <table className="table-auto w-full border-collapse text-sm border border-gray-200">
-                <thead className="bg-[var(--color-primary)] rounmd text-white">
+                <thead className="bg-[var(--color-primary-light)] rounmd text-[var(--color-primary)]">
                   <tr>
                     {/* SELECT ALL */}
                     <th className="px-2 py-3 text-left">
@@ -1027,14 +1027,14 @@ export default function Contacts() {
                       />
                     </th>
 
-                    <th className="px-4 py-3 border-r border-r-[var(--color-secondary-dark)] text-left">S.No.</th>
-                    <th className="px-4 py-3 border-r border-r-[var(--color-secondary-dark)] text-left">Campaign</th>
-                    <th className="px-4 py-3 border-r border-r-[var(--color-secondary-dark)] text-left">Qualifications</th>
-                    <th className="px-4 py-3 border-r border-r-[var(--color-secondary-dark)] text-left">Locations</th>
-                    <th className="px-4 py-3 border-r border-r-[var(--color-secondary-dark)] text-left">Contact No</th>
-                    <th className="px-4 py-3 border-r border-r-[var(--color-secondary-dark)] text-left">Assign To</th>
-                    <th className="px-4 py-3 border-r border-r-[var(--color-secondary-dark)] text-left">Date</th>
-                    <th className="px-4 py-3 border-r border-r-[var(--color-secondary-dark)] text-left">Actions</th>
+                    <th className="px-4 py-3  text-left">S.No.</th>
+                    <th className="px-4 py-3  text-left">Campaign</th>
+                    <th className="px-4 py-3  text-left">Qualifications</th>
+                    <th className="px-4 py-3  text-left">Locations</th>
+                    <th className="px-4 py-3  text-left">Contact No</th>
+                    <th className="px-4 py-3  text-left">Assign To</th>
+                    <th className="px-4 py-3  text-left">Date</th>
+                    <th className="px-4 py-3  text-left">Actions</th>
                   </tr>
                 </thead>
 
@@ -1046,7 +1046,7 @@ export default function Contacts() {
                         className="border-t hover:bg-[#f7f6f3] transition-all duration-200"
                       >
                         {/* ✅ ROW CHECKBOX */}
-                        <td className="px-2 py-3 border border-gray-200">
+                        <td className="px-2 py-3">
                           <input
                             type="checkbox"
                             checked={selectedContacts.includes(item._id)}
@@ -1057,12 +1057,12 @@ export default function Contacts() {
                         <td className="px-4 py-3">
                           {indexOfFirstRow + index + 1}
                         </td>
-                        <td className="px-4 py-3 border border-gray-200">{item.Campaign}</td>
-                        <td className="px-4 py-3 border border-gray-200">{item.Qualifications}</td>
-                        <td className="px-4 py-3 border border-gray-200">{item.Location}</td>
-                        <td className="px-4 py-3 border border-gray-200">{item.ContactNo}</td>
-                        <td className="px-4 py-3 border border-gray-200">{item.AssignTo ? item.AssignTo : "N/A"}</td>
-                        <td className="px-4 py-3 border border-gray-200">{item.date}</td>
+                        <td className="px-4 py-3">{item.Campaign}</td>
+                        <td className="px-4 py-3">{item.Qualifications}</td>
+                        <td className="px-4 py-3">{item.Location}</td>
+                        <td className="px-4 py-3">{item.ContactNo}</td>
+                        <td className="px-4 py-3">{item.AssignTo ? item.AssignTo : "N/A"}</td>
+                        <td className="px-4 py-3">{item.date}</td>
 
                         <td className="px-4 py-2 flex gap-2 items-center">
                           <Button

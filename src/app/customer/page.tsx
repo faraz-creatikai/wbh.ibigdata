@@ -1953,351 +1953,409 @@ export default function Customer() {
 
           {/* TABLE */}
           <section className="flex flex-col mt-6 rounded-md">
-            <div className="m-5 relative">
+            {/* ══════════════════════════════════════════════════
+    DROP-IN REPLACEMENT
+    Paste this in place of the entire outer <div className="m-5 relative">
+    All state, handlers, and logic are 100% untouched.
+══════════════════════════════════════════════════ */}
 
-              <div className="flex justify-between cursor-pointer items-center py-1 px-2 border border-gray-800 rounded-md" onClick={() => setToggleSearchDropdown(!toggleSearchDropdown)}>
-                <h3 className="flex items-center gap-1"><CiSearch />Advance Search</h3>
+<div className="mx-5 my-4 relative">
+
+  {/* ── TOGGLE TRIGGER ── */}
+  <button
+    type="button"
+    onClick={() => setToggleSearchDropdown(!toggleSearchDropdown)}
+    className={[
+      "group w-full flex items-center justify-between px-4 py-3 rounded-xl",
+      "border transition-all duration-200 cursor-pointer",
+      toggleSearchDropdown
+        ? "border-[var(--color-primary)]/40 bg-[var(--color-primary)]/[0.04] dark:bg-[var(--color-primary)]/[0.08]"
+        : "border-gray-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] hover:border-[var(--color-primary)]/30 hover:bg-[var(--color-primary)]/[0.02]",
+    ].join(" ")}
+  >
+    <div className="flex items-center gap-2.5">
+      {/* Icon mark */}
+      <span
+        className="flex items-center justify-center size-7 rounded-lg"
+        style={{ background: "color-mix(in srgb, var(--color-primary) 12%, transparent)" }}
+      >
+        <CiSearch size={15} style={{ color: "var(--color-primary)" }} />
+      </span>
+      <span className="text-[13px] font-semibold text-gray-700 max-sm:dark:text-white/70 tracking-[0.01em]">
+        Advanced Search
+      </span>
+      {/* Active filters badge */}
+      {Object.values(filters).some(v => Array.isArray(v) ? v.length > 0 : !!v) && (
+        <span
+          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white"
+          style={{ background: "var(--color-primary)" }}
+        >
+          Active
+        </span>
+      )}
+    </div>
+
+    <span
+      className={[
+        "flex items-center justify-center size-6 rounded-lg transition-all duration-300",
+        toggleSearchDropdown
+          ? "rotate-180 bg-[var(--color-primary)]/10"
+          : "bg-gray-100 dark:bg-white/[0.06]",
+      ].join(" ")}
+    >
+      <IoIosArrowDown
+        size={13}
+        style={toggleSearchDropdown ? { color: "var(--color-primary)" } : {}}
+        className="text-gray-400 dark:text-white/30"
+      />
+    </span>
+  </button>
+
+  {/* ── PANEL ── */}
+  <div
+    className={[
+      "overflow-hidden transition-all duration-500 ease-in-out",
+      toggleSearchDropdown ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0",
+    ].join(" ")}
+  >
+    <div
+      className={[
+        "mt-2 rounded-xl border overflow-hidden",
+        "border-gray-100 dark:border-white/[0.07]",
+        "bg-white dark:bg-white/[0.02]",
+        "shadow-sm dark:shadow-none",
+      ].join(" ")}
+    >
+
+      {/* ── SECTION: FILTERS ── */}
+      <div className="p-4 border-b border-gray-100 max-sm:dark:border-white/[0.06]">
+        {/* Section label */}
+        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 max-sm:dark:text-white/25 mb-3">
+          Filter Options
+        </p>
+
+        <div className="grid grid-cols-3 gap-3 max-md:grid-cols-1 max-lg:grid-cols-2">
+          <ObjectSelect
+            options={Array.isArray(fieldOptions?.Campaign) ? fieldOptions.Campaign : []}
+            label={getLabel("Campaign", "Campaign")}
+            value={dependent.Campaign.id}
+            getLabel={(item) => item?.Name || ""}
+            getId={(item) => item?._id || ""}
+            onChange={(selectedId) => {
+              const selectedObj = fieldOptions.Campaign.find((i) => i._id === selectedId);
+              if (selectedObj) {
+                const updatedFilters = { ...filters, Campaign: [selectedObj.Name], CustomerType: [], CustomerSubType: [] };
+                setFilters(updatedFilters);
+                setDependent(prev => ({ ...prev, Campaign: { id: selectedObj._id, name: selectedObj.Name }, CustomerType: { id: "", name: "" }, CustomerSubType: { id: "", name: "" } }));
+                handleSelectChange("Campaign", selectedObj.Name, updatedFilters);
+              }
+            }}
+          />
+          <ObjectSelect
+            options={Array.isArray(fieldOptions?.CustomerType) ? fieldOptions.CustomerType : []}
+            label={getLabel("CustomerType", "Customer Type")}
+            value={dependent.CustomerType.name}
+            getLabel={(item) => item?.Name || ""}
+            getId={(item) => item?._id || ""}
+            onChange={(selectedId) => {
+              const selectedObj = fieldOptions.CustomerType.find((i) => i._id === selectedId);
+              if (selectedObj) {
+                const updatedFilters = { ...filters, CustomerType: [selectedObj.Name], CustomerSubType: [] };
+                setFilters(updatedFilters);
+                setDependent(prev => ({ ...prev, CustomerType: { id: selectedObj._id, name: selectedObj.Name }, CustomerSubType: { id: "", name: "" } }));
+                handleSelectChange("CustomerType", selectedObj.Name, updatedFilters);
+              }
+            }}
+          />
+          <ObjectSelect
+            options={Array.isArray(fieldOptions?.CustomerSubtype) ? fieldOptions.CustomerSubtype : []}
+            label={getLabel("CustomerSubType", "Customer Subtype")}
+            value={dependent.CustomerSubType.name}
+            getLabel={(item) => item?.Name || ""}
+            getId={(item) => item?._id || ""}
+            onChange={(selectedId) => {
+              const selectedObj = fieldOptions.CustomerSubtype.find((i) => i._id === selectedId);
+              if (selectedObj) {
+                const updatedFilters = { ...filters, CustomerSubType: [selectedObj.Name] };
+                setFilters(updatedFilters);
+                setDependent(prev => ({ ...prev, CustomerSubType: { id: selectedObj._id, name: selectedObj.Name } }));
+                handleSelectChange("CustomerSubType", selectedObj.Name, updatedFilters);
+              }
+            }}
+          />
+          <ObjectSelect
+            options={Array.isArray(fieldOptions?.City) ? fieldOptions.City : []}
+            label={getLabel("City", "City")}
+            value={dependent.City.id}
+            getLabel={(item) => item?.Name || ""}
+            getId={(item) => item?._id || ""}
+            onChange={(selectedId) => {
+              const selectedObj = fieldOptions.City.find((i) => i._id === selectedId);
+              if (selectedObj) {
+                const updatedFilters = { ...filters, City: [selectedObj.Name], Location: [] };
+                setFilters(updatedFilters);
+                setDependent(prev => ({ ...prev, City: { id: selectedObj._id, name: selectedObj.Name }, Location: { id: "", name: "" } }));
+                handleSelectChange("City", selectedObj.Name, updatedFilters);
+              }
+            }}
+          />
+          <ObjectSelect
+            options={Array.isArray(fieldOptions?.Location) ? fieldOptions.Location : []}
+            label={getLabel("Location", "Location")}
+            value={dependent.Location.id}
+            getLabel={(item) => item?.Name || ""}
+            getId={(item) => item?._id || ""}
+            onChange={(selectedId) => {
+              const selectedObj = fieldOptions.Location.find((i) => i._id === selectedId);
+              if (selectedObj) {
+                const updatedFilters = { ...filters, Location: [selectedObj.Name] };
+                setFilters(updatedFilters);
+                setDependent(prev => ({ ...prev, Location: { id: selectedObj._id, name: selectedObj.Name } }));
+                handleSelectChange("Location", selectedObj.Name, updatedFilters);
+              }
+            }}
+            isSearchable
+          />
+          <ObjectSelect
+            options={Array.isArray(fieldOptions?.SubLocation) ? fieldOptions.SubLocation : []}
+            label={getLabel("SubLocation", "Sub Location")}
+            value={dependent.SubLocation.id}
+            getLabel={(item) => item?.Name || ""}
+            getId={(item) => item?._id || ""}
+            onChange={(selectedId) => {
+              const selectedObj = fieldOptions.SubLocation.find((i) => i._id === selectedId);
+              if (selectedObj) {
+                const updatedFilters = { ...filters, SubLocation: [selectedObj.Name] };
+                setFilters(updatedFilters);
+                setDependent(prev => ({ ...prev, SubLocation: { id: selectedObj._id, name: selectedObj.Name } }));
+                handleSelectChange("SubLocation", selectedObj.Name, updatedFilters);
+              }
+            }}
+            isSearchable
+          />
+          <SingleSelect options={Array.isArray(fieldOptions?.ReferenceId) ? fieldOptions.ReferenceId : []} value={filters.ReferenceId[0]} label={getLabel("ReferenceId", "Reference Id")} onChange={(v) => handleSelectChange("ReferenceId", v)} isSearchable />
+          <SingleSelect options={Array.isArray(fieldOptions?.Price) ? fieldOptions.Price : []} value={filters.Price[0]} label={getLabel("Price", "Price")} onChange={(v) => handleSelectChange("Price", v)} isSearchable />
+          <SingleSelect options={Array.isArray(fieldOptions?.User) ? fieldOptions.User : []} value={filters.User[0]} label="User" onChange={(v) => handleSelectChange("User", v)} isSearchable />
+          <SingleSelect options={["10", "25", "50", "100"]} value={filters.Limit[0]} label="Limit" onChange={(v) => handleSelectChange("Limit", v)} />
+          <DateSelector label="From" value={filters.StartDate[0]} onChange={(v) => handleSelectChange("StartDate", v)} />
+          <DateSelector label="To" value={filters.EndDate[0]} onChange={(v) => handleSelectChange("EndDate", v)} />
+
+          {/* Favourite toggle */}
+          <div className="flex items-end">
+            <input
+              id="favouriteFilter"
+              type="checkbox"
+              className="hidden"
+              checked={filters.isFavourite}
+              onChange={(e) => handleSelectChange("isFavourite", e.target.checked)}
+            />
+            <label
+              htmlFor="favouriteFilter"
+              className={[
+                "inline-flex items-center gap-2 h-10 px-4 rounded-lg w-full justify-center",
+                "text-[13px] font-semibold cursor-pointer border transition-all duration-200",
+                filters.isFavourite
+                  ? "bg-pink-500 text-white border-pink-500 shadow-[0_3px_12px_-4px_rgba(236,72,153,0.5)]"
+                  : "bg-gray-50 max-sm:dark:bg-white/[0.04] text-gray-500 max-sm:dark:text-white/40 border-gray-200 max-sm:dark:border-white/[0.08] hover:border-pink-300 hover:text-pink-500",
+              ].join(" ")}
+            >
+              {filters.isFavourite ? <MdFavorite size={15} /> : <MdFavoriteBorder size={15} />}
+              Favourite
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* ── SECTION: AI GENIE ── */}
+      <div className="p-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (keywordInput.trim() === "") return;
+            setAiLoading(true);
+            setCurrentStep(STEPS.SEARCH);
+            aiGenieSearch();
+          }}
+        >
+          {/* AI Genie header */}
+          <div className="flex items-center gap-2.5 mb-3">
+            <div
+              className="flex items-center justify-center size-7 rounded-lg shrink-0"
+              style={{
+                background: "linear-gradient(135deg, var(--color-primary), var(--color-secondary, var(--color-primary)))",
+                boxShadow: "0 2px 10px -2px color-mix(in srgb, var(--color-primary) 45%, transparent)",
+              }}
+            >
+              {aiLoading ? (
+                <BounceLoader loading size={14} color="white" aria-label="Loading Spinner" data-testid="loader" />
+              ) : (
+                <img className="w-4 h-4 object-contain" src="/aiBot.png" alt="AI" />
+              )}
+            </div>
+
+            <div className="flex flex-col gap-0">
+              <span className="text-[12px] font-bold text-gray-700 max-sm:dark:text-white/70 tracking-[0.01em]">
+                AI Genie
+              </span>
+              {currentStep && (
+                <span className="flex items-center gap-1 text-[11px] text-gray-400 max-sm:dark:text-white/25">
+                  <span className="transition-opacity duration-300">{currentStep}</span>
+                  {aiLoading && <BeatLoader size={2} color="gray" />}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 max-lg:flex-col">
+
+            {/* Input + search-in pills */}
+            <div className="flex-1 w-full">
+
+              {/* Input row */}
+              <div
+                className={[
+                  "flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-all duration-200",
+                  "bg-gray-50 max-sm:dark:bg-white/[0.04]",
+                  "border-gray-200 dark:border-white/[0.08]",
+                  "focus-within:border-[var(--color-primary)]/50 focus-within:bg-white max-sm:dark:focus-within:bg-white/[0.06]",
+                  "focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-primary)_12%,transparent)]",
+                ].join(" ")}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 shrink-0">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+                <input
+                  type="text"
+                  placeholder="What do you want to search?"
+                  className="flex-1 bg-transparent outline-none text-[13px] text-gray-700  ax-sm:dark:text-white/75 placeholder:text-gray-400 max-sm:dark:placeholder:text-white/25"
+                  value={keywordInput}
+                  onChange={(e) => setKeywordInput(e.target.value)}
+                />
                 <button
                   type="button"
-
-                  className="p-2 hover:bg-gray-200 rounded-md cursor-pointer"
+                  onClick={() => setToggleAiGenieSearchBy(!toggleAiGenieSearchBy)}
+                  className={[
+                    "flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg transition-all duration-150 shrink-0",
+                    toggleAiGenieSearchBy
+                      ? "text-[var(--color-primary)] bg-[var(--color-primary)]/10"
+                      : "text-gray-400 max-sm:dark:text-white/25 hover:text-gray-600 hover:bg-gray-100 max-sm:dark:hover:bg-white/[0.06]",
+                  ].join(" ")}
                 >
-                  {toggleSearchDropdown ? <IoIosArrowUp /> : <IoIosArrowDown />}
+                  Search in {toggleAiGenieSearchBy ? <FaCaretUp size={10} /> : <FaCaretDown size={10} />}
                 </button>
               </div>
 
-              <div className={`overflow-hidden ${toggleSearchDropdown ? "overflow-visible max-h-[2000px]" : "overflow-hidden max-h-0"} transition-all duration-500 ease-in-out px-5`}>
-                <div className="flex flex-col gap-5 my-5">
-                  <div className="grid grid-cols-3 gap-5 max-md:grid-cols-1 max-lg:grid-cols-2">
-                    <ObjectSelect
-                      options={Array.isArray(fieldOptions?.Campaign) ? fieldOptions.Campaign : []}
-                      label={getLabel("Campaign", "Campaign")}
-                      value={dependent.Campaign.id}
-                      getLabel={(item) => item?.Name || ""}
-                      getId={(item) => item?._id || ""}
-                      onChange={(selectedId) => {
-                        const selectedObj = fieldOptions.Campaign.find((i) => i._id === selectedId);
-                        if (selectedObj) {
-                          const updatedFilters = {
-                            ...filters,
-                            Campaign: [selectedObj.Name],
-                            CustomerType: [],   // reset
-                            CustomerSubType: []
-                          };
-                          setFilters(updatedFilters);
-
-                          setDependent(prev => ({
-                            ...prev,
-                            Campaign: { id: selectedObj._id, name: selectedObj.Name },
-                            CustomerType: { id: "", name: "" },   // reset
-                            CustomerSubType: { id: "", name: "" }
-                          }));
-                          handleSelectChange("Campaign", selectedObj.Name, updatedFilters)
-                        }
-                      }}
-                    />
-
-                    <ObjectSelect
-                      options={Array.isArray(fieldOptions?.CustomerType) ? fieldOptions.CustomerType : []}
-                      label={getLabel("CustomerType", "Customer Type")}
-                      value={dependent.CustomerType.name}
-                      getLabel={(item) => item?.Name || ""}
-                      getId={(item) => item?._id || ""}
-                      onChange={(selectedId) => {
-                        const selectedObj = fieldOptions.CustomerType.find((i) => i._id === selectedId);
-                        if (selectedObj) {
-                          const updatedFilters = {
-                            ...filters,
-                            CustomerType: [selectedObj.Name],   // reset
-                            CustomerSubType: []
-                          };
-                          setFilters(updatedFilters);
-
-
-                          setDependent(prev => ({
-                            ...prev,
-                            CustomerType: { id: selectedObj._id, name: selectedObj.Name },   // reset
-                            CustomerSubType: { id: "", name: "" }
-                          }));
-                          handleSelectChange("CustomerType", selectedObj.Name, updatedFilters)
-                        }
-                      }}
-
-                    />
-
-                    <ObjectSelect
-                      options={Array.isArray(fieldOptions?.CustomerSubtype) ? fieldOptions.CustomerSubtype : []}
-                      label={getLabel("CustomerSubType", "Customer Subtype")}
-                      value={dependent.CustomerSubType.name}
-                      getLabel={(item) => item?.Name || ""}
-                      getId={(item) => item?._id || ""}
-                      onChange={(selectedId) => {
-
-                        const selectedObj = fieldOptions.CustomerSubtype.find((i) => i._id === selectedId);
-                        if (selectedObj) {
-                          const updatedFilters = {
-                            ...filters,
-                            CustomerSubType: [selectedObj.Name]
-                          };
-                          setFilters(updatedFilters);
-
-                          setDependent(prev => ({
-                            ...prev,
-                            CustomerSubType: { id: selectedObj._id, name: selectedObj.Name }
-                          }));
-                          handleSelectChange("CustomerSubType", selectedObj.Name, updatedFilters)
-                        }
-                      }}
-                    />
-
-
-                    <ObjectSelect
-                      options={Array.isArray(fieldOptions?.City) ? fieldOptions.City : []}
-                      label={getLabel("City", "City")}
-                      value={dependent.City.id}
-                      getLabel={(item) => item?.Name || ""}
-                      getId={(item) => item?._id || ""}
-                      onChange={(selectedId) => {
-                        const selectedObj = fieldOptions.City.find((i) => i._id === selectedId);
-                        if (selectedObj) {
-                          const updatedFilters = {
-                            ...filters,
-                            City: [selectedObj.Name],
-                            Location: []
-                          };
-                          setFilters(updatedFilters);
-
-                          setDependent(prev => ({
-                            ...prev,
-                            City: { id: selectedObj._id, name: selectedObj.Name },
-                            Location: { id: "", name: "" },
-                          }));
-                          handleSelectChange("City", selectedObj.Name, updatedFilters)
-                        }
-                      }}
-                    />
-                    <ObjectSelect
-                      options={Array.isArray(fieldOptions?.Location) ? fieldOptions.Location : []}
-                      label={getLabel("Location", "Location")}
-                      value={dependent.Location.id}
-                      getLabel={(item) => item?.Name || ""}
-                      getId={(item) => item?._id || ""}
-                      onChange={(selectedId) => {
-                        const selectedObj = fieldOptions.Location.find((i) => i._id === selectedId);
-                        if (selectedObj) {
-                          const updatedFilters = {
-                            ...filters,
-                            Location: [selectedObj.Name]
-                          };
-                          setFilters(updatedFilters);
-
-                          setDependent(prev => ({
-                            ...prev,
-                            Location: { id: selectedObj._id, name: selectedObj.Name },
-                          }));
-                          handleSelectChange("Location", selectedObj.Name, updatedFilters)
-                        }
-                      }}
-                      isSearchable
-                    />
-                    <ObjectSelect
-                      options={Array.isArray(fieldOptions?.SubLocation) ? fieldOptions.SubLocation : []}
-                      label={getLabel("SubLocation", "Sub Location")}
-                      value={dependent.SubLocation.id}
-                      getLabel={(item) => item?.Name || ""}
-                      getId={(item) => item?._id || ""}
-                      onChange={(selectedId) => {
-                        const selectedObj = fieldOptions.SubLocation.find((i) => i._id === selectedId);
-                        if (selectedObj) {
-                          const updatedFilters = {
-                            ...filters,
-                            SubLocation: [selectedObj.Name]
-                          };
-                          setFilters(updatedFilters);
-                          setDependent(prev => ({
-                            ...prev,
-                            SubLocation: { id: selectedObj._id, name: selectedObj.Name },
-                          }));
-                          handleSelectChange("SubLocation", selectedObj.Name, updatedFilters)
-                        }
-                      }}
-                      isSearchable
-                    />
-                    <SingleSelect options={Array.isArray(fieldOptions?.ReferenceId) ? fieldOptions.ReferenceId : []} value={filters.ReferenceId[0]} label={getLabel("ReferenceId", "Reference Id")} onChange={(v) => handleSelectChange("ReferenceId", v)} isSearchable />
-                    <SingleSelect options={Array.isArray(fieldOptions?.Price) ? fieldOptions.Price : []} value={filters.Price[0]} label={getLabel("Price", "Price")} onChange={(v) => handleSelectChange("Price", v)} isSearchable />
-                    {/* <SingleSelect options={Array.isArray(fieldOptions?.isFavourite) ? fieldOptions.isFavourite : []} value={filters.isFavourite[0]} label="favroutie" onChange={(v) => handleSelectChange("isFavourite", v)}  /> */}
-
-                    <SingleSelect options={Array.isArray(fieldOptions?.User) ? fieldOptions.User : []} value={filters.User[0]} label="User" onChange={(v) => handleSelectChange("User", v)} isSearchable />
-
-                    <SingleSelect options={["10", "25", "50", "100"]} value={filters.Limit[0]} label="Limit" onChange={(v) => {
-
-                      handleSelectChange("Limit", v)
-                    }} />
-                    <DateSelector label="From" value={filters.StartDate[0]} onChange={(v) => handleSelectChange("StartDate", v)} />
-                    <DateSelector label="To" value={filters.EndDate[0]} onChange={(v) => handleSelectChange("EndDate", v)} />
-                    <div>
-
-                      <input
-                        id="favouriteFilter"
-                        type="checkbox"
-                        className="hidden"
-                        checked={filters.isFavourite}
-                        onChange={(e) =>
-                          handleSelectChange("isFavourite", e.target.checked)
-                        }
-                      />
-
-                      <label
-                        htmlFor="favouriteFilter"
-                        className={`
-        inline-flex items-center justify-center
-        h-10 px-4 rounded-md border
-        text-sm font-medium cursor-pointer
-        transition-colors duration-200 gap-2
-                 ${filters.isFavourite
-                            ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)]"
-                            : "bg-white text-gray-700 border-gray-300"
-                          }
-  `}
-                      >
-                        {filters.isFavourite ? <MdFavorite /> : <MdFavoriteBorder />}
-                        Favourite
-                      </label>
-                    </div>
-                  </div>
-
-
-                </div>
-
-                {/* Keyword Search */}
-                <form className="flex  max-lg:flex-col justify-between items-center gap-2"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (keywordInput.trim() === "")
-                      return
-                    setAiLoading(true);
-                    setCurrentStep(STEPS.SEARCH)
-                    aiGenieSearch();
-                  }}
+              {/* SearchIn panel */}
+              <div
+                className={[
+                  "overflow-hidden transition-all duration-300",
+                  toggleAiGenieSearchBy ? "max-h-[200px] mt-2.5" : "max-h-0",
+                ].join(" ")}
+              >
+                <div
+                  className="rounded-xl border border-gray-100 max-sm:dark:border-white/[0.06] bg-gray-50 max-sm:dark:bg-white/[0.02] p-3 flex flex-col gap-3"
                 >
+                  {/* Available */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {SEARCH_FIELDS.filter(f => !filters.SearchIn.includes(f)).map((field) => (
+                      <button
+                        key={field}
+                        type="button"
+                        onClick={() => setFilters(prev => ({ ...prev, SearchIn: [...prev.SearchIn, field] }))}
+                        className="inline-flex items-center h-6 px-2.5 rounded-full text-[11px] font-medium transition-all duration-150
+                          text-gray-500 max-sm:dark:text-white/40 border border-gray-200 max-sm:dark:border-white/[0.08]
+                          bg-white max-sm:dark:bg-white/[0.03] hover:border-[var(--color-primary)]/40
+                          hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/[0.05]"
+                      >
+                        {field.toLowerCase()}
+                      </button>
+                    ))}
+                  </div>
 
-                  <div className=" w-[80%] ">
-                    <div>
-                      <label className="flex gap-1 mb-2 items-center text-sm font-bold text-[var(--color-secondary-darker)] ml-1">{aiLoading ? <span>
-                        <BounceLoader
-                          loading={true}
-                          color="var(--color-primary)"
-                          size={25}
-                          aria-label="Loading Spinner"
-                          data-testid="loader"
-                        /></span> : <span><img className=" w-[25px] " src="/aiBot.png" /></span>
-                      }
-                        <div className="">AI Genie</div>
-
-
-                      </label>
-                      <p className={`text-gray-400 font-light text-xs ml-2 mb-2  flex items-center gap-[1px] `}>
-                        <span
-                          className={`transition-opacity duration-300 `}
-                        >
-                          {currentStep}
-                        </span>
-
-                        {aiLoading && <span className="translate-y-[2px]">
-                          <BeatLoader size={2} color="gray" />
-                        </span>}
-
-                      </p>
-                      <div className="">
-                        <div className=" flex justify-between items-center border border-gray-300 rounded-md w-full">
-                          <input
-                            type="text"
-                            placeholder="What you want to search?"
-                            className="outline-none w-full px-3 py-2 "
-                            value={keywordInput}
-                            onChange={(e) => setKeywordInput(e.target.value)}
-                          />
-                          <span className=" cursor-pointer mr-3" onClick={() => setToggleAiGenieSearchBy(!toggleAiGenieSearchBy)}>{toggleAiGenieSearchBy ? <FaCaretUp /> : <FaCaretDown />}</span>
-                        </div>
-
-                        <div className={` mt-5 overflow-hidden transition-all duration-300 ${toggleAiGenieSearchBy ? " h-[150px]" : " h-0"}`}>
-                          {/* Unselected Fields */}
-                          <div className="flex flex-wrap gap-2 px-3 mb-5">
-                            {SEARCH_FIELDS.filter(f => !filters.SearchIn.includes(f)).map((field) => (
-                              <button
-                                key={field}
-                                type="button"
-                                className="px-2 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-100 transition"
-                                onClick={() =>
-                                  setFilters(prev => ({
-                                    ...prev,
-                                    SearchIn: [...prev.SearchIn, field],
-                                  }))
-                                }
-                              >
-                                {field.toLowerCase()}
-                              </button>
-                            ))}
-                          </div>
-
-                          {/* Selected Fields */}
-                          <div className="">
-                            {filters.SearchIn.length > 0 && <h5 className=" text-gray-500 text-sm my-2 mx-2">Selected</h5>}
-                            <div className="flex flex-wrap gap-2 px-3">
-
-                              {filters.SearchIn.map((field) => (
-                                <div
-                                  key={field}
-                                  className="group relative flex items-center px-2 py-1 border border-blue-400 rounded-md text-sm bg-blue-100"
-                                >
-                                  {field.toLowerCase()}
-                                  <button
-                                    className="ml-2 opacity-0 cursor-pointer group-hover:opacity-100 transition-opacity text-sm text-[var(--color-primary)]"
-                                    onClick={() =>
-                                      setFilters(prev => ({
-                                        ...prev,
-                                        SearchIn: prev.SearchIn.filter(f => f !== field),
-                                      }))
-                                    }
-                                  >
-                                    <IoMdClose />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
+                  {/* Selected */}
+                  {filters.SearchIn.length > 0 && (
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 dark:text-white/25">
+                        Selected
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {filters.SearchIn.map((field) => (
+                          <span
+                            key={field}
+                            className="group/pill inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[11px] font-semibold transition-all duration-150"
+                            style={{
+                              color: "var(--color-primary)",
+                              background: "color-mix(in srgb, var(--color-primary) 10%, transparent)",
+                            }}
+                          >
+                            {field.toLowerCase()}
+                            <button
+                              type="button"
+                              onClick={() => setFilters(prev => ({ ...prev, SearchIn: prev.SearchIn.filter(f => f !== field) }))}
+                              className="flex items-center justify-center size-3.5 rounded-full opacity-50 group-hover/pill:opacity-100 hover:bg-[var(--color-primary)]/20 transition-all"
+                            >
+                              <IoMdClose size={9} />
+                            </button>
+                          </span>
+                        ))}
                       </div>
-
-
                     </div>
-
-
-
-
-                  </div>
-
-                  <div className={` flex justify-center items-center w-[30%] transition duration-300  ${toggleAiGenieSearchBy ? " lg:-mt-32" : " lg:mt-5"} `}>
-                    {!aiLoading ? <button type="submit" className="border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-all duration-300 cursor-pointer px-3 py-2  rounded-md">
-                      Explore
-                    </button> : <button type="button" className="flex gap-1 justify-center items-center border border-[var(--color-primary)]  bg-[var(--color-primary)] text-white transition-all duration-300 cursor-pointer px-3 py-2  rounded-md">
-                      Exploring <HashLoader
-                        loading={true}
-                        color="white"
-                        size={12}
-                        aria-label="Loading Spinner"
-                        data-testid="loader"
-                      />
-                    </button>}
-
-                    <button type="reset" onClick={clearFilter} className="text-red-500 cursor-pointer hover:underline text-sm px-5 py-2  rounded-md ml-3">
-                      Clear Search
-                    </button>
-                  </div>
-                </form>
-
+                  )}
+                </div>
               </div>
             </div>
+
+            {/* CTA buttons */}
+            <div
+              className={[
+                "flex items-center gap-2 shrink-0 transition-all duration-300",
+                toggleAiGenieSearchBy ? "lg:-mt-0 self-start mt-0" : "self-end",
+              ].join(" ")}
+            >
+              {!aiLoading ? (
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 h-10 px-5 rounded-xl text-[13px] font-semibold transition-all duration-200 cursor-pointer text-white"
+                  style={{
+                    background: "linear-gradient(135deg, var(--color-primary), var(--color-secondary, var(--color-primary)))",
+                    boxShadow: "0 3px 14px -4px color-mix(in srgb, var(--color-primary) 55%, transparent)",
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                  </svg>
+                  Explore
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 h-10 px-5 rounded-xl text-[13px] font-semibold text-white cursor-not-allowed"
+                  style={{ background: "var(--color-primary)", opacity: 0.85 }}
+                >
+                  <HashLoader loading size={12} color="white" aria-label="Loading Spinner" data-testid="loader" />
+                  Exploring…
+                </button>
+              )}
+
+              <button
+                type="reset"
+                onClick={clearFilter}
+                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl text-[13px] font-semibold transition-all duration-150 cursor-pointer
+                  text-red-500 bg-red-50 dark:bg-red-500/10 hover:bg-red-500 hover:text-white border border-red-100 dark:border-red-500/20"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                </svg>
+                Clear
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
 {/* ═══════════════════════════════════════════════════════
     DROP-IN REPLACEMENT — paste this in place of your existing
     table JSX block (from the outer <div className="relative">
@@ -2410,7 +2468,7 @@ export default function Customer() {
       <thead className="sticky top-0 z-[5]">
         <tr>
           {/* Checkbox col */}
-          <th className="sticky left-0 z-20 bg-[var(--color-primary)] px-3 py-0 w-10">
+          <th className="sticky left-0 z-20 bg-[var(--color-primary-light)] px-3 py-0 w-10">
             <input
               id="selectall"
               type="checkbox"
@@ -2425,7 +2483,7 @@ export default function Customer() {
               key={header.key}
               className={[
                 "px-3 py-3.5 text-left text-[11px] font-bold uppercase tracking-[0.08em]",
-                "bg-[var(--color-primary)] text-white/90",
+                "bg-[var(--color-primary-light)] text-[var(--color-primary)]",
                 "border-b border-[var(--color-primary)]",
                 "whitespace-nowrap",
                 header.key === "sno" ? "sticky left-10 z-20 bg-[var(--color-primary)]" : "",

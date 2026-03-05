@@ -87,29 +87,32 @@ export function NavMain({
                     >
                       {item.icon && (
                         <span
-                          className={[
-                            "flex items-center justify-center ml-2 size-[26px] shrink-0 rounded-lg",
-                            "transition-all duration-150",
-                            isActive ? "bg-white/20 text-white" : accentClass,
-                          ].join(" ")}
-                        >
+  className={[
+    "flex items-center justify-center size-[26px] shrink-0 rounded-lg",
+    !isCollapsed && "ml-2",
+    "transition-all duration-150",
+    isActive ? "bg-white/20 text-white" : accentClass,
+  ].filter(Boolean).join(" ")}
+>
                           <item.icon size={14} strokeWidth={2.2} />
                         </span>
                       )}
 
-                      <span className="truncate">{item.title}</span>
+                     {!isCollapsed && (
+  <span className="truncate">{item.title}</span>
+)}
 
-                      {item.items && (
-                        <ChevronRight
-                          size={13}
-                          strokeWidth={2.5}
-                          className={[
-                            "ml-auto shrink-0 transition-transform duration-200",
-                            "group-data-[state=open]/collapsible:rotate-90",
-                            isActive ? "text-white/60" : "text-gray-300 dark:text-white/20",
-                          ].join(" ")}
-                        />
-                      )}
+                      {item.items && !isCollapsed && (
+  <ChevronRight
+    size={13}
+    strokeWidth={2.5}
+    className={[
+      "ml-auto shrink-0 transition-transform duration-200",
+      "group-data-[state=open]/collapsible:rotate-90",
+      isActive ? "text-white/60" : "text-gray-300 dark:text-white/20",
+    ].join(" ")}
+  />
+)}
                     </SidebarMenuButton>
                   </Link>
                 </CollapsibleTrigger>
