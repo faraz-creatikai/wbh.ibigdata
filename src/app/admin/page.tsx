@@ -97,15 +97,15 @@ const Login = () => {
             <p className=" text-[#F5A623]">Earn Money From Home</p>
           </div>
 
-         {/*  <p className="text-white/75 text-sm text-center max-w-xs leading-relaxed">
-            AI‑powered real estate workspace — manage leads, automation &amp; deals smarter.
-          </p> */}
+          <p className="text-white/75 text-sm text-center max-w-xs leading-relaxed">
+            Find remote work. Work from home your way. Enjoy flexibility, stay in control, and get paid.
+          </p>
 
           {/* Robot visible only on desktop */}
-          <div className="hidden lg:block mt-6">
+          <div className="hidden lg:block mt-0">
             <img
               src="/bglogo.png"
-              className="w-72 h-72 object-contain drop-shadow-xl"
+              className="w-80 h-80 object-contain drop-shadow-xl"
               alt="AI Robot"
             />
           </div>
