@@ -249,8 +249,8 @@ export default function RadarChart() {
     const response = await getCustomer();
     setCustomerCount(response.length);
     const users = response.filter((item: any) => {
-      return item.AssignTo && item.AssignTo !== "";
-    });
+  return Array.isArray(item.AssignTo) && item.AssignTo.length > 0;
+});
     console.log("users are ", users);
     return users
   }
@@ -268,19 +268,22 @@ export default function RadarChart() {
       // Step 1: Create a map of unique users
       const userMap: Record<string, { id: string; name: string; customers: number }> = {};
 
-      allCustomers.forEach((customer: any) => {
-        const userName = customer.AssignTo?.name;
-        const userId = customer.AssignTo?._id;
+   allCustomers.forEach((customer: any) => {
+  const assignedUsers = customer.AssignTo || [];
 
-        if (!userName || !userId) return;
+  assignedUsers.forEach((user: any) => {
+    const userId = user.id || user._id;
+    const userName = user.name;
 
-        if (!userMap[userId]) {
-          userMap[userId] = { id: userId, name: userName, customers: 0 };
-        }
+    if (!userId || !userName) return;
 
-        // Increment customer count
-        userMap[userId].customers += 1;
-      });
+    if (!userMap[userId]) {
+      userMap[userId] = { id: userId, name: userName, customers: 0 };
+    }
+
+    userMap[userId].customers += 1;
+  });
+});
 
       // Step 2: Convert map to array
       /*   const result = Object.values(userMap); */

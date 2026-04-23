@@ -11,6 +11,7 @@ import { CreateAdminData } from "@/store/auth.interface"; // ✅ types
 import BackButton from "@/app/component/buttons/BackButton";
 import { handleFieldOptions } from "@/app/utils/handleFieldOptions";
 import { getCity } from "@/store/masters/city/city";
+import { useAuth } from "@/context/AuthContext";
 
 interface ErrorInterface {
   [key: string]: string;
@@ -27,7 +28,7 @@ export default function AdminCreatePage() {
     AddressLine1: "",
     AddressLine2: "",
   });
-
+const { admin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<ErrorInterface>({});
   const [fieldOptions, setFieldOptions] = useState<Record<string, any[]>>({});
@@ -125,7 +126,7 @@ export default function AdminCreatePage() {
   };
 
   // ✅ Dropdown data
-  const roles = ["administrator", "city_admin", "user"];
+  const roles =admin?.role==="administrator"? ["administrator", "city_admin", "user"]:[ "city_admin", "user"];
   const statusOptions = ["Active", "Inactive"];
   const cities = ["Jaipur", "Ajmer", "Udaipur"];
 

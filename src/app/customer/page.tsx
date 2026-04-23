@@ -7,10 +7,10 @@ import Button from '@mui/material/Button';
 import SingleSelect from "@/app/component/SingleSelect";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, ChevronsLeft, ChevronsRight, PlusSquare, UserPlus } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpRight, Bot, ChevronsLeft, ChevronsRight, PlusSquare, Sparkles, UserPlus, Zap } from "lucide-react";
 import ProtectedRoute from "../component/ProtectedRoutes";
 import toast, { Toaster } from "react-hot-toast";
-import { getCustomer, deleteCustomer, getFilteredCustomer, updateCustomer, assignCustomer, deleteAllCustomer } from "@/store/customer";
+import { getCustomer, deleteCustomer, getFilteredCustomer, updateCustomer, assignCustomer, deleteAllCustomer, getDuplicateContacts, getTodayCustomer, startCallByAIAgent, getCallLogs, getCallReport } from "@/store/customer";
 import { CheckDialogDataInterface, CustomerAdvInterface, customerAssignInterface, customerGetDataInterface, DeleteDialogDataInterface } from "@/store/customer.interface";
 import DeleteDialog from "../component/popups/DeleteDialog";
 import { getCampaign } from "@/store/masters/campaign/campaign";
@@ -38,7 +38,7 @@ import CustomerTable from "../phonescreens/DashboardScreens/tables/CustomerTable
 import DynamicAdvance from "../phonescreens/DashboardScreens/DynamicAdvance";
 import { handleFieldOptionsObject } from "../utils/handleFieldOptionsObject";
 import ObjectSelect from "../component/ObjectSelect";
-import { FaCaretDown, FaCaretUp, FaCheck, FaCheckDouble, FaEye, FaPhone, FaWhatsapp } from "react-icons/fa";
+import { FaCaretDown, FaCaretUp, FaCheck, FaCheckDouble, FaEye, FaMicrophone, FaPhone, FaWhatsapp } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
 import { exportToExcel } from "../utils/exportToExcel";
 import { getsubLocationByCityLoc } from "@/store/masters/sublocation/sublocation";
@@ -59,20 +59,58 @@ import FollowupAddDialog from "../component/popups/FollowupAddDialog";
 import { deleteFollowup, getFollowupByCustomerId } from "@/store/customerFollowups";
 import { customerFollowupAllDataInterface } from "@/store/customerFollowups.interface";
 import { FollowupDeleteDialogDataInterface } from "@/store/contactFollowups.interface";
-import { BsPersonFill } from "react-icons/bs";
+import { BsArrowLeftShort, BsPersonFill } from "react-icons/bs";
 import GoogleMapDialog from "../component/popups/GoogleMapDialogue";
 import CustomerEditDialog from "../component/popups/CustomerEditDialog";
-import MobilePageTitle from "../component/labels/MobilePageTitle";
+import { callAllDataInterface } from "@/store/masters/call/call.interface";
+import { callCustomer } from "@/store/masters/call/call";
+import { useAIAgents } from "@/hooks/useAIAgents";
+import AgentSelector from "../component/AgentSelector";
+import RightSidebar from "../component/popups/RightSidebar";
+import FollowupAgentWorkspace from "../component/aiagents/FollowupAgentWorkspace";
+import { getLeadType } from "@/store/masters/leadtype/leadtype";
+import PriceRange from "../component/PriceRange";
+import BottomSheet from "../component/popups/BottomSheet";
+import BottomPopup from "../component/popups/BottomPopup";
+import AIChatMessages from "../component/aiagents/AIChatMessages";
+import AIAgentDropdown from "../component/aiagents/AIAgentDropdown";
+import TodayCustomerDialog from "../component/popups/TodayCustomerDialog";
+import { HiCalendar } from "react-icons/hi2";
+import { create } from "domain";
+import QualificationAgentWorkspace from "../component/aiagents/QualificationAgentWorkspace";
+import CallingAgentWorkspace from "../component/aiagents/CallingAgentWorkspace";
+import RecommendAgentWorkspace from "../component/aiagents/RecommendAgentWorkspace";
+import AIAgentSidebar from "../component/aiagents/AIAgentSidebar";
+import DataMiningAgentWorkspace from "../component/aiagents/AnalyticsAgentWorkspace";
+import AnalyticsAgentWorkspace from "../component/aiagents/AnalyticsAgentWorkspace";
+import SocialMiningAgentWorkspace from "../component/aiagents/MiningAgentWorkspace";
 
 
 interface DeleteAllDialogDataInterface { }
 
-
+interface AIAgent {
+  id: string
+  name: string
+  description: string
+  type: string
+  status: string
+  campaign?: string
+  targetSegment?: string
+  capability?: string
+  tasksCompleted?: number
+  accuracy?: number
+  createdAt?: string
+  assignedUsers?: string[]
+}
 
 export default function Customer() {
   const router = useRouter();
   const hasInitialFetched = useRef(false);
   const { getLabel, labels } = useCustomerFieldLabel();
+  const { getUserAgents, getAdminAgents } = useAIAgents();
+  const [agents, setAgents] = useState<AIAgent[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<AIAgent | null>(null);
+  const [isAIAgentsDialogOpen, setIsAIAgentDialogOpen] = useState(false);
   /* fetch */
   const FETCH_CHUNK = 100;
   const [keywordInput, setKeywordInput] = useState("");
@@ -83,11 +121,21 @@ export default function Customer() {
   const [totalCustomerPage, setTotalCustomerPage] = useState(1)
   const [isFilteredTrigger, setIsFilteredTrigger] = useState(false);
   const lastAppliedFiltersRef = useRef<typeof filters | null>(null);
+  const [isDupContactTableLoading, setIsDupContactTableLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [messages, setMessages] = useState<
+    { role: 'user' | 'ai'; text: string }[]
+  >([]);
 
+  const [qualificationAiMessages, setQualificationAiMessages] = useState<
+    { role: 'user' | 'ai'; text: string }[]
+  >([]);
+  const totalCustomersRef = useRef(0);
 
   /*NEW STATE FOR SELECTED CUSTOMERS */
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
-  const [selectedUser, setSelectUser] = useState<string>();
+  const [selectedUser, setSelectUser] = useState<string[]>([]);
   const [selectedWhatsapptemplate, setSelectedWhatsapptemplate] = useState<string>();
   const [selectedMailtemplate, setSelectedMailtemplate] = useState<string>();
   const [users, setUsers] = useState<usersGetDataInterface[]>([])
@@ -110,8 +158,7 @@ export default function Customer() {
   const [fieldOptions, setFieldOptions] = useState<Record<string, any[]>>({});
   const [isFavrouteCustomer, setIsFavrouteCustomer] = useState<boolean>(false);
   const [customerTableLoader, setCustomerTableLoader] = useState(true);
-  const [deleteAllDialogData, setDeleteAllDialogData] =
-    useState<DeleteAllDialogDataInterface | null>(null);
+  const [deleteAllDialogData, setDeleteAllDialogData] = useState<DeleteAllDialogDataInterface | null>(null);
   const [isTableDialogOpen, setIsTableDialogOpen] = useState(false);
   const [tableDialogcustomerData, setTableDialogCustomerData] = useState<customerGetDataInterface[]>([]);
 
@@ -121,16 +168,40 @@ export default function Customer() {
   const [isfollowupDialogOpen, setIsFollowupDialogOpen] = useState(false);
   const [isFollowupDeleteDialogOpen, setIsFollowupDeleteDialogOpen] = useState(false);
   const [followupdeleteDialogData, setFollowupDeleteDialogData] = useState<FollowupDeleteDialogDataInterface | null>(null);
-
-  const [isMapOpen, setIsMapOpen] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [customerToEdit, setCustomerToEdit] = useState<any>(null);
   const [assignMode, setAssignMode] = useState<"selected" | "campaign">("selected");
-  const [selectedCampaign, setSelectedCampaign] = useState<string | undefined>();
+  const [selectedCampaign, setSelectedCampaign] = useState<string[] | undefined>([]);
   const [campaignList, setCampaignList] = useState<
     { _id: string; Name: string; Status: string }[]
   >([]);
+
+  const [isMapOpen, setIsMapOpen] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+  const [isTemperatureDialogOpen, setIsTemperatureDialogOpen] = useState(false);
+  const [temperatureDialogData, setTemperatureDialogData] = useState<any>(null);
+  const [isTodayDialogOpen, setIsTodayDialogOpen] = useState(false);
+
+  const temperatureConfig: any = {
+    hot: {
+      bg: "#FDECEA",
+      color: "#D32F2F",
+      icon: "🔥"
+    },
+    warm: {
+      bg: "#FFF8E1",
+      color: "#F9A825",
+      icon: "🌤️"
+    },
+    cold: {
+      bg: "#E3F2FD",
+      color: "#1976D2",
+      icon: "❄️"
+    }
+  };
+
+
+
   const scrollRef = useHorizontalScroll();
   const searchParams = useSearchParams();
   const { admin } = useAuth();
@@ -147,7 +218,7 @@ export default function Customer() {
     "Price",
     "ReferenceId",
   ] as const;
-  const [toggleAiGenieSearchBy, setToggleAiGenieSearchBy] = useState(false);
+  const [toggleAiGenieSearchBy, setToggleAiGenieSearchBy] = useState(true);
 
   const [filters, setFilters] = useState({
     StatusAssign: [] as string[],
@@ -161,7 +232,11 @@ export default function Customer() {
     Keyword: "" as string,
     SearchIn: [] as string[],
     ReferenceId: [] as string[],
+    MinPrice: [] as string[],
+    MaxPrice: [] as string[],
     Price: [] as string[],
+    LeadType: [] as string[],
+    LeadTemperature: [] as string[],
     isFavourite: false as boolean,
     Limit: ["100"] as string[],
     StartDate: [] as string[],
@@ -193,6 +268,7 @@ export default function Customer() {
   //end here setting button 
 
   const [customerData, setCustomerData] = useState<customerGetDataInterface[]>([]);
+  const [todaycustomerData, setTodayCustomerData] = useState<customerGetDataInterface[]>([]);
   const [customerAdv, setCustomerAdv] = useState<CustomerAdvInterface[]>([]);
   const [exportingCustomerData, setExportingCustomerData] = useState<customerGetDataInterface[]>([]);
   const [duplicateContacts, setDuplicateContacts] = useState<Record<string, boolean>>({});
@@ -219,12 +295,13 @@ export default function Customer() {
       { key: "type", label: getLabel("CustomerType", "CustomerType"), isPinned: true, visible: true },
       { key: "subtype", label: getLabel("CustomerSubType", "Customer Subtype"), isPinned: true, visible: true },
       { key: "name", label: getLabel("customerName", "Customer Name"), isPinned: true, visible: true },
+      { key: "leadtype", label: getLabel("LeadType", "Lead Type"), isPinned: true, visible: true },
       { key: "City", label: getLabel("City", "City"), isPinned: true, visible: true },
       { key: "Area", label: getLabel("Area", "Area"), isPinned: true, visible: true },
       { key: "Email", label: getLabel("Email", "Email"), isPinned: true, visible: true },
       { key: "Facillities", label: getLabel("Facillities", "Facillities"), isPinned: true, visible: true },
       { key: "CustomerId", label: getLabel("CustomerId", "Customer Id"), isPinned: true, visible: true },
-      { key: "date", label: getLabel("CustomerDate", "Date"), isPinned: true, visible: true },
+      { key: "ClientId", label: getLabel("ClientId", "Client Id"), isPinned: true, visible: true },
       { key: "CustomerYear", label: getLabel("CustomerYear", "Customer Year"), isPinned: true, visible: true },
       { key: "Other", label: getLabel("Other", "Other"), isPinned: true, visible: true },
       { key: "description", label: getLabel("Description", "Description"), isPinned: true, visible: true },
@@ -238,6 +315,7 @@ export default function Customer() {
       { key: "video", label: getLabel("Video", "Video"), isPinned: true, visible: true },
       { key: "googlemap", label: getLabel("GoogleMap", "GoogleMap"), isPinned: true, visible: true },
       { key: "price", label: getLabel("Price", "Price"), isPinned: true, visible: true },
+      { key: "date", label: getLabel("CustomerDate", "Date"), isPinned: true, visible: true },
       /* { key: "actions", label: "Actions", isPinned: true, visible: true }, */
     ]
 
@@ -299,7 +377,6 @@ export default function Customer() {
     );
   }, [DEFAULT_COLUMNS]);
 
-
   const fetchCampaigns = async () => {
     const res = await getCampaign();
     if (res) {
@@ -307,16 +384,27 @@ export default function Customer() {
     }
   };
 
-
   useEffect(() => {
     localStorage.setItem("table-columns", JSON.stringify(columns));
   }, [columns]);
 
-
+  const fetchAiAgents = async () => {
+    if (admin?.role === "administrator") {
+      const res = await getAdminAgents();
+      setAgents(res);
+      return;
+    }
+    const agents = await getUserAgents();
+    setAgents(agents);
+  }
 
   useEffect(() => {
     const status = searchParams.get("Campaign");
+    const reference = searchParams.get("ReferenceId");
+    const leadtemperature = searchParams.get("LeadTemperature");
     if (!fieldOptions?.Campaign?.length) return;
+    if (!fieldOptions?.ReferenceId?.length) return;
+    if (!fieldOptions?.LeadTemperature?.length) return;
 
     if (status) {
 
@@ -343,12 +431,79 @@ export default function Customer() {
       // Fetch filtered data
       handleSelectChange("Campaign", status, updatedFilters);
     }
+    else if (reference) {
+
+      const referenceObj = fieldOptions?.ReferenceId?.find(
+        (c) => c.Name === reference
+      );
+      // Auto set filter
+      setFilters((prev) => ({
+        ...prev,
+        ReferenceId: [reference],
+      }));
+      setDependent((prev) => ({
+        ...prev,
+        ReferenceId: { id: referenceObj?._id, name: referenceObj?.Name }
+      }))
+
+      const updatedFilters = {
+        ...filters,
+        ReferenceId: [reference],
+      };
+
+      setCustomerTableLoader(false);
+
+      // Fetch filtered data
+      handleSelectChange("ReferenceId", reference, updatedFilters);
+    }
+    else if (leadtemperature) {
+
+      const leadtemperatureObj = fieldOptions?.LeadTemperature?.find(
+        (c) => c.Name === leadtemperature
+      );
+      // Auto set filter
+      setFilters((prev) => ({
+        ...prev,
+        LeadTemperature: [leadtemperature],
+      }));
+      setDependent((prev) => ({
+        ...prev,
+        LeadTemperature: { id: leadtemperatureObj?._id, name: leadtemperatureObj?.Name }
+      }))
+
+      const updatedFilters = {
+        ...filters,
+        LeadTemperature: [leadtemperature],
+      };
+
+      setCustomerTableLoader(false);
+
+      // Fetch filtered data
+      handleSelectChange("LeadTemperature", leadtemperature, updatedFilters);
+    }
     else {
       getCustomers();
       fetchFields();
+      getTotalCustomerPage();
     }
-    getTotalCustomerPage();
-  }, [searchParams, fieldOptions.Campaign]);
+    fetchAiAgents();
+    fetchTodayCustomer();
+    audioRef.current = new Audio(
+      "https://res.cloudinary.com/dsyzuwice/video/upload/v1774423860/voicepop_ypkmtz.mp3"
+    );
+
+    fetchcalllogs();
+
+  }, [searchParams, fieldOptions.Campaign, fieldOptions.ReferenceId]);
+
+  const fetchcalllogs = async () => {
+    const res = await getCallReport();
+
+    const res2 = await getCallLogs();
+
+    console.log("call data", res);
+    console.log("call logs", res2);
+  }
 
 
   useEffect(() => {
@@ -362,6 +517,20 @@ export default function Customer() {
     setTotalCustomerPage(total);
     setTotalCustomers(data.length);
   }
+
+  const fetchTodayCustomer = async () => {
+    const data = await getTodayCustomer();
+
+    if (data) {
+      const mapped = data.map(mapCustomer);
+      setTodayCustomerData(mapped);
+    }
+  }
+
+  const handleOpenTodayCustomers = async () => {
+    setIsTodayDialogOpen(true);
+    await fetchTodayCustomer();
+  };
 
 
   useEffect(() => {
@@ -447,13 +616,15 @@ export default function Customer() {
       Area: item.Area,
       SubLocation: item.SubLocation,
       CustomerId: item.CustomerId,
+      ClientId: item.ClientId,
       CustomerYear: item.CustomerYear,
       Facillities: item.Facillities,
       ContactNumber: item.ContactNumber?.slice(0, 10),
       ReferenceId: item.ReferenceId,
-      AssignTo: item.AssignTo?.name,
+      AssignTo: item.AssignTo ?? [],
       isFavourite: item.isFavourite,
       isChecked: item.isChecked,
+      LeadTemperature: item.LeadTemperature || "cold",
       Other: item.Other,
       Date:
         item.CustomerDate === "N/A"
@@ -467,7 +638,9 @@ export default function Customer() {
       Video: item.Video || "",
       GoogleMap: item.GoogleMap || "",
       Price: item.Price || "",
+      LeadType: item.LeadType || "",
       CustomerFields: item.CustomerFields || {},
+      createdAt: formattedDate,
     };
   };
 
@@ -600,6 +773,19 @@ export default function Customer() {
     setIsFavouriteDialogOpen(false);
     setDialogData(null);
   };
+
+  const handleCall = async (data: callAllDataInterface | null) => {
+    if (!data) return;
+    const res = await callCustomer(data);
+
+    if (res) {
+      console.log(" response is here ", res);
+      toast.success("call sent successfully");
+      return;
+    }
+
+    toast.error(" failed to call this customer ");
+  }
 
 
   const handleChecked = async (data: CheckDialogDataInterface | null) => {
@@ -791,7 +977,11 @@ export default function Customer() {
       Keyword: "",
       SearchIn: [],
       ReferenceId: [],
+      MinPrice: [],
+      MaxPrice: [],
       Price: [],
+      LeadType: [],
+      LeadTemperature: [],
       isFavourite: false,
       Limit: ["100"],
       StartDate: [],
@@ -992,10 +1182,16 @@ export default function Customer() {
   // Simple array fields (for normal Select)
   const arrayFields = [
     { key: "StatusAssign", staticData: ["Assigned", "Unassigned"] },
+    { key: "LeadTemperature", staticData: ["hot", "warm", "cold"] },
     { key: "User", fetchFn: getAllAdmins },
     { key: "ReferenceId", fetchFn: getReferences },
     { key: "Price", fetchFn: getPrice },
+    { key: "LeadType", fetchFn: getLeadType },
+    { key: "MinPrice", staticData: ["1000", "10,000", "20,000", "40,000", "60,000", "100,000", "200,000", "1,000,000", "2,000,000", "10,000,000", "100,000,000"] },
+    { key: "MaxPrice", staticData: ["5000", "10,000", "20,000", "40,000", "60,000", "100,000", "200,000", "1,000,000", "2,000,000", "10,000,000", "100,000,000"] },
   ];
+
+
 
 
   useEffect(() => {
@@ -1109,7 +1305,11 @@ export default function Customer() {
   };
 
   const handleSelectUser = (id: string) => {
-    setSelectUser(prev => (prev === id ? undefined : id)); //  only one user at a time
+    setSelectUser((prev) =>
+      prev.includes(id)
+        ? prev.filter((userId) => userId !== id)
+        : [...prev, id]
+    ); //  only one user at a time
   };
 
   const handleSelectMailtemplate = (id: string) => {
@@ -1152,8 +1352,8 @@ export default function Customer() {
       setIsAssignOpen(false);
       return response;
     }
-//console.log(" faraz is here wow brother ",response)
-   toast.error(response.message);
+    //console.log(" faraz is here wow brother ",response)
+    toast.error(response.message);
     setIsAssignOpen(false);
   };
 
@@ -1258,6 +1458,39 @@ export default function Customer() {
     router.push(`/followups/customer/edit/${id}`);
   }
 
+  const handleUpdateTemperature = async (id: string, value: string) => {
+
+    console.log(" id is ", id, "payload is ", value)
+
+    const formData = new FormData();
+    formData.append("LeadTemperature", value.toString());
+
+    const res = await updateCustomer(id, formData);
+
+    if (res) {
+      setTemperatureDialogData((prev: any) => ({
+        ...prev,
+        current: value
+      }));
+
+      setCustomerData(prev =>
+        prev.map(customer =>
+          customer._id === id
+            ? { ...customer, LeadTemperature: value }
+            : customer
+        )
+      );
+
+      toast.success(`Marked as ${value.toUpperCase()}`);
+      setIsTemperatureDialogOpen(false);
+      return;
+    }
+
+
+    toast.error("Failed to update");
+
+  };
+
   const deleteThisFollowup = async (data: FollowupDeleteDialogDataInterface) => {
     //alert(id)
     if (!data) return;
@@ -1277,18 +1510,22 @@ export default function Customer() {
 
 
   const handleTableDialogData = async (contactno: string) => {
+    setIsDupContactTableLoading(true);
+
     const queryParams = new URLSearchParams();
-    queryParams.append("Limit", "100000");
-    queryParams.append("Skip", "0");
+    /*     queryParams.append("Limit", "100000");
+        queryParams.append("Skip", "0"); */
     queryParams.append("ContactNumber", contactno);
     const data = await getFilteredCustomer(queryParams.toString());
     if (data.length > 0) {
       // console.log(" data of contact no is ", data)
       const mapped = data.map(mapCustomer);
       setTableDialogCustomerData(mapped)
+      setIsDupContactTableLoading(false);
       return mapped
     }
     toast.error("Sever Error, please try again")
+    setIsDupContactTableLoading(false);
     return [];
   }
 
@@ -1296,8 +1533,8 @@ export default function Customer() {
     if (duplicateContacts[contactNo] !== undefined) return duplicateContacts[contactNo];
 
     const queryParams = new URLSearchParams();
-    queryParams.append("Limit", "100000");
-    queryParams.append("Skip", "0");
+    /*  queryParams.append("Limit", "100000");
+     queryParams.append("Skip", "0"); */
     queryParams.append("ContactNumber", contactNo);
 
     const data = await getFilteredCustomer(queryParams.toString());
@@ -1316,43 +1553,206 @@ export default function Customer() {
   };
 
   useEffect(() => {
-    currentRows.forEach(item => {
+    /*   currentRows.forEach(item => {
       isDuplicateContactNo(item.ContactNumber, item._id);
-    });
-  }, [currentRows]);
+    }); */
+    if (currentRows.length > 0) {
+      checkDuplicateContactsBatch();
+    }
+  }, [JSON.stringify(currentRows.map(r => r.ContactNumber))]);
 
-  const aiGenieSearch = async () => {
-    if (!keywordInput.trim()) return;
+  useEffect(() => {
+    totalCustomersRef.current = totalCustomers;
+  }, [totalCustomers]);
+
+  const checkDuplicateContactsBatch = async () => {
+    const contactNumbers = currentRows.map(item => item.ContactNumber);
+
+    const data = await getDuplicateContacts({ contactNumbers: contactNumbers });
+    console.log(" contact dup data ", data)
+
+    // Expected response: { "9876543210": true, "9999999999": false }
+
+    setDuplicateContacts((data || {}) as Record<string, boolean>);
+  };
+
+  const aiGenieSearch = async (keyword?: string) => {
+    const finalKeyword = keyword ?? keywordInput;
+
+    if (!finalKeyword.trim()) return;
+
+    console.log(" searching for ", finalKeyword);
 
     await wait(800);
 
-    // STEP 2
     await changeStep(STEPS.SHOW);
-    await wait(800)
+    await wait(800);
 
-    // STEP 3
     const filtersOverride = {
       ...filters,
-      Keyword: keywordInput,
+      Keyword: finalKeyword,
     };
 
     if (filters.SearchIn.length > 0) {
       filtersOverride.SearchIn = filters.SearchIn;
     }
-    const data = await handleSelectChange("Keyword", keywordInput, filtersOverride);
+
+    const data = await handleSelectChange("Keyword", finalKeyword, filtersOverride);
+
     const count = data?.length ?? 0;
 
     await wait(1000);
 
     setAiLoading(false);
 
+    return {
+      data,
+      count: totalCustomers, // still risky but we'll fix below
+    };
   };
 
+  const handleAgentCalling = async (id: string) => {
+
+    const payload = {
+      customerId: id
+    }
+
+    const res = await startCallByAIAgent(payload);
+
+    console.log(" response is here ", res);
+
+    if (res) {
+      toast.success("call initiated successfully");
+      return;
+    }
+  }
 
 
 
+  const avatarColors = [
+    { bg: "bg-[#EEEDFE]", text: "text-[#3C3489]", tag: "bg-[#EEEDFE] text-[#3C3489]" },
+    { bg: "bg-[#E1F5EE]", text: "text-[#085041]", tag: "bg-[#E1F5EE] text-[#085041]" },
+    { bg: "bg-[#FAEEDA]", text: "text-[#633806]", tag: "bg-[#FAEEDA] text-[#633806]" },
+    { bg: "bg-[#E6F1FB]", text: "text-[#0C447C]", tag: "bg-[#E6F1FB] text-[#0C447C]" },
+  ];
+
+  const startListening = () => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Speech Recognition not supported");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+
+    recognition.lang = "en-IN";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.start();
+    setIsListening(true); // 👈 START UI
+
+    // ⏱ Auto stop after 10 sec
+    const timeout = setTimeout(() => {
+      recognition.stop();
+    }, 10000);
+
+    recognition.onresult = async (event: any) => {
+      const transcript = event.results[0][0].transcript;
+
+      setKeywordInput(transcript);
+      setAiLoading(true);
+      setCurrentStep(STEPS.SEARCH)
+      // DIRECT CALL (no state dependency)
+      await aiGenieSearch(transcript);
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+      clearTimeout(timeout);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false); // 👈 STOP UI
+      clearTimeout(timeout);
+    };
 
 
+  };
+  const playSound = () => {
+    setTimeout(() => {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0; // restart every time
+        audioRef.current.play();
+        console.log("working yes ")
+      }
+    }, 100);
+  };
+
+  const handleSend = async () => {
+    if (!keywordInput.trim() || aiLoading) return;
+
+    const userText = keywordInput;
+
+    // 1. Show user message
+    setMessages((prev) => [
+      ...prev,
+      { role: 'user', text: userText },
+    ]);
+
+    setKeywordInput('');
+    setAiLoading(true);
+    setCurrentStep(STEPS.SEARCH);
+
+    try {
+      // 2. Call your existing logic
+      const result = await aiGenieSearch(userText);
+
+      // 3. Show AI response (use real later, dummy for now)
+      await new Promise(requestAnimationFrame);
+
+      const total = totalCustomersRef.current;
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'ai',
+          text:
+            /*  result?.message || */
+            `Found ${total} matching leads for "${userText}". Showing best results based on AI scoring.`,
+        },
+      ]);
+
+
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'ai',
+          text: 'Something went wrong while finding matches.',
+        },
+      ]);
+    } finally {
+      setAiLoading(false);
+      setCurrentStep('');
+    }
+  };
+
+  const AGENTS_TYPE_ICON: Record<string, any> = {
+    Outreach: <Sparkles />,
+    Analytics: <img src="https://res.cloudinary.com/djipgt6vc/image/upload/v1774335552/img-8_twulvb.png" alt="Analytics" className=" object-contain w-10 h-10" />,
+    Calling: <img src="https://res.cloudinary.com/djipgt6vc/image/upload/v1774335521/img-6_mky5rb.png" alt="Calling" className=" object-contain w-10 h-10" />,
+    Research: <img src="/icons/research.png" alt="Research" />,
+    Automation: <img src="/icons/automation.png" alt="Automation" />,
+    Followup: <img src="https://res.cloudinary.com/djipgt6vc/image/upload/v1774335523/img-7_xjwzbl.png" alt="Followup" className=" object-contain w-10 h-10" />,
+    Matching: <img src="https://res.cloudinary.com/djipgt6vc/image/upload/v1774335520/img-2_l1xdll.png" alt="Matching" className="object-contain w-10 h-10" />,
+    Qualification: <img src="https://res.cloudinary.com/djipgt6vc/image/upload/v1774335520/img-1_nz99v7.png" alt="Qualification" className=" object-contain w-10 h-10" />,
+    Recommendation: <img src="https://res.cloudinary.com/djipgt6vc/image/upload/v1774335520/img-3_scja92.png" alt="Recommendation" className=" object-contain w-10 h-10" />,
+    Mining: <img src="https://res.cloudinary.com/djipgt6vc/image/upload/v1774335520/img-3_scja92.png" alt="Mining" className=" object-contain w-10 h-10" />,
+    default: "AG",
+  };
 
   return (
     <ProtectedRoute>
@@ -1402,24 +1802,44 @@ export default function Customer() {
 
 
 
-      <CustomerEditDialog
-        isOpen={isEditOpen}
-        customerId={customerToEdit}
-        onClose={() => {
-          setIsEditOpen(false);
-          setCustomerToEdit(null);
-        }}
-        onCustomerUpdated={handleCustomerUpdated}
-      />
 
+
+
+      {/* today customer dialogue */}
+      <TodayCustomerDialog
+        isOpen={isTodayDialogOpen}
+        data={todaycustomerData}
+        onClose={() => setIsTodayDialogOpen(false)}
+        onDelete={(item) => {
+          setIsDeleteDialogOpen(true);
+          setDialogType("delete");
+
+          setDialogData({
+            id: item._id,
+            customerName: item.Name,
+            ContactNumber: item.ContactNumber,
+          });
+        }}
+        onEdit={(item) => {
+          handleEditClick(item._id)
+        }}
+        onDeleteAll={(ids) => {
+          setSelectedCustomers(ids);
+          setIsDeleteAllDialogOpen(true);
+          setDeleteAllDialogData({});
+          console.log(" ids are ", ids)
+        }}
+      />
 
       {/* customer by contact number */}
       <TableDialog
         isOpen={isTableDialogOpen}
+        isLoading={isDupContactTableLoading}
         title="Customers By"
         data={tableDialogcustomerData}
         onClose={() => {
           setIsTableDialogOpen(false);
+          setTableDialogCustomerData([]);
         }}
         renderActions={(item) => (
           <div className="grid grid-cols-2 max-md:flex gap-3 items-center h-full">
@@ -1441,8 +1861,7 @@ export default function Customer() {
             >
               <MdEdit />
             </Button>
-
-            <Button
+            {admin?.role === "administrator" && <Button
               sx={{ backgroundColor: "#FDECEA", color: "#C62828", minWidth: "32px", height: "32px", borderRadius: "8px" }}
               onClick={() => {
                 setIsDeleteDialogOpen(true);
@@ -1456,12 +1875,23 @@ export default function Customer() {
             >
               <MdDelete />
             </Button>
+            }
 
 
           </div>
         )}
       />
 
+
+      <CustomerEditDialog
+        isOpen={isEditOpen}
+        customerId={customerToEdit}
+        onClose={() => {
+          setIsEditOpen(false);
+          setCustomerToEdit(null);
+        }}
+        onCustomerUpdated={handleCustomerUpdated}
+      />
 
       {/* Delete Dialog */}
       <DeleteDialog<DeleteDialogDataInterface>
@@ -1645,14 +2075,138 @@ export default function Customer() {
         )
       }
 
+      {
+        isTemperatureDialogOpen && temperatureDialogData && (
+          <PopupMenu
+            onClose={() => {
+              setIsTemperatureDialogOpen(false);
+              setTemperatureDialogData(null);
+            }}
+          >
+            <div className="flex flex-col bg-white rounded-3xl shadow-2xl max-w-[380px] w-full m-3 overflow-hidden"
+              style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.18)" }}
+            >
+              {/* Header */}
+              <div
+                className="relative px-6 pt-6 pb-5 overflow-hidden"
+                style={{ background: "linear-gradient(135deg, var(--color-secondary-darker) 0%, var(--color-secondary) 100%)" }}
+              >
+                {/* Decorative circles */}
+                <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full opacity-10 bg-white" />
+                <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full opacity-10 bg-white" />
+
+                <div className="relative flex justify-between items-start">
+                  <div>
+                    <p className="text-white/60 text-xs font-medium uppercase tracking-widest mb-1">Lead Status</p>
+                    <h2 className="text-white text-xl font-bold leading-tight">Update Temperature</h2>
+                    <p className="text-white/80 text-sm mt-1 font-medium">{temperatureDialogData.name}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsTemperatureDialogOpen(false);
+                      setTemperatureDialogData(null);
+                    }}
+                    className="w-8 h-8 cursor-pointer rounded-full flex items-center justify-center bg-white/15 hover:bg-white/25 transition-colors mt-0.5"
+                  >
+                    <IoMdClose className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Options */}
+              <div className="flex flex-col gap-2.5 p-5">
+
+                {/* HOT */}
+                <button
+                  onClick={() => handleUpdateTemperature(temperatureDialogData.id, "hot")}
+                  className={`group cursor-pointer relative flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 text-left ${temperatureDialogData.current === "hot"
+                    ? "border-red-400 bg-red-50 shadow-sm shadow-red-100"
+                    : "border-gray-100 hover:border-red-200 hover:bg-red-50/50"
+                    }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 transition-all ${temperatureDialogData.current === "hot" ? "bg-red-100" : "bg-gray-100 group-hover:bg-red-100"
+                    }`}>
+                    🔥
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-800 text-sm">Hot</p>
+                    <p className="text-xs text-gray-400 mt-0.5">High chance to convert</p>
+                  </div>
+                  {temperatureDialogData.current === "hot" && (
+                    <div className="w-5 h-5 rounded-full bg-red-400 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+
+                {/* WARM */}
+                <button
+                  onClick={() => handleUpdateTemperature(temperatureDialogData.id, "warm")}
+                  className={`group cursor-pointer relative flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 text-left ${temperatureDialogData.current === "warm"
+                    ? "border-yellow-400 bg-yellow-50 shadow-sm shadow-yellow-100"
+                    : "border-gray-100 hover:border-yellow-200 hover:bg-yellow-50/50"
+                    }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 transition-all ${temperatureDialogData.current === "warm" ? "bg-yellow-100" : "bg-gray-100 group-hover:bg-yellow-100"
+                    }`}>
+                    🌤️
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-800 text-sm">Warm</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Moderate interest</p>
+                  </div>
+                  {temperatureDialogData.current === "warm" && (
+                    <div className="w-5 h-5 rounded-full bg-yellow-400 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+
+                {/* COLD */}
+                <button
+                  onClick={() => handleUpdateTemperature(temperatureDialogData.id, "cold")}
+                  className={`group cursor-pointer relative flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 text-left ${temperatureDialogData.current === "cold"
+                    ? "border-blue-400 bg-blue-50 shadow-sm shadow-blue-100"
+                    : "border-gray-100 hover:border-blue-200 hover:bg-blue-50/50"
+                    }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 transition-all ${temperatureDialogData.current === "cold" ? "bg-blue-100" : "bg-gray-100 group-hover:bg-blue-100"
+                    }`}>
+                    ❄️
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-800 text-sm">Cold</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Low or no interest</p>
+                  </div>
+                  {temperatureDialogData.current === "cold" && (
+                    <div className="w-5 h-5 rounded-full bg-blue-400 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+
+              </div>
+
+              {/* Footer hint */}
+              <p className="text-center text-xs text-gray-300 pb-4">Tap an option to update the lead status</p>
+            </div>
+          </PopupMenu>
+        )
+      }
+
       {/* Mobile Customer Page */}
       <div className=" sm:hidden min-h-[calc(100vh-56px)] overflow-auto max-sm:py-2">
 
-        {/* <div className=" flex justify-between items-center px-0">
+        <div className=" flex justify-between items-center px-0">
           <h1 className=" text-[var(--color-primary)] font-extrabold text-2xl ">Leads</h1>
 
-        </div> */}
-        <MobilePageTitle title="Leads" />
+        </div>
         <div className=" w-full">
           <DynamicAdvance>
             <ObjectSelect
@@ -1788,13 +2342,193 @@ export default function Customer() {
 
 
             <SingleSelect options={Array.isArray(fieldOptions?.User) ? fieldOptions.User : []} value={filters.User[0]} label="User" onChange={(v) => handleSelectChange("User", v)} isSearchable />
+            {/* Keyword Search */}
+            <form className="flex  max-lg:flex-col justify-between items-center gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (keywordInput.trim() === "")
+                  return
+                setAiLoading(true);
+                setCurrentStep(STEPS.SEARCH)
+                aiGenieSearch();
+              }}
+            >
 
+              <div className=" w-full ">
+                <div>
+                  <div className=" flex justify-between">
+                    <label className="flex gap-1 mb-2 items-center text-sm font-bold text-[var(--color-secondary-darker)] ml-1">{aiLoading ? <span>
+                      <BounceLoader
+                        loading={true}
+                        color="var(--color-primary)"
+                        size={25}
+                        aria-label="Loading Spinner"
+                        data-testid="loader"
+                      /></span> : <span><img className=" w-[25px] " src="/aiBot.png" /></span>
+                    }
+                      <div className="">AI Genie</div>
+
+
+                    </label>
+                    {/*  {isListening && (
+                          <div className="flex items-center gap-2.5 mt-2 ml-1 px-3 py-2 rounded-xl bg-red-50 border border-red-100 w-fit">
+                           
+                            <div className="flex items-center gap-[3px]">
+                              {[0, 1, 2, 3].map((i) => (
+                                <span
+                                  key={i}
+                                  className="block w-[3px] rounded-full bg-red-500"
+                                  style={{
+                                    animation: `soundBar 0.8s ease-in-out infinite alternate`,
+                                    animationDelay: `${i * 0.15}s`,
+                                    height: "14px",
+                                  }}
+                                />
+                              ))}
+                            </div>
+
+                            <p className="text-red-500 text-xs font-semibold tracking-wide">
+                              Listening…
+                            </p>
+
+                           
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                            </span>
+
+                            <style>{`
+      @keyframes soundBar {
+        from { transform: scaleY(0.3); opacity: 0.5; }
+        to   { transform: scaleY(1);   opacity: 1;   }
+      }
+    `}</style>
+                          </div>
+                        )} */}
+                  </div>
+                  <p className={`text-gray-400 font-light text-xs ml-2 mb-2  flex items-center gap-[1px] `}>
+                    <span
+                      className={`transition-opacity duration-300 `}
+                    >
+                      {currentStep}
+                    </span>
+
+                    {aiLoading && <span className="translate-y-[2px]">
+                      <BeatLoader size={2} color="gray" />
+                    </span>}
+
+                  </p>
+                  <div className="">
+
+                    <div className=" flex justify-between items-center border border-gray-300 rounded-md w-full">
+                      <input
+                        type="text"
+                        placeholder="What you want to search?"
+                        className="outline-none w-full px-3 py-2 "
+                        value={keywordInput}
+                        onChange={(e) => setKeywordInput(e.target.value)}
+                      />
+                      <span
+                        className={`relative mr-3 cursor-pointer flex items-center justify-center`}
+                        onClick={() => {
+                          playSound();      // 🔊 sound plays
+                          startListening(); // 🎤 mic starts
+                        }}
+                      >
+                        {/* Pulse Ring */}
+                        {isListening && (
+                          <span className="absolute inline-flex h-8 w-8 rounded-full bg-red-400 opacity-75 animate-ping"></span>
+                        )}
+
+                        {/* Mic Icon */}
+                        <span
+                          className={`relative z-10 p-2 rounded-full transition-all duration-300 
+    ${isListening ? "bg-red-500 text-white scale-110" : "text-gray-500 hover:text-blue-500"}
+  `}
+                        >
+                          <FaMicrophone />
+                        </span>
+                      </span>
+                      <span className=" cursor-pointer mr-3" onClick={() => setToggleAiGenieSearchBy(!toggleAiGenieSearchBy)}>{toggleAiGenieSearchBy ? <FaCaretDown /> : <FaCaretUp />}</span>
+                    </div>
+
+                    <div className={` mt-5 overflow-hidden transition-all duration-300 ${toggleAiGenieSearchBy ? " h-0" : " h-[150px]"}`}>
+                      {/* Unselected Fields */}
+                      <div className="flex flex-wrap gap-2 px-3 mb-5">
+                        {SEARCH_FIELDS.filter(f => !filters.SearchIn.includes(f)).map((field) => (
+                          <button
+                            key={field}
+                            type="button"
+                            className="px-2 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-100 transition"
+                            onClick={() =>
+                              setFilters(prev => ({
+                                ...prev,
+                                SearchIn: [...prev.SearchIn, field],
+                              }))
+                            }
+                          >
+                            {field.toLowerCase()}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Selected Fields */}
+                      <div className="">
+                        {filters.SearchIn.length > 0 && <h5 className=" text-gray-500 text-sm my-2 mx-2">Selected</h5>}
+                        <div className="flex flex-wrap gap-2 px-3">
+
+                          {filters.SearchIn.map((field) => (
+                            <div
+                              key={field}
+                              className="group relative flex items-center px-2 py-1 border border-blue-400 rounded-md text-sm bg-blue-100"
+                            >
+                              {field.toLowerCase()}
+                              <button
+                                className="ml-2 opacity-0 cursor-pointer group-hover:opacity-100 transition-opacity text-sm text-[var(--color-primary)]"
+                                onClick={() =>
+                                  setFilters(prev => ({
+                                    ...prev,
+                                    SearchIn: prev.SearchIn.filter(f => f !== field),
+                                  }))
+                                }
+                              >
+                                <IoMdClose />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div className={` flex justify-center items-center w-full transition duration-300  ${toggleAiGenieSearchBy ? " lg:-mt-32" : " lg:mt-5"} `}>
+                {!aiLoading ? <button type="submit" className="border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-all duration-300 cursor-pointer px-3 py-2  rounded-md">
+                  Explore
+                </button> : <button type="button" className="flex gap-1 justify-center items-center border border-[var(--color-primary)]  bg-[var(--color-primary)] text-white transition-all duration-300 cursor-pointer px-3 py-2  rounded-md">
+                  Exploring <HashLoader
+                    loading={true}
+                    color="white"
+                    size={12}
+                    aria-label="Loading Spinner"
+                    data-testid="loader"
+                  />
+                </button>}
+
+                <button type="reset" onClick={clearFilter} className="text-red-500 cursor-pointer hover:underline text-sm px-5 py-2  rounded-md ml-3">
+                  Clear Search
+                </button>
+              </div>
+            </form>
             <div className=" w-full flex justify-end"></div>
-            <div className=" w-full flex justify-end">
+            {/*  <div className=" w-full flex justify-end">
               <button type="reset" onClick={clearFilter} className="text-red-500 cursor-pointer hover:underline text-sm px-5 py-2 rounded-md">
                 Clear Search
               </button>
-            </div>
+            </div> */}
 
           </DynamicAdvance>
         </div>
@@ -1865,6 +2599,7 @@ export default function Customer() {
             onSubmit={handleAssignto}
             submitLabel="Assign"
             onClose={() => setIsAssignOpen(false)}
+            multiSelect
           >
             <div className="px-6 flex flex-col gap-3">
 
@@ -1891,21 +2626,7 @@ export default function Customer() {
 
               {/* Campaign Dropdown */}
               {assignMode === "campaign" && (
-                /*   <select
-                    className="border rounded px-3 py-2"
-                    value={selectedCampaign || ""}
-                    onChange={(e) => setSelectedCampaign(e.target.value)}
-                  >
-                    <option value="">Select Campaign</option>
-                
-                    {campaignList
-                      .filter((c) => c.Status === "Active") // optional: only active
-                      .map((c) => (
-                        <option key={c._id} value={c.Name}>
-                          {c.Name}
-                        </option>
-                      ))}
-                  </select> */
+
                 <SingleSelect
                   options={
                     campaignList
@@ -1914,7 +2635,7 @@ export default function Customer() {
                   }
                   value={selectedCampaign}
                   label="Select Campaign"
-                  onChange={(v) => setSelectedCampaign(v)}
+                  onChange={(v: any) => setSelectedCampaign(v)}
                   isSearchable
                 />
               )}
@@ -1951,847 +2672,1248 @@ export default function Customer() {
           </div>
 
 
-          {/* TABLE */}
-          <section className="flex flex-col mt-6 rounded-md">
-            {/* ══════════════════════════════════════════════════
-    DROP-IN REPLACEMENT
-    Paste this in place of the entire outer <div className="m-5 relative">
-    All state, handlers, and logic are 100% untouched.
-══════════════════════════════════════════════════ */}
 
-<div className="mx-5 my-4 relative">
-
-  {/* ── TOGGLE TRIGGER ── */}
-  <button
-    type="button"
-    onClick={() => setToggleSearchDropdown(!toggleSearchDropdown)}
-    className={[
-      "group w-full flex items-center justify-between px-4 py-3 rounded-xl",
-      "border transition-all duration-200 cursor-pointer",
-      toggleSearchDropdown
-        ? "border-[var(--color-primary)]/40 bg-[var(--color-primary)]/[0.04] dark:bg-[var(--color-primary)]/[0.08]"
-        : "border-gray-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] hover:border-[var(--color-primary)]/30 hover:bg-[var(--color-primary)]/[0.02]",
-    ].join(" ")}
-  >
-    <div className="flex items-center gap-2.5">
-      {/* Icon mark */}
-      <span
-        className="flex items-center justify-center size-7 rounded-lg"
-        style={{ background: "color-mix(in srgb, var(--color-primary) 12%, transparent)" }}
-      >
-        <CiSearch size={15} style={{ color: "var(--color-primary)" }} />
-      </span>
-      <span className="text-[13px] font-semibold text-gray-700 max-sm:dark:text-white/70 tracking-[0.01em]">
-        Advanced Search
-      </span>
-      {/* Active filters badge */}
-      {Object.values(filters).some(v => Array.isArray(v) ? v.length > 0 : !!v) && (
-        <span
-          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white"
-          style={{ background: "var(--color-primary)" }}
-        >
-          Active
-        </span>
-      )}
-    </div>
-
-    <span
-      className={[
-        "flex items-center justify-center size-6 rounded-lg transition-all duration-300",
-        toggleSearchDropdown
-          ? "rotate-180 bg-[var(--color-primary)]/10"
-          : "bg-gray-100 dark:bg-white/[0.06]",
-      ].join(" ")}
-    >
-      <IoIosArrowDown
-        size={13}
-        style={toggleSearchDropdown ? { color: "var(--color-primary)" } : {}}
-        className="text-gray-400 dark:text-white/30"
-      />
-    </span>
-  </button>
-
-  {/* ── PANEL ── */}
-  <div
-    className={[
-      "overflow-hidden transition-all duration-500 ease-in-out",
-      toggleSearchDropdown ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0",
-    ].join(" ")}
-  >
-    <div
-      className={[
-        "mt-2 rounded-xl border overflow-hidden",
-        "border-gray-100 dark:border-white/[0.07]",
-        "bg-white dark:bg-white/[0.02]",
-        "shadow-sm dark:shadow-none",
-      ].join(" ")}
-    >
-
-      {/* ── SECTION: FILTERS ── */}
-      <div className="p-4 border-b border-gray-100 max-sm:dark:border-white/[0.06]">
-        {/* Section label */}
-        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 max-sm:dark:text-white/25 mb-3">
-          Filter Options
-        </p>
-
-        <div className="grid grid-cols-3 gap-3 max-md:grid-cols-1 max-lg:grid-cols-2">
-          <ObjectSelect
-            options={Array.isArray(fieldOptions?.Campaign) ? fieldOptions.Campaign : []}
-            label={getLabel("Campaign", "Campaign")}
-            value={dependent.Campaign.id}
-            getLabel={(item) => item?.Name || ""}
-            getId={(item) => item?._id || ""}
-            onChange={(selectedId) => {
-              const selectedObj = fieldOptions.Campaign.find((i) => i._id === selectedId);
-              if (selectedObj) {
-                const updatedFilters = { ...filters, Campaign: [selectedObj.Name], CustomerType: [], CustomerSubType: [] };
-                setFilters(updatedFilters);
-                setDependent(prev => ({ ...prev, Campaign: { id: selectedObj._id, name: selectedObj.Name }, CustomerType: { id: "", name: "" }, CustomerSubType: { id: "", name: "" } }));
-                handleSelectChange("Campaign", selectedObj.Name, updatedFilters);
-              }
-            }}
-          />
-          <ObjectSelect
-            options={Array.isArray(fieldOptions?.CustomerType) ? fieldOptions.CustomerType : []}
-            label={getLabel("CustomerType", "Customer Type")}
-            value={dependent.CustomerType.name}
-            getLabel={(item) => item?.Name || ""}
-            getId={(item) => item?._id || ""}
-            onChange={(selectedId) => {
-              const selectedObj = fieldOptions.CustomerType.find((i) => i._id === selectedId);
-              if (selectedObj) {
-                const updatedFilters = { ...filters, CustomerType: [selectedObj.Name], CustomerSubType: [] };
-                setFilters(updatedFilters);
-                setDependent(prev => ({ ...prev, CustomerType: { id: selectedObj._id, name: selectedObj.Name }, CustomerSubType: { id: "", name: "" } }));
-                handleSelectChange("CustomerType", selectedObj.Name, updatedFilters);
-              }
-            }}
-          />
-          <ObjectSelect
-            options={Array.isArray(fieldOptions?.CustomerSubtype) ? fieldOptions.CustomerSubtype : []}
-            label={getLabel("CustomerSubType", "Customer Subtype")}
-            value={dependent.CustomerSubType.name}
-            getLabel={(item) => item?.Name || ""}
-            getId={(item) => item?._id || ""}
-            onChange={(selectedId) => {
-              const selectedObj = fieldOptions.CustomerSubtype.find((i) => i._id === selectedId);
-              if (selectedObj) {
-                const updatedFilters = { ...filters, CustomerSubType: [selectedObj.Name] };
-                setFilters(updatedFilters);
-                setDependent(prev => ({ ...prev, CustomerSubType: { id: selectedObj._id, name: selectedObj.Name } }));
-                handleSelectChange("CustomerSubType", selectedObj.Name, updatedFilters);
-              }
-            }}
-          />
-          <ObjectSelect
-            options={Array.isArray(fieldOptions?.City) ? fieldOptions.City : []}
-            label={getLabel("City", "City")}
-            value={dependent.City.id}
-            getLabel={(item) => item?.Name || ""}
-            getId={(item) => item?._id || ""}
-            onChange={(selectedId) => {
-              const selectedObj = fieldOptions.City.find((i) => i._id === selectedId);
-              if (selectedObj) {
-                const updatedFilters = { ...filters, City: [selectedObj.Name], Location: [] };
-                setFilters(updatedFilters);
-                setDependent(prev => ({ ...prev, City: { id: selectedObj._id, name: selectedObj.Name }, Location: { id: "", name: "" } }));
-                handleSelectChange("City", selectedObj.Name, updatedFilters);
-              }
-            }}
-          />
-          <ObjectSelect
-            options={Array.isArray(fieldOptions?.Location) ? fieldOptions.Location : []}
-            label={getLabel("Location", "Location")}
-            value={dependent.Location.id}
-            getLabel={(item) => item?.Name || ""}
-            getId={(item) => item?._id || ""}
-            onChange={(selectedId) => {
-              const selectedObj = fieldOptions.Location.find((i) => i._id === selectedId);
-              if (selectedObj) {
-                const updatedFilters = { ...filters, Location: [selectedObj.Name] };
-                setFilters(updatedFilters);
-                setDependent(prev => ({ ...prev, Location: { id: selectedObj._id, name: selectedObj.Name } }));
-                handleSelectChange("Location", selectedObj.Name, updatedFilters);
-              }
-            }}
-            isSearchable
-          />
-          <ObjectSelect
-            options={Array.isArray(fieldOptions?.SubLocation) ? fieldOptions.SubLocation : []}
-            label={getLabel("SubLocation", "Sub Location")}
-            value={dependent.SubLocation.id}
-            getLabel={(item) => item?.Name || ""}
-            getId={(item) => item?._id || ""}
-            onChange={(selectedId) => {
-              const selectedObj = fieldOptions.SubLocation.find((i) => i._id === selectedId);
-              if (selectedObj) {
-                const updatedFilters = { ...filters, SubLocation: [selectedObj.Name] };
-                setFilters(updatedFilters);
-                setDependent(prev => ({ ...prev, SubLocation: { id: selectedObj._id, name: selectedObj.Name } }));
-                handleSelectChange("SubLocation", selectedObj.Name, updatedFilters);
-              }
-            }}
-            isSearchable
-          />
-          <SingleSelect options={Array.isArray(fieldOptions?.ReferenceId) ? fieldOptions.ReferenceId : []} value={filters.ReferenceId[0]} label={getLabel("ReferenceId", "Reference Id")} onChange={(v) => handleSelectChange("ReferenceId", v)} isSearchable />
-          <SingleSelect options={Array.isArray(fieldOptions?.Price) ? fieldOptions.Price : []} value={filters.Price[0]} label={getLabel("Price", "Price")} onChange={(v) => handleSelectChange("Price", v)} isSearchable />
-          <SingleSelect options={Array.isArray(fieldOptions?.User) ? fieldOptions.User : []} value={filters.User[0]} label="User" onChange={(v) => handleSelectChange("User", v)} isSearchable />
-          <SingleSelect options={["10", "25", "50", "100"]} value={filters.Limit[0]} label="Limit" onChange={(v) => handleSelectChange("Limit", v)} />
-          <DateSelector label="From" value={filters.StartDate[0]} onChange={(v) => handleSelectChange("StartDate", v)} />
-          <DateSelector label="To" value={filters.EndDate[0]} onChange={(v) => handleSelectChange("EndDate", v)} />
-
-          {/* Favourite toggle */}
-          <div className="flex items-end">
-            <input
-              id="favouriteFilter"
-              type="checkbox"
-              className="hidden"
-              checked={filters.isFavourite}
-              onChange={(e) => handleSelectChange("isFavourite", e.target.checked)}
-            />
-            <label
-              htmlFor="favouriteFilter"
-              className={[
-                "inline-flex items-center gap-2 h-10 px-4 rounded-lg w-full justify-center",
-                "text-[13px] font-semibold cursor-pointer border transition-all duration-200",
-                filters.isFavourite
-                  ? "bg-pink-500 text-white border-pink-500 shadow-[0_3px_12px_-4px_rgba(236,72,153,0.5)]"
-                  : "bg-gray-50 max-sm:dark:bg-white/[0.04] text-gray-500 max-sm:dark:text-white/40 border-gray-200 max-sm:dark:border-white/[0.08] hover:border-pink-300 hover:text-pink-500",
-              ].join(" ")}
+          <div className="mb-4 mx-4 flex justify-between items-center">
+            <button
+              onClick={handleOpenTodayCustomers}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/8 dark:bg-[var(--color-primary)]/12 text-[var(--color-primary)] text-[13px] font-semibold transition-all duration-150 hover:bg-[var(--color-primary)]/15 hover:border-[var(--color-primary)]/40 active:scale-[0.97] cursor-pointer"
             >
-              {filters.isFavourite ? <MdFavorite size={15} /> : <MdFavoriteBorder size={15} />}
-              Favourite
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {/* ── SECTION: AI GENIE ── */}
-      <div className="p-4">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (keywordInput.trim() === "") return;
-            setAiLoading(true);
-            setCurrentStep(STEPS.SEARCH);
-            aiGenieSearch();
-          }}
-        >
-          {/* AI Genie header */}
-          <div className="flex items-center gap-2.5 mb-3">
-            <div
-              className="flex items-center justify-center size-7 rounded-lg shrink-0"
-              style={{
-                background: "linear-gradient(135deg, var(--color-primary), var(--color-secondary, var(--color-primary)))",
-                boxShadow: "0 2px 10px -2px color-mix(in srgb, var(--color-primary) 45%, transparent)",
-              }}
-            >
-              {aiLoading ? (
-                <BounceLoader loading size={14} color="white" aria-label="Loading Spinner" data-testid="loader" />
-              ) : (
-                <img className="w-4 h-4 object-contain" src="/aiBot.png" alt="AI" />
-              )}
-            </div>
-
-            <div className="flex flex-col gap-0">
-              <span className="text-[12px] font-bold text-gray-700 max-sm:dark:text-white/70 tracking-[0.01em]">
-                AI Genie
-              </span>
-              {currentStep && (
-                <span className="flex items-center gap-1 text-[11px] text-gray-400 max-sm:dark:text-white/25">
-                  <span className="transition-opacity duration-300">{currentStep}</span>
-                  {aiLoading && <BeatLoader size={2} color="gray" />}
+              <HiCalendar size={14} className="opacity-80" />
+              Today
+              {todaycustomerData?.length > 0 && (
+                <span className="min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-[var(--color-primary)] text-white text-[10px] font-bold leading-none">
+                  {todaycustomerData.length}
                 </span>
               )}
-            </div>
+            </button>
+            <AIAgentDropdown
+              agents={agents}
+              setSelectedAgent={setSelectedAgent}
+              setIsAIAgentDialogOpen={setIsAIAgentDialogOpen}
+            />
           </div>
 
-          <div className="flex items-start gap-3 max-lg:flex-col">
+          <BottomPopup onClose={() => setIsAIAgentDialogOpen(false)} isOpen={isAIAgentsDialogOpen}>
+            {({ isMaximized, toggleMaximize }) => (
+              <div className={` flex flex-row relative overflow-hidden ${isMaximized ? "" : "rounded-t-2xl"}  h-[100%] w-full `} style={{ background: "#ffffff" }}>
 
-            {/* Input + search-in pills */}
-            <div className="flex-1 w-full">
+                {/* LEFT DARK SIDEBAR */}
+                {
+                  !isMaximized && <AIAgentSidebar
+                    selectedAgent={selectedAgent}
+                    AGENTS_TYPE_ICON={AGENTS_TYPE_ICON}
+                    onClose={() => setIsAIAgentDialogOpen(false)}
+                  />
+                }
 
-              {/* Input row */}
-              <div
-                className={[
-                  "flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-all duration-200",
-                  "bg-gray-50 max-sm:dark:bg-white/[0.04]",
-                  "border-gray-200 dark:border-white/[0.08]",
-                  "focus-within:border-[var(--color-primary)]/50 focus-within:bg-white max-sm:dark:focus-within:bg-white/[0.06]",
-                  "focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-primary)_12%,transparent)]",
-                ].join(" ")}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 shrink-0">
-                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                </svg>
-                <input
-                  type="text"
-                  placeholder="What do you want to search?"
-                  className="flex-1 bg-transparent outline-none text-[13px] text-gray-700  ax-sm:dark:text-white/75 placeholder:text-gray-400 max-sm:dark:placeholder:text-white/25"
-                  value={keywordInput}
-                  onChange={(e) => setKeywordInput(e.target.value)}
-                />
-                <button
-                  type="button"
-                  onClick={() => setToggleAiGenieSearchBy(!toggleAiGenieSearchBy)}
-                  className={[
-                    "flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg transition-all duration-150 shrink-0",
-                    toggleAiGenieSearchBy
-                      ? "text-[var(--color-primary)] bg-[var(--color-primary)]/10"
-                      : "text-gray-400 max-sm:dark:text-white/25 hover:text-gray-600 hover:bg-gray-100 max-sm:dark:hover:bg-white/[0.06]",
-                  ].join(" ")}
-                >
-                  Search in {toggleAiGenieSearchBy ? <FaCaretUp size={10} /> : <FaCaretDown size={10} />}
-                </button>
-              </div>
 
-              {/* SearchIn panel */}
-              <div
-                className={[
-                  "overflow-hidden transition-all duration-300",
-                  toggleAiGenieSearchBy ? "max-h-[200px] mt-2.5" : "max-h-0",
-                ].join(" ")}
-              >
-                <div
-                  className="rounded-xl border border-gray-100 max-sm:dark:border-white/[0.06] bg-gray-50 max-sm:dark:bg-white/[0.02] p-3 flex flex-col gap-3"
-                >
-                  {/* Available */}
-                  <div className="flex flex-wrap gap-1.5">
-                    {SEARCH_FIELDS.filter(f => !filters.SearchIn.includes(f)).map((field) => (
-                      <button
-                        key={field}
-                        type="button"
-                        onClick={() => setFilters(prev => ({ ...prev, SearchIn: [...prev.SearchIn, field] }))}
-                        className="inline-flex items-center h-6 px-2.5 rounded-full text-[11px] font-medium transition-all duration-150
-                          text-gray-500 max-sm:dark:text-white/40 border border-gray-200 max-sm:dark:border-white/[0.08]
-                          bg-white max-sm:dark:bg-white/[0.03] hover:border-[var(--color-primary)]/40
-                          hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/[0.05]"
-                      >
-                        {field.toLowerCase()}
-                      </button>
-                    ))}
-                  </div>
+                {/* RIGHT WORKSPACE */}
+                <div className="flex-1 flex flex-col pb-5 w-full overflow-hidden bg-white">
 
-                  {/* Selected */}
-                  {filters.SearchIn.length > 0 && (
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-gray-400 dark:text-white/25">
-                        Selected
+                  {/* ── Top strip ── */}
+                  <div
+                    className="flex items-center justify-between relative px-5 flex-shrink-0 border-b"
+                    style={{ height: "44px", background: "#f8fafc", borderColor: "#e2e8f0" }}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-[9px] font-semibold uppercase tracking-widest" style={{ color: "#94a3b8" }}>
+                        Workspace
                       </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {filters.SearchIn.map((field) => (
-                          <span
-                            key={field}
-                            className="group/pill inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[11px] font-semibold transition-all duration-150"
-                            style={{
-                              color: "var(--color-primary)",
-                              background: "color-mix(in srgb, var(--color-primary) 10%, transparent)",
-                            }}
-                          >
-                            {field.toLowerCase()}
-                            <button
-                              type="button"
-                              onClick={() => setFilters(prev => ({ ...prev, SearchIn: prev.SearchIn.filter(f => f !== field) }))}
-                              className="flex items-center justify-center size-3.5 rounded-full opacity-50 group-hover/pill:opacity-100 hover:bg-[var(--color-primary)]/20 transition-all"
-                            >
-                              <IoMdClose size={9} />
-                            </button>
-                          </span>
-                        ))}
+                      <div className="w-px h-3.5" style={{ background: "#e2e8f0" }} />
+                      {/* Live badge */}
+                      <div
+                        className="flex items-center gap-1.5 px-2 py-0.5 rounded-full"
+                        style={{
+                          background: aiLoading ? "rgba(56,189,248,0.1)" : "rgba(16,185,129,0.08)",
+                          border: `1px solid ${aiLoading ? "rgba(56,189,248,0.25)" : "rgba(16,185,129,0.2)"}`,
+                        }}
+                      >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{
+                            background: aiLoading ? "#38bdf8" : "#10b981",
+                            animation: aiLoading ? "pulse 1s infinite" : "none",
+                          }}
+                        />
+                        <span
+                          className="text-[9px] font-mono font-medium flex items-center gap-1"
+                          style={{ color: aiLoading ? "#0ea5e9" : "#10b981" }}
+                        >
+                          {currentStep || "Ready"}
+                          {aiLoading && <BeatLoader size={2} color="#0ea5e9" />}
+                        </span>
                       </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
 
-            {/* CTA buttons */}
-            <div
-              className={[
-                "flex items-center gap-2 shrink-0 transition-all duration-300",
-                toggleAiGenieSearchBy ? "lg:-mt-0 self-start mt-0" : "self-end",
-              ].join(" ")}
-            >
-              {!aiLoading ? (
-                <button
-                  type="submit"
-                  className="inline-flex items-center gap-2 h-10 px-5 rounded-xl text-[13px] font-semibold transition-all duration-200 cursor-pointer text-white"
-                  style={{
-                    background: "linear-gradient(135deg, var(--color-primary), var(--color-secondary, var(--color-primary)))",
-                    boxShadow: "0 3px 14px -4px color-mix(in srgb, var(--color-primary) 55%, transparent)",
-                  }}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                  </svg>
-                  Explore
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 h-10 px-5 rounded-xl text-[13px] font-semibold text-white cursor-not-allowed"
-                  style={{ background: "var(--color-primary)", opacity: 0.85 }}
-                >
-                  <HashLoader loading size={12} color="white" aria-label="Loading Spinner" data-testid="loader" />
-                  Exploring…
-                </button>
-              )}
+                    {/* Action buttons: maximize + close */}
+                    <div className="flex items-center gap-1 absolute top-2 right-2 z-50">
 
-              <button
-                type="reset"
-                onClick={clearFilter}
-                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl text-[13px] font-semibold transition-all duration-150 cursor-pointer
-                  text-red-500 bg-red-50 dark:bg-red-500/10 hover:bg-red-500 hover:text-white border border-red-100 dark:border-red-500/20"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                </svg>
-                Clear
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
+                      {/* Maximize / Minimize button */}
+                      <button
+                        onClick={toggleMaximize}
+                        title={isMaximized ? "Minimize" : "Maximize"}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-transparent text-[#94a3b8] hover:bg-[#e0f2fe] hover:text-[#0284c7] transition-all cursor-pointer"
+                      >
+                        {isMaximized ? (
+                          /* Minimize icon — two inward arrows */
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="4 14 10 14 10 20" />
+                            <polyline points="20 10 14 10 14 4" />
+                            <line x1="10" y1="14" x2="3" y2="21" />
+                            <line x1="21" y1="3" x2="14" y2="10" />
+                          </svg>
+                        ) : (
+                          /* Maximize icon — two outward arrows */
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="15 3 21 3 21 9" />
+                            <polyline points="9 21 3 21 3 15" />
+                            <line x1="21" y1="3" x2="14" y2="10" />
+                            <line x1="3" y1="21" x2="10" y2="14" />
+                          </svg>
+                        )}
+                      </button>
 
-    </div>
-  </div>
-</div>
-{/* ═══════════════════════════════════════════════════════
-    DROP-IN REPLACEMENT — paste this in place of your existing
-    table JSX block (from the outer <div className="relative">
-    all the way through the pagination </div>)
-    All logic, refs, state, handlers are untouched.
-═══════════════════════════════════════════════════════ */}
+                      {/* Close button */}
+                      <button
+                        onClick={() => setIsAIAgentDialogOpen(false)}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-transparent text-[#94a3b8] hover:bg-[#fee2e2] hover:text-[#ef4444] transition-all cursor-pointer"
+                      >
+                        <IoMdClose size={18} />
+                      </button>
+                    </div>
+                  </div>
 
-<div className="relative flex flex-col gap-0" ref={scrollRef}>
+                  {/* ── MATCHING AGENT ── */}
+                  {selectedAgent && selectedAgent.type === "Matching" ? (
+                    <div className="flex flex-col overflow-hidden flex-1">
 
-  {/* ── TOOLBAR ── */}
-  <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-2.5 bg-white max-sm:dark:bg-gray-950 border-b border-gray-100 max-sm:dark:border-white/[0.06] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      {/* Chat messages — your existing AIChatMessages component, restyled */}
+                      <AIChatMessages
+                        agentName={selectedAgent.name}
+                        messages={messages}
+                        aiLoading={aiLoading}
+                        currentStep={currentStep}
+                        hints={[
+                          "High-value leads in Mumbai",
+                          "Active last 30 days",
+                          "Enterprise, no contact",
+                        ]}
+                        onHintClick={(hint) => setKeywordInput(hint)}
+                        maxHeight="100%"
+                      />
 
-    {/* Left: action pills */}
-    <div className="flex items-center gap-1.5 min-w-max">
-
-      {/* Select All — uses a label so the hidden checkbox still works */}
-      <label
-        htmlFor="selectall"
-        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-semibold cursor-pointer select-none transition-all duration-150
-          text-[var(--color-primary)] bg-[var(--color-primary)]/8 hover:bg-[var(--color-primary)] hover:text-white
-          max-sm:dark:bg-[var(--color-primary)]/15 max-sm:dark:hover:bg-[var(--color-primary)]"
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="3"/><polyline points="9 11 12 14 22 4"/>
-        </svg>
-        Select All
-      </label>
-      <input id="selectall" type="checkbox" className="hidden"
-        checked={currentRows.length > 0 && currentRows.every((r) => selectedCustomers.includes(r._id))}
-        onChange={handleSelectAll}
-      />
-
-      {[
-        {
-          label: "Assign To",
-          icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-          onClick: () => { if (selectedCustomers.length <= 0) toast.error("please select atleast 1 customer"); else { setIsAssignOpen(true); fetchUsers(); } }
-        },
-        {
-          label: "Email All",
-          icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>,
-          onClick: () => { if (selectedCustomers.length <= 0) toast.error("please select atleast 1 customer"); else { setIsMailAllOpen(true); fetchEmailTemplates(); } }
-        },
-        {
-          label: "SMS All",
-          icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-          onClick: () => { if (selectedCustomers.length <= 0) toast.error("please select atleast 1 customer"); else { setIsWhatsappAllOpen(true); fetchWhatsappTemplates(); } }
-        },
-      ].map(({ label, icon, onClick }) => (
-        <button
-          key={label}
-          type="button"
-          onClick={onClick}
-          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-semibold transition-all duration-150
-            text-gray-600 max-sm:dark:text-white/55 bg-gray-100 max-sm:dark:bg-white/[0.06]
-            hover:bg-[var(--color-primary)] hover:text-white max-sm:dark:hover:bg-[var(--color-primary)] max-sm:dark:hover:text-white"
-        >
-          {icon}
-          {label}
-        </button>
-      ))}
-
-      {admin?.role !== "user" && (
-        <button
-          type="button"
-          onClick={() => {
-            if (customerData.length > 0) {
-              if (selectedCustomers.length < 1) {
-                const firstPageIds = currentRows.map((c) => c._id);
-                setSelectedCustomers(firstPageIds);
-              }
-              setIsDeleteAllDialogOpen(true);
-              setDeleteAllDialogData({});
-            }
-          }}
-          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-semibold transition-all duration-150
-            text-red-500 bg-red-50 max-sm:dark:bg-red-500/10 hover:bg-red-500 hover:text-white"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-          </svg>
-          Delete All
-        </button>
-      )}
-    </div>
-
-    {/* Right: meta info */}
-    <div className="flex items-center gap-3 shrink-0">
-      {isFilteredTrigger && (
-        <span className="text-[11px] font-medium text-gray-400 max-sm:dark:text-white/30 bg-gray-50 max-sm:dark:bg-white/[0.04] px-2.5 py-1 rounded-full border border-gray-200 max-sm:dark:border-white/[0.06]">
-          {totalCustomers} found
-        </span>
-      )}
-      {selectedCustomers.length > 0 && (
-        <span className="text-[11px] font-semibold text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2.5 py-1 rounded-full">
-          {selectedCustomers.length} selected
-        </span>
-      )}
-    </div>
-  </div>
-
-  {/* ── TABLE SETTINGS ── */}
-  <Tablesetting columns={columns} setColumns={setColumns} />
-
-  {/* ── TABLE ── */}
-  <div className="max-h-[600px] px-3 w-full overflow-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.200)_transparent] max-sm:dark:[scrollbar-color:rgba(255,255,255,0.1)_transparent]">
-    <table className="table-auto relative w-full text-sm border-separate border-spacing-0">
-
-      {/* Head */}
-      <thead className="sticky top-0 z-[5]">
-        <tr>
-          {/* Checkbox col */}
-          <th className="sticky left-0 z-20 bg-[var(--color-primary-light)] px-3 py-0 w-10">
-            <input
-              id="selectall"
-              type="checkbox"
-              className="hidden"
-              checked={currentRows.length > 0 && currentRows.every((r) => selectedCustomers.includes(r._id))}
-              onChange={handleSelectAll}
-            />
-          </th>
-
-          {columns.filter(col => col.visible).map((header) => (
-            <th
-              key={header.key}
-              className={[
-                "px-3 py-3.5 text-left text-[11px] font-bold uppercase tracking-[0.08em]",
-                "bg-[var(--color-primary-light)] text-[var(--color-primary)]",
-                "border-b border-[var(--color-primary)]",
-                "whitespace-nowrap",
-                header.key === "sno" ? "sticky left-10 z-20 bg-[var(--color-primary)]" : "",
-              ].join(" ")}
-            >
-              {header.label}
-            </th>
-          ))}
-        </tr>
-      </thead>
-
-      {/* Body */}
-      <tbody className="divide-y divide-gray-100 max-sm:dark:divide-white/[0.05]">
-        {customerTableLoader ? (
-          /* Loading rows */
-          Array.from({ length: 6 }).map((_, i) => (
-            <tr key={i} className="animate-pulse">
-              <td className="sticky left-0 bg-white max-sm:dark:bg-gray-950 px-3 py-3.5 w-10">
-                <div className="size-4 rounded bg-gray-100 max-sm:dark:bg-white/[0.07]" />
-              </td>
-              {columns.filter(c => c.visible).map((col) => (
-                <td key={col.key} className="px-3 py-3.5">
-                  <div className="h-3.5 rounded-full bg-gray-100 max-sm:dark:bg-white/[0.07]" style={{ width: `${50 + (i * col.key.length * 3) % 40}%` }} />
-                </td>
-              ))}
-            </tr>
-          ))
-        ) : currentRows.length > 0 ? (
-          currentRows.map((item, index) => (
-            <tr
-              key={item._id}
-              className="group/row bg-white max-sm:dark:bg-gray-950 hover:bg-[var(--color-primary-lighter)] max-sm:dark:hover:bg-gray-800 transition-colors duration-100"
-            >
-              {/* Row checkbox */}
-              <td className="sticky left-0 z-[2] px-3 py-3 bg-white max-sm:dark:bg-gray-950 group-hover/row:bg-[var(--color-primary-lighter)] max-sm:dark:group-hover/row:bg-black/[0.03] transition-colors duration-100 w-10">
-                <input
-                  type="checkbox"
-                  checked={selectedCustomers.includes(item._id)}
-                  onChange={() => handleSelectRow(item._id)}
-                  className="size-4 rounded border-gray-300 max-sm:dark:border-white/20 accent-[var(--color-primary)] cursor-pointer"
-                />
-              </td>
-
-              {columns.filter(col => col.visible).map((col) => {
-                let cellValue;
-                if (col.key.startsWith("cf_")) {
-                  const originalKey = col.key.replace("cf_", "");
-                  cellValue = item.CustomerFields?.[originalKey] ?? "-";
-                } else {
-                  switch (col.key) {
-                    case "sno":
-                      cellValue = (currentTablePage - 1) * rowsPerTablePage + (index + 1);
-                      break;
-                    case "campaign": cellValue = item.Campaign; break;
-                    case "type": cellValue = item.Type; break;
-                    case "subtype": cellValue = item.SubType; break;
-                    case "City": cellValue = item.City; break;
-                    case "Area": cellValue = item.Area; break;
-                    case "Email": cellValue = item.Email; break;
-                    case "Facillities": cellValue = item.Facillities; break;
-                    case "CustomerId": cellValue = item.CustomerId; break;
-                    case "Adderess":
-                      cellValue = (
-                        <span
-                          className="text-[var(--color-primary)] cursor-pointer underline underline-offset-2 decoration-dashed hover:decoration-solid"
-                          onClick={() => { setSelectedAddress(item.Adderess); setIsMapOpen(true); }}
+                      {/* ── INPUT AREA ── */}
+                      <div
+                        className="flex-shrink-0 border-t px-4  pt-3"
+                        style={{ borderColor: "#e2e8f0", background: "#ffffff" }}
+                      >
+                        {/* Collapsible fields panel */}
+                        <div
+                          className="overflow-hidden transition-all duration-300"
+                          style={{
+                            maxHeight: toggleAiGenieSearchBy ? "160px" : "0",
+                            opacity: toggleAiGenieSearchBy ? 1 : 0,
+                            marginBottom: toggleAiGenieSearchBy ? "10px" : "0",
+                          }}
                         >
-                          {item.Adderess}
-                        </span>
-                      );
-                      break;
-                    case "CustomerYear": cellValue = item.CustomerYear; break;
-                    case "Other": cellValue = item.Other; break;
-                    case "name": cellValue = item.Name; break;
-                    case "description": cellValue = item.Description; break;
-                    case "location": cellValue = item.Location; break;
-                    case "sublocation": cellValue = item.SubLocation; break;
-                    case "contact":
-                      cellValue = item.ContactNumber ? (
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-[13px] font-medium text-gray-800 max-sm:dark:text-white/80 tabular-nums">
-                            {item.ContactNumber}
-                          </span>
-                          <div className="flex items-center gap-1">
-                            {[
-                              {
-                                href: `tel:${item.ContactNumber}`,
-                                as: "a",
-                                icon: <FaPhone size={10} />,
-                                color: "text-emerald-600 bg-emerald-50 hover:bg-emerald-600 max-sm:dark:bg-emerald-500/10 max-sm:dark:hover:bg-emerald-500",
-                              },
-                              {
-                                onClick: () => { setSelectedCustomers([item._id]); setSelectUser(item._id); setIsMailAllOpen(true); fetchEmailTemplates(); },
-                                icon: <MdEmail size={11} />,
-                                color: "text-sky-600 bg-sky-50 hover:bg-sky-600 max-sm:dark:bg-sky-500/10 max-sm:dark:hover:bg-sky-500",
-                              },
-                              {
-                                onClick: () => { setSelectedCustomers([item._id]); setSelectUser(item._id); setIsWhatsappAllOpen(true); fetchWhatsappTemplates(); },
-                                icon: <FaWhatsapp size={10} />,
-                                color: "text-green-600 bg-green-50 hover:bg-green-600 max-sm:dark:bg-green-500/10 max-sm:dark:hover:bg-green-500",
-                              },
-                            ].map((btn, bi) =>
-                              btn.href ? (
-                                <a
-                                  key={bi}
-                                  href={btn.href}
-                                  className={`inline-flex items-center justify-center size-6 rounded-md transition-all duration-150 hover:text-white ${btn.color}`}
-                                >
-                                  {btn.icon}
-                                </a>
-                              ) : (
+                          <div
+                            className="rounded-[14px] p-3 border"
+                            style={{ background: "#f8fafc", borderColor: "#e2e8f0" }}
+                          >
+                            <p className="text-[9px] font-semibold uppercase tracking-widest mb-2" style={{ color: "#94a3b8" }}>
+                              Search in fields
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {SEARCH_FIELDS.filter(f => !filters.SearchIn.includes(f)).map((field) => (
                                 <button
-                                  key={bi}
+                                  key={field}
                                   type="button"
-                                  onClick={btn.onClick}
-                                  className={`inline-flex items-center justify-center size-6 rounded-md transition-all duration-150 hover:text-white ${btn.color}`}
+                                  onClick={() => setFilters(prev => ({ ...prev, SearchIn: [...prev.SearchIn, field] }))}
+                                  className="text-[10.5px] font-medium px-2 py-1 rounded-lg border transition-all"
+                                  style={{ borderColor: "#e2e8f0", background: "#ffffff", color: "#64748b" }}
                                 >
-                                  {btn.icon}
+                                  {field.toLowerCase()}
                                 </button>
-                              )
-                            )}
-                            {duplicateContacts[item.ContactNumber] && (
-                              <button
-                                type="button"
-                                onClick={() => { setIsTableDialogOpen(true); handleTableDialogData(item.ContactNumber); }}
-                                className="inline-flex items-center justify-center size-6 rounded-md text-amber-600 bg-amber-50 max-sm:dark:bg-amber-500/10 hover:bg-amber-500 hover:text-white transition-all duration-150"
-                              >
-                                <FaEye size={10} />
-                              </button>
+                              ))}
+                            </div>
+                            {filters.SearchIn.length > 0 && (
+                              <div className="mt-2 pt-2 border-t" style={{ borderColor: "#e2e8f0" }}>
+                                <p className="text-[9px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "#94a3b8" }}>
+                                  Active
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {filters.SearchIn.map((field) => (
+                                    <div
+                                      key={field}
+                                      className="flex items-center gap-1 text-[10.5px] font-medium px-2 py-1 rounded-lg"
+                                      style={{ background: "#e0f2fe", color: "#0284c7", border: "1px solid #bae6fd" }}
+                                    >
+                                      {field.toLowerCase()}
+                                      <button
+                                        type="button"
+                                        onClick={() => setFilters(prev => ({ ...prev, SearchIn: prev.SearchIn.filter(f => f !== field) }))}
+                                        className="leading-none ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
                             )}
                           </div>
                         </div>
-                      ) : null;
-                      break;
-                    case "assign": cellValue = item.AssignTo; break;
-                    case "reference": cellValue = item.ReferenceId; break;
-                    case "date": cellValue = item.Date; break;
-                    case "url": cellValue = item.URL; break;
-                    case "video": cellValue = item.Video; break;
-                    case "googlemap": cellValue = item.GoogleMap; break;
-                    case "price": cellValue = item.Price; break;
-                    case "actions":
-                      cellValue = (
-                        <div className="flex items-center gap-1 flex-wrap">
-                          {[
-                            {
-                              icon: <MdAdd size={14} />,
-                              color: "text-[var(--color-primary)] bg-[var(--color-primary)]/8 hover:bg-[var(--color-primary)] max-sm:dark:bg-[var(--color-primary)]/15",
-                              onClick: () => { setSelectedCustomerFollowupId(item._id); setIsFollowupOpen(true); },
-                              title: "Add Follow Up",
-                            },
-                            {
-                              icon: <MdEdit size={13} />,
-                              color: "text-sky-600 bg-sky-50 hover:bg-sky-500 max-sm:dark:bg-sky-500/10",
-                              onClick: () => handleEditClick(item._id),
-                              title: "Edit",
-                            },
-                            {
-                              icon: <MdDelete size={13} />,
-                              color: "text-red-500 bg-red-50 hover:bg-red-500 max-sm:dark:bg-red-500/10",
-                              onClick: () => { setIsDeleteDialogOpen(true); setDialogType("delete"); setDialogData({ id: item._id, customerName: item.Name, ContactNumber: item.ContactNumber }); },
-                              title: "Delete",
-                            },
-                            {
-                              icon: item.isFavourite ? <MdFavorite size={13} /> : <MdFavoriteBorder size={13} />,
-                              color: item.isFavourite
-                                ? "text-pink-500 bg-pink-50 hover:bg-pink-500 max-sm:dark:bg-pink-500/10"
-                                : "text-gray-400 bg-gray-100 hover:bg-pink-500 hover:text-white max-sm:dark:bg-white/[0.06]",
-                              onClick: () => handleFavouriteToggle(item._id, item.Name, item.ContactNumber, item.isFavourite ?? false),
-                              title: "Favourite",
-                            },
-                            {
-                              icon: item.isChecked ? <IoCheckmarkDoneOutline size={13} /> : <IoCheckmark size={13} />,
-                              color: item.isChecked
-                                ? "text-emerald-600 bg-emerald-50 hover:bg-emerald-500 max-sm:dark:bg-emerald-500/10"
-                                : "text-gray-400 bg-gray-100 hover:bg-emerald-500 hover:text-white max-sm:dark:bg-white/[0.06]",
-                              onClick: () => handleChecked({ id: item._id, isChecked: item.isChecked }),
-                              title: "Check",
-                            },
-                            {
-                              icon: <UserPlus size={13} />,
-                              color: "text-violet-600 bg-violet-50 hover:bg-violet-500 max-sm:dark:bg-violet-500/10",
-                              onClick: () => { setIsFollowupDialogOpen(true); handleFollowups(item._id, item.Name); },
-                              title: "Follow Ups",
-                            },
-                          ].map((btn, bi) => (
-                            <button
-                              key={bi}
-                              type="button"
-                              title={btn.title}
-                              onClick={btn.onClick}
-                              className={`inline-flex items-center justify-center size-7 rounded-lg transition-all duration-150 hover:text-white ${btn.color}`}
-                            >
-                              {btn.icon}
-                            </button>
-                          ))}
+
+                        {/* Textarea + send */}
+                        <div
+                          className={`flex items-end gap-2 rounded-2xl px-3.5 pt-2.5 pb-2 transition-all duration-200 border-[1.5px] ${aiLoading
+                            ? "border-sky-200"
+                            : "border-slate-200 focus-within:border-sky-300 focus-within:shadow-[0_0_0_3px_rgba(125,211,252,0.12)]"
+                            }`}
+                          style={{ background: "#ffffff" }}
+                        >
+                          <div className="flex-1">
+                            <textarea
+                              rows={2}
+                              placeholder="Describe the leads you're looking for…"
+                              className="w-full resize-none bg-transparent outline-none leading-relaxed disabled:opacity-40"
+                              style={{ fontSize: "12.5px", color: "#0f172a" }}
+                              value={keywordInput}
+                              disabled={aiLoading}
+                              onChange={(e) => setKeywordInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault();
+                                  if (keywordInput.trim() && !aiLoading) {
+                                    setAiLoading(true);
+                                    setCurrentStep(STEPS.SEARCH);
+                                    handleSend();
+                                  }
+                                }
+                              }}
+                            />
+                            <div className="flex items-center justify-between mt-1 pt-1.5 border-t" style={{ borderColor: "#f1f5f9" }}>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  disabled={aiLoading}
+                                  onClick={() => setToggleAiGenieSearchBy(!toggleAiGenieSearchBy)}
+                                  className="flex items-center gap-1 text-[10px] font-medium transition-colors disabled:opacity-40"
+                                  style={{ color: "#94a3b8" }}
+                                >
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18M7 8h10M11 12h4" />
+                                  </svg>
+                                  Fields {toggleAiGenieSearchBy ? "▴" : "▾"}
+                                  {filters.SearchIn.length > 0 && (
+                                    <span
+                                      className="ml-1 rounded-full px-1.5 text-[8.5px] font-bold"
+                                      style={{ background: "#e0f2fe", color: "#0284c7" }}
+                                    >
+                                      {filters.SearchIn.length}
+                                    </span>
+                                  )}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={clearFilter}
+                                  disabled={aiLoading}
+                                  className="text-[10px] transition-colors disabled:opacity-40 hover:text-rose-500"
+                                  style={{ color: "#94a3b8" }}
+                                >
+                                  Clear
+                                </button>
+                              </div>
+                              <span className="text-[9.5px] font-mono" style={{ color: "#cbd5e1" }}>↵ to send</span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={aiLoading || !keywordInput.trim()}
+                            onClick={() => {
+                              if (keywordInput.trim() && !aiLoading) {
+                                setAiLoading(true);
+                                setCurrentStep(STEPS.SEARCH);
+                                handleSend();
+                              }
+                            }}
+                            className="w-9 h-9 mb-1 rounded-[11px] flex items-center justify-center text-white transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0 active:scale-95 hover:brightness-110"
+                            style={{ background: "#0284c7", boxShadow: "0 2px 8px rgba(2,132,199,0.3)" }}
+                          >
+                            {aiLoading
+                              ? <BounceLoader loading color="#fff" size={10} />
+                              : <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24">
+                                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                              </svg>
+                            }
+                          </button>
                         </div>
-                      );
-                      break;
-                    default: cellValue = null;
-                  }
-                }
+                      </div>
+                    </div>
 
-                return (
-                  <td
-                    key={col.key}
-                    className={[
-                      "px-3 py-3 text-[13px] text-gray-700 max-sm:dark:text-white/65",
-                      "border-b border-gray-100 max-sm:dark:border-white/[0.05]",
-                      "break-all whitespace-normal align-middle",
-                      col.key !== "sno" ? "min-w-[100px]" : "",
-                      col.key === "description" && item.Description ? "min-w-[160px]" : "",
-                      col.key === "sno" ? "sticky left-10 z-[2] bg-white max-sm:dark:bg-gray-950 group-hover/row:bg-[var(--color-primary)]/[0.03] max-sm:dark:group-hover/row:bg-white/[0.03] transition-colors duration-100 max-w-[60px] font-medium text-gray-400 max-sm:dark:text-white/30 text-xs tabular-nums" : "",
-                      col.key === "type" ? "max-w-[80px]" : "",
-                      col.key === "subtype" ? "max-w-[90px]" : "",
-                      col.key === "contact" ? "max-w-[160px]" : "",
-                      col.key === "reference" ? "max-w-[70px]" : "",
-                      col.key === "date" ? "min-w-[100px]" : "",
-                      col.key === "actions" ? "min-w-[160px]" : "",
-                    ].join(" ")}
-                  >
-                    {cellValue}
-                  </td>
-                );
-              })}
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td colSpan={columns.filter(c => c.visible).length + 1} className="py-16 text-center">
-              <div className="flex flex-col items-center gap-2">
-                <div className="size-10 rounded-xl bg-gray-100 max-sm:dark:bg-white/[0.06] flex items-center justify-center">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 max-sm:dark:text-white/25">
-                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6M8 11h6"/>
-                  </svg>
+                    /* ── FOLLOWUP AGENT ── */
+                  ) : selectedAgent && selectedAgent.type === "Followup" ? (
+                    <div className="flex-1 overflow-y-auto px-6 py-4">
+                      <FollowupAgentWorkspace data={selectedAgent} />
+                    </div>
+
+                    /* ── Qualification STATE ── */
+                  ) : selectedAgent && selectedAgent.type === "Qualification" ? (
+                    <div className="flex-1 overflow-hidden px-6 py-4">
+                      <QualificationAgentWorkspace isOpen={isAIAgentsDialogOpen} />
+                    </div>
+
+                    /* ── RECOMMEND CUSTOMER STATE ── */
+                  ) : selectedAgent && selectedAgent.type === "Recommendation" ? (
+                    <div className="flex-1 overflow-hidden px-6 py-4">
+                      <RecommendAgentWorkspace isOpen={isAIAgentsDialogOpen} />
+                    </div>
+
+                    /* ── CALLING STATE ── */
+                  ) : selectedAgent && selectedAgent.type === "Calling" ? (
+                    <div className="flex-1 overflow-y-auto px-6">
+                      <CallingAgentWorkspace isOpen={isAIAgentsDialogOpen} />
+                    </div>
+                  ) : selectedAgent && selectedAgent.type === "Followup" ? (
+                    <div className="flex-1 overflow-y-auto px-6 py-4">
+                      <FollowupAgentWorkspace data={selectedAgent} />
+                    </div>
+
+                    /* ── Data Mining STATE ── */
+                  ) : selectedAgent && selectedAgent.type === "Mining" ? (
+                    <div className="flex-1 overflow-hidden ">
+                      <SocialMiningAgentWorkspace isOpen={isAIAgentsDialogOpen} />
+                    </div>
+
+                    /* ── Error STATE ── */
+                  ) : selectedAgent && selectedAgent.type === "Analytics" ? (
+                    <div className="flex-1 overflow-hidden px-6 py-4">
+                      <AnalyticsAgentWorkspace isOpen={isAIAgentsDialogOpen} />
+                    </div>
+
+                    /* ── Error STATE ── */
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center py-16 text-center px-6">
+                      <div
+                        className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
+                        style={{ background: "#fff1f2" }}
+                      >
+                        <span className="text-xl" style={{ color: "#f43f5e" }}>!</span>
+                      </div>
+                      <p className="text-[14px] font-semibold" style={{ color: "#334155" }}>Something went wrong</p>
+                      <p className="text-[12px] mt-1" style={{ color: "#94a3b8" }}>Please try again later</p>
+                    </div>
+                  )}
+
                 </div>
-                <span className="text-[13px] text-gray-400 max-sm:dark:text-white/30">No data available</span>
               </div>
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
-  </div>
-</div>
+            )}
+          </BottomPopup>
 
-{/* ── PAGINATION ── */}
-<div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 max-sm:dark:border-white/[0.06] bg-white max-sm:dark:bg-gray-950">
-  <p className="text-[12px] text-gray-400 max-sm:dark:text-white/30 font-medium tabular-nums">
-    Page <span className="text-gray-700 max-sm:dark:text-white/60 font-semibold">{currentTablePage}</span> of <span className="text-gray-700 max-sm:dark:text-white/60 font-semibold">{totalCustomerPage}</span>
-  </p>
+          {/* TABLE */}
+          <section className="flex flex-col mt-6 rounded-md">
 
-  <div className="flex items-center gap-1.5">
-    {[
-      {
-        icon: <ChevronsLeft size={14} />,
-        onClick: () => setCurrentTablePage(1),
-        disabled: currentTablePage === 1,
-        title: "First page",
-      },
-      {
-        icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>,
-        label: "Prev",
-        onClick: () => setCurrentTablePage((prev) => Math.max(prev - 1, 1)),
-        disabled: currentTablePage === 1,
-      },
-      {
-        icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
-        label: "Next",
-        onClick: async () => {
-          if (currentTablePage < totalTablePages) {
-            setCurrentTablePage(prev => prev + 1);
-            return;
-          }
-          if (hasMoreCustomers) {
-            await fetchMore();
-            setCurrentTablePage(prev => prev + 1);
-          }
-        },
-        disabled: !hasMoreCustomers && currentTablePage === totalTablePages,
-      },
-      {
-        icon: <ChevronsRight size={14} />,
-        onClick: handleLastPage,
-        disabled: currentTablePage === totalTablePages && !hasMoreCustomers,
-        title: "Last page",
-      },
-    ].map((btn, i) => (
-      <button
-        key={i}
-        type="button"
-        onClick={btn.onClick}
-        disabled={btn.disabled}
-        title={btn.title}
-        className={[
-          "inline-flex items-center justify-center gap-1.5 h-8 rounded-lg text-[12px] font-semibold transition-all duration-150",
-          btn.label ? "px-3" : "w-8",
-          btn.disabled
-            ? "text-gray-300 max-sm:dark:text-white/15 cursor-not-allowed bg-gray-50 max-sm:dark:bg-white/[0.02]"
-            : "text-gray-600 max-sm:dark:text-white/55 bg-gray-100 dark:bg-white/[0.06] hover:bg-[var(--color-primary)] hover:text-white",
-        ].join(" ")}
-      >
-        {btn.label && <span>{btn.label}</span>}
-        {btn.icon}
-      </button>
-    ))}
-  </div>
-</div>
+            <div className="m-5 relative">
+
+              <div className="flex justify-between cursor-pointer items-center py-1 px-2 border border-gray-800 rounded-md" onClick={() => setToggleSearchDropdown(!toggleSearchDropdown)}>
+                <h3 className="flex items-center gap-1"><CiSearch />Advance Search</h3>
+                <button
+                  type="button"
+
+                  className="p-2 hover:bg-gray-200 rounded-md cursor-pointer"
+                >
+                  {toggleSearchDropdown ? <IoIosArrowUp /> : <IoIosArrowDown />}
+                </button>
+              </div>
+
+              <div className={`overflow-hidden ${toggleSearchDropdown ? "overflow-visible max-h-[2000px]" : "overflow-hidden max-h-0"} transition-all duration-500 ease-in-out px-5`}>
+                <div className="flex flex-col gap-5 my-5">
+                  <div className="grid grid-cols-3 gap-5 max-md:grid-cols-1 max-lg:grid-cols-2">
+                    <ObjectSelect
+                      options={Array.isArray(fieldOptions?.Campaign) ? fieldOptions.Campaign : []}
+                      label={getLabel("Campaign", "Campaign")}
+                      value={dependent.Campaign.id}
+                      getLabel={(item) => item?.Name || ""}
+                      getId={(item) => item?._id || ""}
+                      onChange={(selectedId) => {
+                        const selectedObj = fieldOptions.Campaign.find((i) => i._id === selectedId);
+                        if (selectedObj) {
+                          const updatedFilters = {
+                            ...filters,
+                            Campaign: [selectedObj.Name],
+                            CustomerType: [],   // reset
+                            CustomerSubType: []
+                          };
+                          setFilters(updatedFilters);
+
+                          setDependent(prev => ({
+                            ...prev,
+                            Campaign: { id: selectedObj._id, name: selectedObj.Name },
+                            CustomerType: { id: "", name: "" },   // reset
+                            CustomerSubType: { id: "", name: "" }
+                          }));
+                          handleSelectChange("Campaign", selectedObj.Name, updatedFilters)
+                        }
+                      }}
+                    />
+
+                    <ObjectSelect
+                      options={Array.isArray(fieldOptions?.CustomerType) ? fieldOptions.CustomerType : []}
+                      label={getLabel("CustomerType", "Customer Type")}
+                      value={dependent.CustomerType.name}
+                      getLabel={(item) => item?.Name || ""}
+                      getId={(item) => item?._id || ""}
+                      onChange={(selectedId) => {
+                        const selectedObj = fieldOptions.CustomerType.find((i) => i._id === selectedId);
+                        if (selectedObj) {
+                          const updatedFilters = {
+                            ...filters,
+                            CustomerType: [selectedObj.Name],   // reset
+                            CustomerSubType: []
+                          };
+                          setFilters(updatedFilters);
+
+
+                          setDependent(prev => ({
+                            ...prev,
+                            CustomerType: { id: selectedObj._id, name: selectedObj.Name },   // reset
+                            CustomerSubType: { id: "", name: "" }
+                          }));
+                          handleSelectChange("CustomerType", selectedObj.Name, updatedFilters)
+                        }
+                      }}
+
+                    />
+
+                    <ObjectSelect
+                      options={Array.isArray(fieldOptions?.CustomerSubtype) ? fieldOptions.CustomerSubtype : []}
+                      label={getLabel("CustomerSubType", "Customer Subtype")}
+                      value={dependent.CustomerSubType.name}
+                      getLabel={(item) => item?.Name || ""}
+                      getId={(item) => item?._id || ""}
+                      onChange={(selectedId) => {
+
+                        const selectedObj = fieldOptions.CustomerSubtype.find((i) => i._id === selectedId);
+                        if (selectedObj) {
+                          const updatedFilters = {
+                            ...filters,
+                            CustomerSubType: [selectedObj.Name]
+                          };
+                          setFilters(updatedFilters);
+
+                          setDependent(prev => ({
+                            ...prev,
+                            CustomerSubType: { id: selectedObj._id, name: selectedObj.Name }
+                          }));
+                          handleSelectChange("CustomerSubType", selectedObj.Name, updatedFilters)
+                        }
+                      }}
+                    />
+
+
+                    <ObjectSelect
+                      options={Array.isArray(fieldOptions?.City) ? fieldOptions.City : []}
+                      label={getLabel("City", "City")}
+                      value={dependent.City.id}
+                      getLabel={(item) => item?.Name || ""}
+                      getId={(item) => item?._id || ""}
+                      onChange={(selectedId) => {
+                        const selectedObj = fieldOptions.City.find((i) => i._id === selectedId);
+                        if (selectedObj) {
+                          const updatedFilters = {
+                            ...filters,
+                            City: [selectedObj.Name],
+                            Location: []
+                          };
+                          setFilters(updatedFilters);
+
+                          setDependent(prev => ({
+                            ...prev,
+                            City: { id: selectedObj._id, name: selectedObj.Name },
+                            Location: { id: "", name: "" },
+                          }));
+                          handleSelectChange("City", selectedObj.Name, updatedFilters)
+                        }
+                      }}
+                    />
+                    <ObjectSelect
+                      options={Array.isArray(fieldOptions?.Location) ? fieldOptions.Location : []}
+                      label={getLabel("Location", "Location")}
+                      value={dependent.Location.id}
+                      getLabel={(item) => item?.Name || ""}
+                      getId={(item) => item?._id || ""}
+                      onChange={(selectedId) => {
+                        const selectedObj = fieldOptions.Location.find((i) => i._id === selectedId);
+                        if (selectedObj) {
+                          const updatedFilters = {
+                            ...filters,
+                            Location: [selectedObj.Name]
+                          };
+                          setFilters(updatedFilters);
+
+                          setDependent(prev => ({
+                            ...prev,
+                            Location: { id: selectedObj._id, name: selectedObj.Name },
+                          }));
+                          handleSelectChange("Location", selectedObj.Name, updatedFilters)
+                        }
+                      }}
+                      isSearchable
+                    />
+                    <ObjectSelect
+                      options={Array.isArray(fieldOptions?.SubLocation) ? fieldOptions.SubLocation : []}
+                      label={getLabel("SubLocation", "Sub Location")}
+                      value={dependent.SubLocation.id}
+                      getLabel={(item) => item?.Name || ""}
+                      getId={(item) => item?._id || ""}
+                      onChange={(selectedId) => {
+                        const selectedObj = fieldOptions.SubLocation.find((i) => i._id === selectedId);
+                        if (selectedObj) {
+                          const updatedFilters = {
+                            ...filters,
+                            SubLocation: [selectedObj.Name]
+                          };
+                          setFilters(updatedFilters);
+                          setDependent(prev => ({
+                            ...prev,
+                            SubLocation: { id: selectedObj._id, name: selectedObj.Name },
+                          }));
+                          handleSelectChange("SubLocation", selectedObj.Name, updatedFilters)
+                        }
+                      }}
+                      isSearchable
+                    />
+
+                    <SingleSelect options={Array.isArray(fieldOptions?.ReferenceId) ? fieldOptions.ReferenceId : []} value={filters.ReferenceId[0]} label={getLabel("ReferenceId", "Reference Id")} onChange={(v) => handleSelectChange("ReferenceId", v)} isSearchable />
+                    {/*   <SingleSelect options={Array.isArray(fieldOptions?.MinPrice) ? fieldOptions.MinPrice : []} value={filters.MinPrice[0]} label={getLabel("MinPrice", "Min Price")} onChange={(v) => handleSelectChange("MinPrice", v)} isSearchable />
+                    <SingleSelect options={Array.isArray(fieldOptions?.MaxPrice) ? fieldOptions.MaxPrice : []} value={filters.MaxPrice[0]} label={getLabel("MaxPrice", "Max Price")} onChange={(v) => handleSelectChange("MaxPrice", v)} isSearchable /> */}
+
+                    <SingleSelect options={Array.isArray(fieldOptions?.LeadType) ? fieldOptions.LeadType : []} value={filters.LeadType[0]} label={getLabel("LeadType", "Lead Type")} onChange={(v) => handleSelectChange("LeadType", v)} isSearchable />
+                    <SingleSelect options={Array.isArray(fieldOptions?.LeadTemperature) ? fieldOptions.LeadTemperature : []} value={filters.LeadTemperature[0]} label={getLabel("LeadTemperature", "Lead Status")} onChange={(v) => handleSelectChange("LeadTemperature", v)} isSearchable />
+                    {/*   <SingleSelect options={Array.isArray(fieldOptions?.Price) ? fieldOptions.Price : []} value={filters.Price[0]} label={getLabel("Price", "Price")} onChange={(v) => handleSelectChange("Price", v)} isSearchable /> */}
+                    {/* <SingleSelect options={Array.isArray(fieldOptions?.isFavourite) ? fieldOptions.isFavourite : []} value={filters.isFavourite[0]} label="favroutie" onChange={(v) => handleSelectChange("isFavourite", v)}  /> */}
+
+                    <SingleSelect options={Array.isArray(fieldOptions?.User) ? fieldOptions.User : []} value={filters.User[0]} label="User" onChange={(v) => handleSelectChange("User", v)} isSearchable />
+
+                    <SingleSelect options={["10", "25", "50", "100"]} value={filters.Limit[0]} label="Limit" onChange={(v) => {
+
+                      handleSelectChange("Limit", v)
+                    }} />
+                    <DateSelector label="From" value={filters.StartDate[0]} onChange={(v) => handleSelectChange("StartDate", v)} />
+                    <DateSelector label="To" value={filters.EndDate[0]} onChange={(v) => handleSelectChange("EndDate", v)} />
+                    <PriceRange
+                      filters={filters}
+                      handleSelectChange={handleSelectChange}
+                    />
+                    <div>
+                      <input
+                        id="favouriteFilter"
+                        type="checkbox"
+                        className="hidden"
+                        checked={filters.isFavourite}
+                        onChange={(e) =>
+                          handleSelectChange("isFavourite", e.target.checked)
+                        }
+                      />
+
+                      <label
+                        htmlFor="favouriteFilter"
+                        className={`
+    inline-flex items-center justify-center
+    h-10 px-4 rounded-md border
+    text-sm font-medium cursor-pointer
+    transition-colors duration-200 gap-2
+    ${filters.isFavourite
+                            ? "bg-[var(--color-primary)] text-white border-[var(--color-primary)]"
+                            : "bg-white text-gray-700 border-gray-300"
+                          }
+  `}
+                      >
+                        {filters.isFavourite ? <MdFavorite /> : <MdFavoriteBorder />}
+                        Favourite
+                      </label>
+                    </div>
+
+                  </div>
+
+
+                </div>
+
+                {/* Keyword Search */}
+                <form className="flex  max-lg:flex-col justify-between items-center gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (keywordInput.trim() === "")
+                      return
+                    setAiLoading(true);
+                    setCurrentStep(STEPS.SEARCH)
+                    aiGenieSearch();
+                  }}
+                >
+
+                  <div className=" w-[80%] ">
+                    <div>
+                      <div className=" flex justify-between">
+                        <label className="flex gap-1 mb-2 items-center text-sm font-bold text-[var(--color-secondary-darker)] ml-1">{aiLoading ? <span>
+                          <BounceLoader
+                            loading={true}
+                            color="var(--color-primary)"
+                            size={25}
+                            aria-label="Loading Spinner"
+                            data-testid="loader"
+                          /></span> : <span><img className=" w-[25px] " src="/aiBot.png" /></span>
+                        }
+                          <div className="">AI Genie</div>
+
+
+                        </label>
+                        {/*  {isListening && (
+                          <div className="flex items-center gap-2.5 mt-2 ml-1 px-3 py-2 rounded-xl bg-red-50 border border-red-100 w-fit">
+                           
+                            <div className="flex items-center gap-[3px]">
+                              {[0, 1, 2, 3].map((i) => (
+                                <span
+                                  key={i}
+                                  className="block w-[3px] rounded-full bg-red-500"
+                                  style={{
+                                    animation: `soundBar 0.8s ease-in-out infinite alternate`,
+                                    animationDelay: `${i * 0.15}s`,
+                                    height: "14px",
+                                  }}
+                                />
+                              ))}
+                            </div>
+
+                            <p className="text-red-500 text-xs font-semibold tracking-wide">
+                              Listening…
+                            </p>
+
+                           
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                            </span>
+
+                            <style>{`
+      @keyframes soundBar {
+        from { transform: scaleY(0.3); opacity: 0.5; }
+        to   { transform: scaleY(1);   opacity: 1;   }
+      }
+    `}</style>
+                          </div>
+                        )} */}
+                      </div>
+                      <p className={`text-gray-400 font-light text-xs ml-2 mb-2  flex items-center gap-[1px] `}>
+                        <span
+                          className={`transition-opacity duration-300 `}
+                        >
+                          {currentStep}
+                        </span>
+
+                        {aiLoading && <span className="translate-y-[2px]">
+                          <BeatLoader size={2} color="gray" />
+                        </span>}
+
+                      </p>
+                      <div className="">
+
+                        <div className=" flex justify-between items-center border border-gray-300 rounded-md w-full">
+                          <input
+                            type="text"
+                            placeholder="What you want to search?"
+                            className="outline-none w-full px-3 py-2 "
+                            value={keywordInput}
+                            onChange={(e) => setKeywordInput(e.target.value)}
+                          />
+                          <span
+                            className={`relative mr-3 cursor-pointer flex items-center justify-center`}
+                            onClick={() => {
+                              playSound();      // 🔊 sound plays
+                              startListening(); // 🎤 mic starts
+                            }}
+                          >
+                            {/* Pulse Ring */}
+                            {isListening && (
+                              <span className="absolute inline-flex h-8 w-8 rounded-full bg-red-400 opacity-75 animate-ping"></span>
+                            )}
+
+                            {/* Mic Icon */}
+                            <span
+                              className={`relative z-10 p-2 rounded-full transition-all duration-300 
+    ${isListening ? "bg-red-500 text-white scale-110" : "text-gray-500 hover:text-blue-500"}
+  `}
+                            >
+                              <FaMicrophone />
+                            </span>
+                          </span>
+                          <span className=" cursor-pointer mr-3" onClick={() => setToggleAiGenieSearchBy(!toggleAiGenieSearchBy)}>{toggleAiGenieSearchBy ? <FaCaretUp /> : <FaCaretDown />}</span>
+                        </div>
+
+                        <div className={` mt-5 overflow-hidden transition-all duration-300 ${toggleAiGenieSearchBy ? " h-[150px]" : " h-0"}`}>
+                          {/* Unselected Fields */}
+                          <div className="flex flex-wrap gap-2 px-3 mb-5">
+                            {SEARCH_FIELDS.filter(f => !filters.SearchIn.includes(f)).map((field) => (
+                              <button
+                                key={field}
+                                type="button"
+                                className="px-2 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-100 transition"
+                                onClick={() =>
+                                  setFilters(prev => ({
+                                    ...prev,
+                                    SearchIn: [...prev.SearchIn, field],
+                                  }))
+                                }
+                              >
+                                {field.toLowerCase()}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Selected Fields */}
+                          <div className="">
+                            {filters.SearchIn.length > 0 && <h5 className=" text-gray-500 text-sm my-2 mx-2">Selected</h5>}
+                            <div className="flex flex-wrap gap-2 px-3">
+
+                              {filters.SearchIn.map((field) => (
+                                <div
+                                  key={field}
+                                  className="group relative flex items-center px-2 py-1 border border-blue-400 rounded-md text-sm bg-blue-100"
+                                >
+                                  {field.toLowerCase()}
+                                  <button
+                                    className="ml-2 opacity-0 cursor-pointer group-hover:opacity-100 transition-opacity text-sm text-[var(--color-primary)]"
+                                    onClick={() =>
+                                      setFilters(prev => ({
+                                        ...prev,
+                                        SearchIn: prev.SearchIn.filter(f => f !== field),
+                                      }))
+                                    }
+                                  >
+                                    <IoMdClose />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  <div className={` flex justify-center items-center w-[30%] transition duration-300  ${toggleAiGenieSearchBy ? " lg:-mt-32" : " lg:mt-5"} `}>
+                    {!aiLoading ? <button type="submit" className="border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-all duration-300 cursor-pointer px-3 py-2  rounded-md">
+                      Explore
+                    </button> : <button type="button" className="flex gap-1 justify-center items-center border border-[var(--color-primary)]  bg-[var(--color-primary)] text-white transition-all duration-300 cursor-pointer px-3 py-2  rounded-md">
+                      Exploring <HashLoader
+                        loading={true}
+                        color="white"
+                        size={12}
+                        aria-label="Loading Spinner"
+                        data-testid="loader"
+                      />
+                    </button>}
+
+                    <button type="reset" onClick={clearFilter} className="text-red-500 cursor-pointer hover:underline text-sm px-5 py-2  rounded-md ml-3">
+                      Clear Search
+                    </button>
+                  </div>
+                </form>
+
+              </div>
+            </div>
+            {/*  <AgentSelector
+  agents={agents}
+  keywordInput={keywordInput}
+  setKeywordInput={setKeywordInput}
+  filters={filters}
+  setFilters={setFilters}
+  aiLoading={aiLoading}
+  setAiLoading={setAiLoading}
+  currentStep={currentStep}
+  setCurrentStep={setCurrentStep}
+  toggleAiGenieSearchBy={toggleAiGenieSearchBy}
+  setToggleAiGenieSearchBy={setToggleAiGenieSearchBy}
+  STEPS={STEPS}
+  aiGenieSearch={aiGenieSearch}
+  clearFilter={clearFilter}
+/> */}
+            <div className="  relative" ref={scrollRef}>
+
+              <div className=" flex justify-between items-center sticky top-0 left-0 overflow-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden w-full">
+                <div className="flex gap-5 items-center px-3 py-4 text-[13px] min-w-max text-gray-700">
+
+                  <label htmlFor="selectall" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer">
+                    <div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
+                    <span className="relative">Select All</span>
+                  </label>
+                  <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
+                    if (selectedCustomers.length <= 0) toast.error("please select atleast 1 customer")
+                    else {
+                      setIsAssignOpen(true);
+                      fetchUsers()
+                    } 0
+                  }}><div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
+                    <span className="relative">Asign To</span></button>
+                  <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
+                    if (selectedCustomers.length <= 0) toast.error("please select atleast 1 customer")
+                    else {
+                      setIsMailAllOpen(true);
+                      fetchEmailTemplates()
+                    }
+                  }}><div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
+                    <span className="relative">Email All</span></button>
+                  <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
+                    if (selectedCustomers.length <= 0) toast.error("please select atleast 1 customer")
+                    else {
+                      setIsWhatsappAllOpen(true);
+                      fetchWhatsappTemplates()
+                    }
+                  }}><div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
+                    <span className="relative">SMS All</span></button>
+                  {/*                 <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer">
+                  <div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
+                  <span className="relative ">Mass Update</span>
+                </button> */}
+
+                  {
+                    admin?.role !== "user" && <button type="button" className=" relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)]  rounded-tr-sm rounded-br-sm  border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
+                      if (customerData.length > 0) {
+                        if (selectedCustomers.length < 1) {
+                          const firstPageIds = currentRows.map((c) => c._id);
+                          setSelectedCustomers(firstPageIds);
+                        }
+
+                        setIsDeleteAllDialogOpen(true);
+                        setDeleteAllDialogData({});
+                      }
+                    }}><div className=" absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300 "></div>
+                      <span className="relative ">Delete All</span>
+                    </button>
+                  }
+
+                </div>
+
+                {
+                  isFilteredTrigger && <p className={`text-gray-400 font-light text-xs mx-3  mt-2  flex items-center gap-[1px] `}>
+                    Customers Found {totalCustomers}
+                  </p>
+                }
+                {selectedCustomers.length > 0 && <p className=" text-gray-400 font-extralight text-sm mx-3">selected {selectedCustomers.length}</p>}
+              </div>
+              <Tablesetting columns={columns} setColumns={setColumns} />
+              <div className=" max-h-[600px]  w-full overflow-y-auto">
+                <table className="table-auto relative w-full border-separate border-spacing-0 text-sm border border-gray-200">
+                  <thead className="bg-[var(--color-primary)] h-16 text-white sticky top-0 left-0 z-[5]">
+                    <tr>
+
+                      {/* ✅ SELECT ALL CHECKBOX COLUMN */}
+                      <th className="px-2 py-3 border border-[var(--color-secondary-dark)] bg-[var(--color-primary)] sticky left-0 z-20 text-left">
+
+                        <input
+                          id="selectall"
+                          type="checkbox"
+                          className="hidden"
+                          checked={
+                            currentRows.length > 0 &&
+                            currentRows.every((r) => selectedCustomers.includes(r._id))
+                          }
+                          onChange={handleSelectAll}
+                        />
+                      </th>
+
+                      {columns
+                        .filter(col => col.visible)
+                        .map((header, index) => (
+                          <th
+                            key={header.key}
+                            className={`px-2 py-3 border border-[var(--color-secondary-dark)] text-left  
+                ${header.key === "sno" ? "sticky left-7.5 z-20 bg-[var(--color-primary)]" : ""}`}
+                          >
+                            {header.label}
+                          </th>
+                        ))}
+
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {customerTableLoader ?
+                      <tr>
+                        <td colSpan={12} className="text-center py-4 text-gray-500">
+                          Loading customers...
+                        </td>
+                      </tr> : currentRows.length > 0 ? (
+                        currentRows.map((item, index) => (
+                          <tr key={item._id} className="border-t hover:bg-[#f7f6f3] transition-all duration-200">
+
+                            {/* ✅ ROW CHECKBOX */}
+                            <td className="px-2 py-3 sticky left-0 bg-white  border border-gray-200">
+                              <input
+                                type="checkbox"
+                                checked={selectedCustomers.includes(item._id)}
+                                onChange={() => handleSelectRow(item._id)}
+                              />
+                            </td>
+
+                            {columns.filter(col => col.visible).map((col) => {
+                              let cellValue;
+                              if (col.key.startsWith("cf_")) {
+                                const originalKey = col.key.replace("cf_", "");
+                                cellValue = item.CustomerFields?.[originalKey] ?? "-";
+                              } else {
+                                switch (col.key) {
+                                  case "sno":
+                                    cellValue = (currentTablePage - 1) * rowsPerTablePage + (index + 1);
+                                    break;
+                                  case "campaign":
+                                    cellValue = item.Campaign;
+                                    break;
+                                  case "type":
+                                    cellValue = item.Type;
+                                    break;
+                                  case "subtype":
+                                    cellValue = item.SubType;
+                                    break;
+                                  case "leadtype":
+                                    cellValue = item.LeadType;
+                                    break;
+                                  case "City":
+
+                                    cellValue = item.City;
+                                    break;
+                                  case "Area":
+                                    cellValue = item.Area;
+                                    break;
+                                  case "Email":
+                                    cellValue = item.Email;
+                                    break;
+
+                                  case "Facillities":
+                                    cellValue = item.Facillities;
+                                    break;
+
+                                  case "CustomerId":
+                                    cellValue = item.CustomerId;
+                                    break;
+                                  case "ClientId":
+                                    cellValue = item.ClientId;
+                                    break;
+                                  case "Adderess":
+                                    cellValue = (<>
+                                      <span
+                                        className="text-blue-600 cursor-pointer underline"
+                                        onClick={() => {
+                                          setSelectedAddress(item.Adderess);
+                                          setIsMapOpen(true);
+                                        }}
+                                      >
+                                        {item.Adderess}
+                                      </span>
+
+                                    </>);
+                                    break;
+                                  case "CustomerYear":
+                                    cellValue = item.CustomerYear;
+                                    break;
+                                  case "Other":
+                                    cellValue = item.Other;
+                                    break;
+                                  case "name":
+                                    cellValue = item.Name;
+                                    break;
+                                  case "description":
+                                    cellValue = item.Description;
+                                    break;
+                                  case "location":
+                                    cellValue = item.Location;
+                                    break;
+                                  case "sublocation":
+                                    cellValue = item.SubLocation;
+                                    break;
+                                  case "contact":
+                                    cellValue = (
+                                      <>
+                                        {item.ContactNumber && (
+                                          <>
+                                            <div className=" text-center" onClick={() => handleAgentCalling(item._id)}>{item.ContactNumber}</div>
+                                            <span className="flex">
+                                              <Button
+                                                component="a"
+                                                /* href={`tel:${item.ContactNumber}`} */
+                                                onClick={() => handleCall({ customerNumber: item.ContactNumber })}
+                                                sx={{
+                                                  backgroundColor: "#E8F5E9",
+                                                  color: "var(--color-primary)",
+                                                  minWidth: "14px",
+                                                  height: "24px",
+                                                  borderRadius: "8px",
+                                                  margin: "4px"
+                                                }}
+                                              >
+                                                <FaPhone size={12} />
+                                              </Button>
+                                              <Button
+                                                sx={{
+                                                  backgroundColor: "#E8F5E9",
+                                                  color: "var(--color-primary)",
+                                                  minWidth: "14px",
+                                                  height: "24px",
+                                                  borderRadius: "8px",
+                                                  margin: "4px"
+                                                }}
+                                                onClick={() => {
+                                                  setSelectedCustomers([item._id]);
+                                                  setSelectUser([item._id]);
+                                                  setIsMailAllOpen(true);
+                                                  fetchEmailTemplates();
+                                                }}
+                                              >
+                                                <MdEmail size={14} />
+                                              </Button>
+                                              <Button
+                                                onClick={() => {
+                                                  setSelectedCustomers([item._id]);
+                                                  setSelectUser([item._id]);
+                                                  setIsWhatsappAllOpen(true);
+                                                  fetchWhatsappTemplates();
+                                                }}
+                                                sx={{
+                                                  backgroundColor: "#E8F5E9",
+                                                  color: "var(--color-primary)",
+                                                  minWidth: "14px",
+                                                  height: "24px",
+                                                  borderRadius: "8px",
+                                                  margin: "4px"
+                                                }}
+                                              >
+                                                <FaWhatsapp size={14} />
+                                              </Button>
+                                            </span>
+                                            {duplicateContacts[item.ContactNumber] && (
+                                              <span>
+                                                <Button
+                                                  onClick={() => {
+                                                    setIsTableDialogOpen(true);
+                                                    handleTableDialogData(item.ContactNumber);
+                                                  }}
+                                                  sx={{
+                                                    backgroundColor: "#E8F5E9",
+                                                    color: "var(--color-primary)",
+                                                    minWidth: "100px",
+                                                    height: "24px",
+                                                    borderRadius: "8px",
+                                                    margin: "4px"
+                                                  }}
+                                                >
+                                                  <FaEye size={12} />
+                                                </Button>
+                                              </span>
+                                            )}
+                                          </>
+                                        )}
+                                      </>
+                                    );
+                                    break;
+                                  case "assign":
+                                    cellValue = item.AssignTo.map((e: any) => e.name + ", ");
+                                    break;
+                                  case "reference":
+                                    cellValue = item.ReferenceId;
+                                    break;
+
+                                  case "url":
+                                    cellValue = item.URL;
+                                    break;
+                                  case "video":
+                                    cellValue = item.Video;
+                                    break;
+                                  case "googlemap":
+                                    cellValue = item.GoogleMap;
+                                    break;
+                                  case "price":
+                                    cellValue = item.Price;
+                                    break;
+                                  case "date":
+                                    cellValue = item.Date;
+                                    break;
+                                  case "actions":
+                                    cellValue = (
+                                      <div className="grid grid-cols-2 gap-3 items-center h-full">
+                                        <Button
+                                          sx={{ backgroundColor: "#E8F5E9", color: "var(--color-primary)", minWidth: "32px", height: "32px", borderRadius: "8px" }}
+                                          /*  onClick={() => router.push(`/followups/customer/add/${item._id}`)} */
+                                          onClick={() => {
+                                            setSelectedCustomerFollowupId(item._id);
+                                            setIsFollowupOpen(true);
+                                          }}
+                                        >
+                                          <MdAdd />
+                                        </Button>
+                                        <Button
+                                          sx={{ backgroundColor: "#E8F5E9", color: "var(--color-primary)", minWidth: "32px", height: "32px", borderRadius: "8px" }}
+                                          onClick={() => /* router.push(`/customer/edit/${item._id}`) */ handleEditClick(item._id)}
+                                        >
+                                          <MdEdit />
+                                        </Button>
+                                        {admin?.role === "administrator" && <Button
+                                          sx={{ backgroundColor: "#FDECEA", color: "#C62828", minWidth: "32px", height: "32px", borderRadius: "8px" }}
+                                          onClick={() => {
+                                            setIsDeleteDialogOpen(true);
+                                            setDialogType("delete");
+                                            setDialogData({
+                                              id: item._id,
+                                              customerName: item.Name,
+                                              ContactNumber: item.ContactNumber,
+                                            });
+                                          }}
+                                        >
+                                          <MdDelete />
+                                        </Button>}
+
+                                        <Button
+                                          sx={{ backgroundColor: "#FFF0F5", color: item.isFavourite ? "#E91E63" : "#C62828", minWidth: "32px", height: "32px", borderRadius: "8px" }}
+                                          onClick={() =>
+                                            handleFavouriteToggle(item._id, item.Name, item.ContactNumber, item.isFavourite ?? false)
+                                          }
+                                        >
+                                          {item.isFavourite ? <MdFavorite /> : <MdFavoriteBorder />}
+                                        </Button>
+                                        <Button
+                                          className=" bg-gray-500"
+                                          sx={{ backgroundColor: item.isChecked ? "#E8F5E9" : "#FFF0F5", color: item.isChecked ? "var(--color-primary)" : "#E91E63", minWidth: "32px", height: "32px", borderRadius: "8px" }}
+                                          onClick={() =>
+                                            handleChecked({ id: item._id, isChecked: item.isChecked })
+                                          }
+                                        >
+                                          {item.isChecked ? <IoCheckmarkDoneOutline size={20} /> : <IoCheckmark size={20} />}
+                                        </Button>
+                                        <Button
+                                          sx={{ backgroundColor: "#E8F5E9", color: "var(--color-primary)", minWidth: "32px", height: "32px", borderRadius: "8px" }}
+                                          onClick={() => {
+                                            setIsFollowupDialogOpen(true);
+                                            handleFollowups(item._id, item.Name);
+                                          }}
+                                        >
+                                          <UserPlus />
+                                        </Button>
+                                        <Button
+                                          sx={{
+                                            backgroundColor: temperatureConfig[item.LeadTemperature || "cold"]?.bg,
+                                            color: temperatureConfig[item.LeadTemperature || "cold"]?.color,
+                                            minWidth: "32px",
+                                            height: "32px",
+                                            borderRadius: "8px",
+                                            transition: "all 0.2s ease",
+                                            "&:hover": {
+                                              filter: "brightness(0.95)",
+                                              transform: "scale(1.05)"
+                                            }
+                                          }}
+                                          onClick={() => {
+                                            setTemperatureDialogData({
+                                              id: item._id,
+                                              name: item.CustomerName,
+                                              current: item.LeadTemperature || "cold"
+                                            });
+                                            setIsTemperatureDialogOpen(true);
+                                          }}
+                                        >
+                                          {temperatureConfig[item.LeadTemperature || "cold"]?.icon}
+                                        </Button>
+                                      </div>
+                                    );
+                                    break;
+                                  default:
+                                    cellValue = null;
+                                }
+                              }
+
+                              return (
+                                <td key={col.key} className={`px-2 py-3 border border-gray-200 break-all whitespace-normal 
+                                    ${col.key !== "sno" ? "min-w-[100px]" : ""}
+             ${col.key === "description" && item.Description ? "min-w-[160px]" : ""} 
+            ${col.key === "sno" ? "sticky left-7.5  bg-white max-w-[60px]" : ""}
+             ${col.key === "type" ? "max-w-[80px]" : ""}
+             ${col.key === "subtype" ? "max-w-[90px]" : ""} 
+             ${col.key === "contact" ? "max-w-[140px]" : ""} 
+             ${col.key === "reference" ? "max-w-[70px]" : ""}
+              ${col.key === "date" ? "min-w-[100px]" : ""} 
+             ${col.key === "actions" ? "min-w-[90px] align-middle" : ""}
+             `}>
+                                  {cellValue}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={10} className="text-center py-4 w-full text-gray-500">
+                            No data available.
+                          </td>
+                        </tr>
+                      )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {/* Pagination */}
+            <div className="flex justify-between items-center mt-3 py-3 px-5">
+              <p className="text-sm">
+                Page {currentTablePage} of {totalCustomerPage}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setCurrentTablePage(1)}
+                  disabled={currentTablePage === 1}
+                  className="p-2 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
+                  title="First page"
+                >
+                  <ChevronsLeft size={16} />
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentTablePage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentTablePage === 1}
+                  className="px-3 py-1 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
+                >
+                  Prev
+                </button>
+                <button
+                  onClick={async () => {
+                    // normal pagination
+                    if (currentTablePage < totalTablePages) {
+                      setCurrentTablePage(prev => prev + 1);
+                      return;
+                    }
+
+                    // last page → fetch more → then move
+                    if (hasMoreCustomers) {
+                      await fetchMore();
+                      setCurrentTablePage(prev => prev + 1);
+                    }
+                  }}
+                  disabled={!hasMoreCustomers && currentTablePage === totalTablePages}
+                  className="px-3 py-1 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
+                >
+                  Next
+                </button>
+                <button
+                  onClick={handleLastPage}
+                  disabled={currentTablePage === totalTablePages && !hasMoreCustomers}
+                  className="p-2 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
+                  title="Last page"
+                >
+                  <ChevronsRight size={16} />
+                </button>
+
+
+              </div>
+            </div>
           </section>
 
         </div>

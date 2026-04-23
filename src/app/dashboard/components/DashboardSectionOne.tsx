@@ -51,64 +51,85 @@ export default function DashboardSectionOne() {
     DashboardSectionOneDataFetch();
   }, [])
 
-  const DashboardSectionOneDataFetch = async () => {
-    const LeadsResponse = await getCustomer();
-    const FollowupResponseRaw = await getAllCustomerFollowups();
-    const ContactResponse= await getContact();
+const DashboardSectionOneDataFetch = async () => {
+  try {
+    // Run all APIs in parallel
+    const [
+      LeadsResponse,
+      FollowupResponseRaw,
+      ContactResponse,
+      IncomeResponse,
+    ] = await Promise.all([
+      getCustomer(),
+      getAllCustomerFollowups(),
+      getContact(),
+      getIncomeMarketing(),
+    ]);
 
-    const FollowupResponse = FollowupResponseRaw?.map((item: any) => ({
-      customerid: item.customer._id,
-      StatusType: item.StatusType,
-      Date: item.Date,
-      _id: item._id,
-      Name: item.customer.customerName,
-      ContactNumber: item.customer.ContactNumber,
-      User: item.customer.AssignTo?.name ?? "",
-    }));
-
-    const IncomeResponse = await getIncomeMarketing();
-
-    if (LeadsResponse && FollowupResponse && IncomeResponse && ContactResponse) {
+    // 🔹 Leads
+    if (LeadsResponse) {
       const totalCustomer = LeadsResponse.length;
-      const totalContacts = ContactResponse.length;
-      const convertedLeads = FollowupResponse.filter(
-        (item, index, arr) =>
-          arr.findIndex((row) => row.customerid === item.customerid) === index //keeps only first occurrence
-      ).length;
-      const activeFollowups = FollowupResponse.filter(
-        (item, index, arr) => (item.StatusType === "Active")
-      ).length;
-      const totalRevenue = IncomeResponse.reduce((sum: number, item: any) => sum + (Number(item.Income) || 0), 0);
 
       setDashboardSectionOneCardData((prev) => {
-        // Create a copy of the previous array
         const newData = [...prev];
-
-        // Update only the first element (index 0)
-        newData[0] = {
-          ...newData[0], // keep other properties
-          value: totalCustomer || 0, // update value
-        };
-        newData[1] = {
-          ...newData[1], // keep other properties
-          value: convertedLeads || 0, // update value // or any other dynamic property
-        };
-
-        newData[2] = {
-          ...newData[2], // keep other properties
-          value: totalContacts || 0, // update value
-        };
-        newData[3] = {
-          ...newData[3], // keep other properties
-          value: totalRevenue || 0, // update value
-          prefix: "₹", // or any other dynamic property
-        };
-        setDataLoading(true);
-
+        newData[0] = { ...newData[0], value: totalCustomer };
         return newData;
-      })
+      });
     }
+
+    // 🔹 Followups
+    if (FollowupResponseRaw) {
+      const FollowupResponse = FollowupResponseRaw.map((item: any) => ({
+        customerid: item.customer._id,
+        StatusType: item.StatusType,
+      }));
+
+      const convertedLeads = FollowupResponse.filter(
+        (item, index, arr) =>
+          arr.findIndex((row) => row.customerid === item.customerid) === index
+      ).length;
+
+      setDashboardSectionOneCardData((prev) => {
+        const newData = [...prev];
+        newData[1] = { ...newData[1], value: convertedLeads };
+        return newData;
+      });
+    }
+
+    // 🔹 Contacts
+    if (ContactResponse) {
+      const totalContacts = ContactResponse.length;
+
+      setDashboardSectionOneCardData((prev) => {
+        const newData = [...prev];
+        newData[2] = { ...newData[2], value: totalContacts };
+        return newData;
+      });
+    }
+
+    // 🔹 Income
+    if (IncomeResponse) {
+      const totalRevenue = IncomeResponse.reduce(
+        (sum: number, item: any) => sum + (Number(item.Income) || 0),
+        0
+      );
+
+      setDashboardSectionOneCardData((prev) => {
+        const newData = [...prev];
+        newData[3] = {
+          ...newData[3],
+          value: totalRevenue,
+          prefix: "₹",
+        };
+        return newData;
+      });
+    }
+
+    setDataLoading(true);
+  } catch (err) {
+    console.error(err);
   }
+};
 
 
   // Start count animation

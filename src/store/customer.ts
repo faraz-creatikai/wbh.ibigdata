@@ -2,7 +2,7 @@
 
 import { API_ROUTES } from "@/constants/ApiRoute"
 import { contactAllDataInterface } from "./contact.interface";
-import { customerAllDataInterface, customerAssignInterface, customerDeletePayloadInterface } from "./customer.interface";
+import { customerAllDataInterface, customerAssignInterface, customerCheckDuplicateInterface, customerDeletePayloadInterface } from "./customer.interface";
 import toast from "react-hot-toast";
 
 export const getCustomer = async () => {
@@ -24,6 +24,20 @@ export const getCustomerById = async (id: string) => {
     const response = await fetch(API_ROUTES.CUSTOMER.GET_BY_ID(id), { credentials: "include" });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
+    return data;
+  }
+  catch (error) {
+    console.log("SERVER ERROR: ", error)
+    return null;
+  }
+}
+
+export const getTodayCustomer = async () => {
+  try {
+    const response = await fetch(API_ROUTES.CUSTOMER.GET_TODAY_ALL, { credentials: "include" });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+    console.log(data)
     return data;
   }
   catch (error) {
@@ -60,6 +74,26 @@ export const getFilteredCustomer = async (params: string) => {
     console.log("SERVER ERROR: ", error)
     return null;
   }
+}
+
+export const getDuplicateContacts = async (data: any) => {
+    try {
+        let response = await fetch(API_ROUTES.CUSTOMER.CHECKDUPLICATES,
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+                credentials: "include"
+            }
+        );
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        response = await response.json();
+        return response;
+    }
+    catch (error) {
+        console.log("SERVER ERROR: ", error)
+        return null;
+    }
 }
 
 export const addCustomer = async (formData: FormData) => {
@@ -155,9 +189,6 @@ export const assignCustomer = async (data: customerAssignInterface) => {
     });
 
     if (!response.ok) {
-      let data = await response.json();
-     console.log(" status code is ",data)
-     return data;
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -239,3 +270,126 @@ export const deleteAllCustomer = async (payload: customerDeletePayloadInterface)
 }
 
 
+export const getQualification = async (data: any) => {
+  try {
+    const response = await fetch(API_ROUTES.CUSTOMER.QUALIFYCUSTOMER, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+      credentials: "include"
+    });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+    const json = await response.json(); // ✅ new variable
+    return json;
+
+  } catch (error) {
+    console.log("SERVER ERROR: ", error);
+    return null;
+  }
+};
+
+export const getRecommendedCustomers = async (data: any) => {
+  try {
+    const response = await fetch(API_ROUTES.CUSTOMER.RECOMENDCUSTOMER, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+      credentials: "include"
+    });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+    const json = await response.json(); // ✅ new variable
+    return json;
+
+  } catch (error) {
+    console.log("SERVER ERROR: ", error);
+    return null;
+  }
+};
+
+export const dataMining= async () => {
+  try {
+    const response = await fetch(API_ROUTES.CUSTOMER.DATAMINING, { credentials: "include" });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+    console.log(data)
+    return data;
+  }
+  catch (error) {
+    console.log("SERVER ERROR: ", error)
+    return null;
+  }
+}
+
+export const startCallByAIAgent = async (data: any) => {
+  try {
+    const response = await fetch(API_ROUTES.CUSTOMER.AGENTCALLING, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+      credentials: "include"
+    });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+    const json = await response.json(); // ✅ new variable
+    return json;
+
+  } catch (error) {
+    console.log("SERVER ERROR: ", error);
+    return null;
+  }
+};
+
+
+
+export const getCallLogs = async () => {
+  try {
+    const response = await fetch(API_ROUTES.CUSTOMER.GETCALLLOGS, { credentials: "include" });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+    console.log(data)
+    return data;
+  }
+  catch (error) {
+    console.log("SERVER ERROR: ", error)
+    return null;
+  }
+}
+
+export const getCallReport = async () => {
+  try {
+    const response = await fetch(API_ROUTES.CUSTOMER.GETCALLREPORT, { credentials: "include" });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+    console.log(data)
+    return data;
+  }
+  catch (error) {
+    console.log("SERVER ERROR: ", error)
+    return null;
+  }
+}
+
+export const deleteCallLog = async (id: string) => {
+  try {
+    const response = await fetch(API_ROUTES.CUSTOMER.DELETECALLLOG(id),
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include"
+      }
+    );
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+    return data;
+
+  }
+  catch (error) {
+    console.log("SERVER ERROR: ", error)
+    return null;
+  }
+}
