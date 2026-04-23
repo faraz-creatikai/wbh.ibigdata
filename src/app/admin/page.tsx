@@ -92,9 +92,14 @@ const Login = () => {
             />
           </Link>
 
-          <p className="text-white/75 text-sm text-center max-w-xs leading-relaxed">
+          <div className=" text-white text-center">
+            <h1 className=" font-extrabold text-3xl">Work<span className=" text-[#F5A623]">By</span>Home</h1>
+            <p className=" text-[#F5A623]">Earn Money From Home</p>
+          </div>
+
+         {/*  <p className="text-white/75 text-sm text-center max-w-xs leading-relaxed">
             AI‑powered real estate workspace — manage leads, automation &amp; deals smarter.
-          </p>
+          </p> */}
 
           {/* Robot visible only on desktop */}
           <div className="hidden lg:block mt-6">
