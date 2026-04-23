@@ -136,7 +136,7 @@ export default function CustomerTable<T extends Record<string, any>>({
                                 images={
                                     viewLeadData?.CustomerImage?.length
                                         ? viewLeadData.CustomerImage
-                                        : ["/siteplan2.png"]
+                                        : ["/workbyhomeicon.jpeg"]
                                 }
                             />
 
@@ -250,8 +250,8 @@ export default function CustomerTable<T extends Record<string, any>>({
                             } >View All</button> */}
 
 
-                                <div className=" bg-gray-300 overflow-hidden dark:bg-[var(--color-secondary-darker)] w-[120px] h-[80px] grid place-items-center rounded-md  self-end">
-                                    <img width={120} className={`  ${lead.SitePlan?.length > 0 ? "w-full object-cover" : "w-[60px] h-[60px]"}`} src={lead.SitePlan?.length > 0 ? lead.SitePlan : "/siteplan2.png"} onClick={() => {
+                                <div className=" bg-white overflow-hidden dark:bg-[var(--color-secondary-darker)] w-[120px] h-[80px] grid place-items-center rounded-md  self-end">
+                                    <img width={120} className={`  ${lead.SitePlan?.length > 0 ? "w-full object-cover" : "w-[60px] h-[60px]"}`} src={lead.SitePlan?.length > 0 ? lead.SitePlan : "/workbyhomeicon.jpeg"} onClick={() => {
                                         setViewAll(true)
                                         setViewLeadData(lead)
                                     }} />

@@ -49,9 +49,14 @@ export default function AppLayoutClient({ children }: { children: ReactNode }) {
 
               <Link
                 href={"/dashboard"}
-                className="text-white cursor-pointer font-extrabold text-xl py-1 sm:hidden"
+                className="text-white flex items-center gap-1 cursor-pointer font-extrabold text-xl py-1 w-full sm:hidden"
               >
-                Dashboard
+                <img
+              src="/workbyhomeicon.jpeg"
+              alt="EstateAI"
+              className="w-10 rounded-full h-auto"
+            />
+             <h1 className=" font-extrabold text-sm">Work<span className=" text-[#F5A623]">By</span>Home</h1>
               </Link>
 
               <div className="ml-auto w-full">
