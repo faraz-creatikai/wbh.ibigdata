@@ -8,185 +8,256 @@ import { useAuth } from "@/context/AuthContext";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Link from "next/link";
 
-
 const Login = () => {
   const router = useRouter();
   const { admin, isLoading, login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false)
-  const [currentYear, setCurrentYear] = useState<number | null>(null);
-  const togglePassword = () => {
-    setShowPassword(!showPassword)
-  };
+  const [showPassword, setShowPassword] = useState(false);
 
-
-  // Redirect if already logged in
   useEffect(() => {
-    const date = new Date();
-    setCurrentYear(date.getFullYear());
-    if (admin) {
-      router.push("/dashboard");
-    }
+    if (admin) router.push("/dashboard");
   }, [admin]);
 
   if (isLoading || loading) {
     return (
-      <div className="grid place-items-center min-h-screen w-full text-lg text-gray-600">
+      <div className="grid place-items-center min-h-screen w-full text-lg text-gray-500">
         Loading...
       </div>
     );
   }
 
-
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-
     await login({ email, password });
     if (admin) router.push("/dashboard");
     setLoading(false);
   };
 
-  //bg-[url('/bgimage.webp')]
   return (
     <div
-      className="min-h-screen w-full bg-cover bg-center bg-no-repeat sm:bg-[url('https://res.cloudinary.com/djipgt6vc/image/upload/v1774335586/login-bg_myf3hh.png')] bg-[url('https://res.cloudinary.com/djipgt6vc/image/upload/v1774335568/login-bg1_tg2ma5.png')] relative"
-
+      className="min-h-screen w-full flex flex-col lg:flex-row overflow-hidden"
+      style={{ backgroundColor: "var(--color-bg, #f0f4ff)" }}
     >
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-slate-900/10 pointer-events-none" />
+      <Toaster position="top-right" />
 
-      <div className="min-h-screen w-full relative overflow-hidden">
+      {/* ─── HERO PANEL ─────────────────────────────────────────────────────── */}
+      {/* Mobile: top 45vh strip  |  Desktop: left 45% full-height panel        */}
+      <div
+        className="relative flex-shrink-0 lg:w-[45%] lg:min-h-screen"
+        style={{ height: "45vh" }}
+      >
+        {/* Background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage:
+              "url('/authbg.jpeg')",
+          }}
+        />
 
-        {/* LOGO */}
-        <Link href="https://estateai.in" className="absolute top-4 left-4 sm:top-6 sm:left-8 z-10">
-          <img
-            src="/estateai.png"
-            alt="EstateAI"
-            className="w-58 sm:w-40 md:w-48 lg:w-52 h-auto"
-          />
-        </Link>
+        {/* Primary colour overlay */}
+        <div
+          className="absolute inset-0"
+          style={{ backgroundColor: "color-mix(in srgb, var(--color-primary, #1e88e5) 88%, transparent)" }}
+        />
 
-        {/* MAIN */}
-        <div className="flex items-center justify-center px-4 sm:px-6 lg:px-8 min-h-screen py-20 sm:py-24 lg:py-0">
-          <Toaster />
+        {/* ── Decorative dot grids ── */}
+        <div className="absolute top-8 left-6 grid grid-cols-4 gap-[5px]">
+          {Array.from({ length: 16 }).map((_, i) => (
+            <div key={i} className="w-[3px] h-[3px] rounded-full bg-white/60" />
+          ))}
+        </div>
+        <div className="absolute bottom-14 right-6 grid grid-cols-3 gap-[5px] lg:bottom-10">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <div key={i} className="w-[3px] h-[3px] rounded-full bg-white/40" />
+          ))}
+        </div>
 
-          <div className="w-full max-w-5xl flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-8 lg:gap-16">
+        {/* ── Floating blob accents ── */}
+        <div className="absolute -left-4 top-[45%] w-10 h-10 rounded-full bg-white/20" />
+        <div className="absolute -right-3 top-[38%] w-7 h-7 rounded-full bg-white/20" />
+        <div className="absolute top-6 right-10 w-2.5 h-2.5 rounded-full bg-white/50" />
+        <div className="absolute top-10 right-1/3 w-1.5 h-1.5 rounded-full bg-white/40" />
 
-            {/* LEFT CARD - Full screen on mobile */}
-            <div
-              className="w-full min-h-[50vh] sm:min-h-0 py-0 px-6 sm:max-w-md lg:max-w-md text-white sm:p-8 rounded-2xl sm:rounded-3xl shadow-2xl sm:ml-16 lg:ml-26"
-              style={{
-                background: "linear-gradient(160deg, #0b2a4a 0%, #0d3561 60%, #0a2440 100%)",
-                boxShadow: "0 25px 60px rgba(13, 46, 94, 0.4), 0 0 0 1px rgba(255,255,255,0.05)",
-              }}
-            >
-              {/* Spacer for logo on mobile */}
-              <div className="h-10 sm:hidden" />
+        {/* ── Brand / logo content ── */}
+        <div className="relative z-10 flex flex-col items-center justify-center h-full px-6 pb-10 lg:pb-0 gap-3">
+          <Link href="https://estateai.in">
+            <img
+              src="/workbyhomeicon.jpeg"
+              alt="EstateAI"
+              className="w-20 rounded-full sm:w-22 lg:w-26 h-auto"
+            />
+          </Link>
 
-              <h2 className="text-xs sm:text-sm text-gray-300 mb-1 tracking-widest uppercase">
-                WELCOME,
-              </h2>
+          <p className="text-white/75 text-sm text-center max-w-xs leading-relaxed">
+            AI‑powered real estate workspace — manage leads, automation &amp; deals smarter.
+          </p>
 
-              <h1 className="text-2xl sm:text-2xl font-black mb-5 sm:mb-7">
-                Access Your<br />Secure Admin Panel
-              </h1>
-
-              <form onSubmit={handleSubmit} className="space-y-4 my-6 sm:my-10">
-
-                {/* Email */}
-                <div className="flex items-center gap-3 rounded-xl px-4 py-3.5 sm:py-3 bg-white/10 border border-blue-200/20">
-                  <FaUserAlt className="text-gray-400 text-sm flex-shrink-0" />
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    className="bg-transparent outline-none w-full text-white text-base placeholder-gray-400"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-
-                {/* Password */}
-                <div className="flex items-center gap-3 rounded-xl px-4 py-3.5 sm:py-3 bg-white/10 border border-blue-200/20">
-                  <FaLock className="text-gray-400 text-sm flex-shrink-0" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Password"
-                    className="bg-transparent outline-none w-full text-white text-base placeholder-gray-400"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="text-gray-400 hover:text-white transition flex-shrink-0"
-                  >
-                    {showPassword ? <FaEyeSlash /> : <FaEye />}
-                  </button>
-                </div>
-
-                {/* BUTTON */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 sm:py-3 rounded-full text-base font-black uppercase hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 transition-all mt-2"
-                  style={{
-                    background: "linear-gradient(90deg, #1e88e5, #29b6f6)",
-                    boxShadow: "0 0 24px rgba(30, 136, 229, 0.6), 0 4px 15px rgba(41, 182, 246, 0.4)",
-                  }}
-                >
-                  {loading ? "Signing in..." : "SIGN IN"}
-                </button>
-              </form>
-
-              {/* SOCIAL */}
-              <div className="text-center text-gray-400 text-sm">
-                Or sign up with:
-              </div>
-
-              <div className="flex justify-center gap-6 mt-4">
-                <button className="w-12 h-12 sm:w-11 sm:h-11 rounded-full bg-white/10 flex items-center justify-center hover:scale-110 transition border border-white/10">
-                  <FaGoogle className="text-xl" style={{ color: "#4285F4" }} />
-                </button>
-                <button className="w-12 h-12 sm:w-11 sm:h-11 rounded-full bg-white/10 flex items-center justify-center hover:scale-110 transition border border-white/10">
-                  <FaGithub className="text-xl text-white" />
-                </button>
-                <button className="w-12 h-12 sm:w-11 sm:h-11 rounded-full bg-white/10 flex items-center justify-center hover:scale-110 transition border border-white/10">
-                  <FaCog className="text-xl" style={{ color: "#90caf9" }} />
-                </button>
-              </div>
-
-              <div className="text-center mt-5 sm:mt-6 text-gray-400 text-sm">
-                Don't have an account?{" "}
-                <Link href="/register" className="text-white font-bold hover:underline">
-                  Sign Up
-                </Link>
-              </div>
-
-              {/* Bottom spacer on mobile */}
-              <div className="h-12 sm:hidden" />
-            </div>
-
-            {/* RIGHT SIDE */}
-            <div className="hidden lg:flex flex-col items-center text-center max-w-md">
-              <div className="w-56 h-56 xl:w-72 xl:h-72 rounded-full flex items-center justify-center mb-6 xl:mb-8">
-                <img
-                  src="https://res.cloudinary.com/djipgt6vc/image/upload/v1774335570/login-robo_y9a5vm.png"
-                  className="w-48 h-48 xl:w-60 xl:h-60 object-contain"
-                  alt="AI Robot"
-                />
-              </div>
-
-              <p className="text-[#1a3a5c] text-base xl:text-lg max-w-sm px-4 leading-relaxed font-medium">
-                Create your AI-powered real estate workspace and manage leads,
-                automation, and deals smarter.
-              </p>
-            </div>
-
+          {/* Robot visible only on desktop */}
+          <div className="hidden lg:block mt-6">
+            <img
+              src="/bglogo.png"
+              className="w-72 h-72 object-contain drop-shadow-xl"
+              alt="AI Robot"
+            />
           </div>
+        </div>
+
+        {/* ── Curved bottom edge (mobile only) ── */}
+        <div
+          className="absolute bottom-0 left-0 right-0 overflow-hidden lg:hidden"
+          style={{ height: 52 }}
+        >
+          <svg
+            viewBox="0 0 375 60"
+            preserveAspectRatio="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-full"
+          >
+            <path
+              d="M0,60 L0,30 Q187.5,-20 375,30 L375,60 Z"
+              fill="var(--color-bg, #f0f4ff)"
+            />
+          </svg>
+        </div>
+
+        {/* ── Curved right edge (desktop only) ── */}
+        <div
+          className="hidden lg:block absolute top-0 right-0 bottom-0 overflow-hidden"
+          style={{ width: 56 }}
+        >
+          <svg
+            viewBox="0 0 60 900"
+            preserveAspectRatio="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-full"
+          >
+            <path
+              d="M60,0 L28,0 Q-18,450 28,900 L60,900 Z"
+              fill="var(--color-bg, #f0f4ff)"
+            />
+          </svg>
+        </div>
+      </div>
+
+      {/* ─── FORM SECTION ────────────────────────────────────────────────────── */}
+      <div
+        className="flex-1 flex flex-col items-center lg:justify-center px-6 py-5 lg:py-0"
+        style={{ backgroundColor: "var(--color-bg, #f0f4ff)" }}
+      >
+        <div className="w-full max-w-sm">
+          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 text-center mb-8">
+            Welcome Back
+          </h2>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {/* Email */}
+            <div
+              className="flex items-center gap-3 bg-white border-2 rounded-full px-4 py-3 shadow-sm"
+              style={{ borderColor: "var(--color-primary, #1e88e5)" }}
+            >
+              <FaUserAlt
+                className="text-sm flex-shrink-0"
+                style={{ color: "var(--color-primary, #1e88e5)" }}
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="flex-1 bg-transparent outline-none text-gray-700 text-base placeholder-gray-400"
+              />
+            </div>
+
+            {/* Password */}
+            <div
+              className="relative flex items-center gap-3 bg-white border-2 rounded-full px-4 py-3 shadow-sm"
+              style={{ borderColor: "var(--color-primary, #1e88e5)" }}
+            >
+              <FaLock
+                className="text-sm flex-shrink-0"
+                style={{ color: "var(--color-primary, #1e88e5)" }}
+              />
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="flex-1 bg-transparent outline-none text-gray-700 text-base placeholder-gray-400 pr-8"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 transition"
+                style={{ color: "var(--color-primary, #1e88e5)" }}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-2 flex items-center justify-between rounded-xl px-5 py-3.5 text-white font-semibold text-base tracking-widest uppercase disabled:opacity-60 hover:opacity-90 active:scale-[0.98] transition-all"
+              style={{ backgroundColor: "#F5A623" }}
+            >
+              <span className="flex-1 text-center">
+                {loading ? "Signing in…" : "SIGN IN"}
+              </span>
+              <span className="ml-2 w-7 h-7 rounded-full border-2 border-white flex items-center justify-center flex-shrink-0">
+                <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                  <path
+                    d="M2 7h10M8 3l4 4-4 4"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+            </button>
+          </form>
+
+          {/* Social */}
+{/*           <div className="text-center mt-7 text-gray-400 text-sm">Or sign in with</div>
+          <div className="flex justify-center gap-4 mt-3">
+            {[
+              { icon: <FaGoogle className="text-xl" style={{ color: "#4285F4" }} /> },
+              { icon: <FaGithub className="text-xl text-gray-800" /> },
+              {
+                icon: (
+                  <FaCog
+                    className="text-xl"
+                    style={{ color: "var(--color-primary, #1e88e5)" }}
+                  />
+                ),
+              },
+            ].map((btn, i) => (
+              <button
+                key={i}
+                className="w-11 h-11 rounded-full bg-white flex items-center justify-center hover:scale-110 transition shadow-sm border border-gray-100"
+              >
+                {btn.icon}
+              </button>
+            ))}
+          </div> */}
+
+          <p className="text-center mt-7 text-sm text-gray-600">
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/register"
+              className="font-bold hover:underline"
+              style={{ color: "var(--color-primary)" }}
+            >
+              Sign Up
+            </Link>
+          </p>
         </div>
       </div>
     </div>

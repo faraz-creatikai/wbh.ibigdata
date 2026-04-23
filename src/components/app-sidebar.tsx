@@ -352,13 +352,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   });
   return (
     <Sidebar collapsible="icon" className="" {...props}>
-      <SidebarHeader className={`flex items-center py-1 justify-center ${state === "collapsed" ? "bg-white dark:bg-[var(--color-secondary-darker)] py-4" : "bg-gray-100"}`}>
+      <SidebarHeader className={`flex items-center py-1 justify-center ${state === "collapsed" ? "bg-white dark:bg-[var(--color-secondary-darker)] py-4" : "bg-white"}`}>
         {/* <img src="/logo.webp" alt="App Logo" className="h-10 w-40 " /> */}
         {state === "collapsed" ? (
           <ShieldUser className="w-6 h-6" />
         ) : (
           <img
-            src="/applogo.jpeg"
+            src="/workbyhome.jpeg"
             alt="App Logo"
             className="h-12 w-40"
           />

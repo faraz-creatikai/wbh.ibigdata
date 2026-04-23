@@ -86,20 +86,20 @@
 
 
 
- /*custom colors */
-  --color-primary: #0066cc;
---color-primary-dark: #005bb8;
---color-primary-darker: #004c99;
---color-primary-light: #cce0ff;
---color-primary-lighter: #e6f0ff;
+ /* custom colors */
+--color-primary: #3a50dc;
+--color-primary-dark: #3246c4;
+--color-primary-darker: #2a3ca6;
+--color-primary-light: #d8ddfb;
+--color-primary-lighter: #eceffd;
 
---color-secondary: #0066cc;
---color-secondary-dark: #005bb8;
---color-secondary-darker: #004c99;
---color-secondary-light: #cce0ff;
+--color-secondary: #3a50dc;
+--color-secondary-dark: #3246c4;
+--color-secondary-darker: #2a3ca6;
+--color-secondary-light: #d8ddfb;
 
---color-accent: #99c2ff;
---color-muted: #cce0ff;
+--color-accent: #aab4f5;
+--color-muted: #d8ddfb;
 --color-destructive: #F87171;
 
 /* Additional colors */
@@ -108,14 +108,13 @@
 --color-bglightdark: #000000;
 
 /* table phone screen color */
---table: #4d79ff;
+--table: #5c6ff0;
 
 /* dark/light */
-
 --color-bgdark: #04171c;
 --color-bglight: white;
 
---color-childbglight: #e6f0ff;
+--color-childbglight: #eceffd;
 --color-childbgdark: #052b36;
 
   --color-txtdark:black;
