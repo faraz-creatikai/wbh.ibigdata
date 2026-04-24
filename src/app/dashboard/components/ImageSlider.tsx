@@ -16,30 +16,30 @@ interface CardData {
 
 const cards: CardData[] = [
   {
-    company: "Bedquest",
+    company: "WorkByHome",
     image: "/crm-sliderImage.jfif",
-    title: "We Made A Community Mural With AI",
+    title: "Start Earning from Home",
     description:
-      "Using tools like geofencing and keyword retargeting, we target customers based on location and behavior, ensuring every impression counts.",
-    tags: ["CEO", "SEO", "Branding"],
+      "Discover simple remote tasks you can do anytime. Work at your convenience and turn your time into income.",
+    tags: ["Remote", "Flexible", "Earning"],
     link: "#",
   },
   {
-    company: "Apple",
-    image: "\crm-siderImage7.png",
-    title: "Reimagining Retail Experience",
+    company: "WorkByHome",
+    image: "/crm-siderImage7.png",
+    title: "Work on Your Schedule",
     description:
-      "Apple redefined in-store customer interactions using AR and personalized AI assistants.",
-    tags: ["AR", "UX", "Retail"],
+      "No fixed hours or pressure. Choose when you want to work and enjoy complete flexibility from home.",
+    tags: ["Freedom", "Work-Life", "Flexible"],
     link: "#",
   },
   {
-    company: "Google",
+    company: "WorkByHome",
     image: "/crm-sliderImage22.webp",
-    title: "AI-Powered Workspace Tools",
+    title: "Simple Tasks, Real Income",
     description:
-      "Google Workspace now leverages AI to automate workflow and increase team productivity.",
-    tags: ["AI", "Cloud", "Productivity"],
+      "Complete easy company tasks, build consistency, and get paid reliably without leaving your home.",
+    tags: ["Tasks", "Income", "Remote"],
     link: "#",
   },
 ];

@@ -38,7 +38,7 @@ export default function AppLayoutClient({ children }: { children: ReactNode }) {
           {/* Main */}
           <SidebarInset className="flex flex-col flex-1 min-h-screen overflow-hidden">
             {/* Navbar */}
-            <header className="flex items-center gap-2 shrink-0 bg-white max-sm:fixed max-sm:top-0 max-sm:left-0 max-sm:w-full max-sm:bg-[var(--color-primary)] text-gray-800 px-4 pl-0 shadow-sm z-10">
+            <header className="flex items-center  shrink-0 bg-white max-sm:fixed max-sm:top-0 max-sm:left-0 max-sm:w-full max-sm:bg-[var(--color-primary)] text-gray-800 px-0 pl-0 shadow-sm z-10">
 
               <div className="flex items-center gap-2 ml-2 max-sm:hidden">
                 <SidebarTrigger className="ml-1 cursor-pointer" />
@@ -49,17 +49,17 @@ export default function AppLayoutClient({ children }: { children: ReactNode }) {
 
               <Link
                 href={"/dashboard"}
-                className="text-white flex items-center gap-1 cursor-pointer font-extrabold text-xl py-1 w-full sm:hidden"
+                className="text-white flex items-center gap-1 cursor-pointer font-extrabold text-xl py-1  w-full sm:hidden"
               >
                 <img
               src="/workbyhomeicon.jpeg"
               alt="EstateAI"
-              className="w-10 rounded-full h-auto"
+              className="w-8 rounded-full h-auto"
             />
-             <h1 className=" font-extrabold text-sm">Work<span className=" text-[#F5A623]">By</span>Home</h1>
+             <h1 className=" font-extrabold text-lg max-[320px]:text-sm">Work<span className=" text-[#F5A623]">By</span>Home</h1>
               </Link>
 
-              <div className="ml-auto w-full">
+              <div className="ml-auto ">
                 <Navbar />
               </div>
             </header>
