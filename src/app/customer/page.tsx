@@ -1121,7 +1121,8 @@ export default function Customer() {
         whatsapptemplates.map((item: any): whatsappGetDataInterface => ({
           _id: item?._id ?? "",
           name: item?.name ?? "",
-          body: item?.body ?? ""
+          body: item?.body ?? "",
+          image: item?.whatsappImage[0] ?? "",
         }))
       );
 
