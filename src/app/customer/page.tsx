@@ -2568,6 +2568,45 @@ export default function Customer() {
             setIsTableDialogOpen(true);
             handleTableDialogData(contactNumber);
           }}
+          renderActions={(item) => (
+             <div className=" flex justify-between w-full">
+
+              <Button
+                className=" bg-gray-500"
+                sx={{ backgroundColor: item.isChecked ? "#E8F5E9" : "#FFF0F5", color: item.isChecked ? "var(--color-primary)" : "#E91E63", minWidth: "32px", minHeight: "35px", borderRadius: "100%" }}
+                onClick={() =>
+                  handleChecked({ id: item._id, isChecked: item.isChecked })
+                }
+              >
+                {item.isChecked ? <IoCheckmarkDoneOutline size={20} /> : <IoCheckmark size={20} />}
+              </Button>
+
+              <Button
+                sx={{
+                  backgroundColor: temperatureConfig[item.LeadTemperature || "cold"]?.bg,
+                  color: temperatureConfig[item.LeadTemperature || "cold"]?.color,
+                  minWidth: "32px",
+                  height: "35px",
+                  borderRadius: "100%",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    filter: "brightness(0.95)",
+                    transform: "scale(1.05)"
+                  }
+                }}
+                onClick={() => {
+                  setTemperatureDialogData({
+                    id: item._id,
+                    name: item.CustomerName,
+                    current: item.LeadTemperature || "cold"
+                  });
+                  setIsTemperatureDialogOpen(true);
+                }}
+              >
+                {temperatureConfig[item.LeadTemperature || "cold"]?.icon}
+              </Button>
+            </div>
+          )}
         />
 
 
