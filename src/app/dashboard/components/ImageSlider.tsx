@@ -18,7 +18,7 @@ const cards: CardData[] = [
   {
     company: "WorkByHome",
     image: "/crm-sliderImage.jfif",
-    title: "Start Earning from Home",
+    title: "Start Earning from Home Today",
     description:
       "Discover simple remote tasks you can do anytime. Work at your convenience and turn your time into income.",
     tags: ["Remote", "Flexible", "Earning"],
@@ -27,7 +27,7 @@ const cards: CardData[] = [
   {
     company: "WorkByHome",
     image: "/crm-siderImage7.png",
-    title: "Work on Your Schedule",
+    title: "Earn Extra Income from Home",
     description:
       "No fixed hours or pressure. Choose when you want to work and enjoy complete flexibility from home.",
     tags: ["Freedom", "Work-Life", "Flexible"],
@@ -36,7 +36,7 @@ const cards: CardData[] = [
   {
     company: "WorkByHome",
     image: "/crm-sliderImage22.webp",
-    title: "Simple Tasks, Real Income",
+    title: "Home-Based Part-Time Income",
     description:
       "Complete easy company tasks, build consistency, and get paid reliably without leaving your home.",
     tags: ["Tasks", "Income", "Remote"],
