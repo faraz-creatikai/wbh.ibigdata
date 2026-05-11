@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Navbar from "@/app/component/Nav";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -13,9 +13,19 @@ import { Separator } from "@/components/ui/separator";
 import ProtectedRoute from "@/app/component/ProtectedRoutes";
 import MobileHamburger from "@/app/component/HamburgerMenu";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { disconnectSocket, initSocket } from "@/socket/socket";
 
 export default function AppLayoutClient({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const {admin} = useAuth();
+
+    useEffect(() => {
+    if (!admin?._id) return;
+    console.log("admin id in AppLayoutClient: ", admin._id);
+    initSocket(admin._id);
+    return () => disconnectSocket();
+  }, [admin?._id]);
 
   const isAdminPage =
     pathname === "/admin" ||
@@ -38,7 +48,7 @@ export default function AppLayoutClient({ children }: { children: ReactNode }) {
           {/* Main */}
           <SidebarInset className="flex flex-col flex-1 min-h-screen overflow-hidden">
             {/* Navbar */}
-            <header className="flex items-center  shrink-0 bg-white max-sm:fixed max-sm:top-0 max-sm:left-0 max-sm:w-full max-sm:bg-[var(--color-primary)] text-gray-800 px-0 pl-0 shadow-sm z-10">
+            <header className="flex items-center gap-2 shrink-0 bg-white max-sm:fixed max-sm:top-0 max-sm:left-0 max-sm:w-full max-sm:bg-[var(--color-primary)] text-gray-800 px-4 pl-0 shadow-sm z-10">
 
               <div className="flex items-center gap-2 ml-2 max-sm:hidden">
                 <SidebarTrigger className="ml-1 cursor-pointer" />
@@ -49,17 +59,12 @@ export default function AppLayoutClient({ children }: { children: ReactNode }) {
 
               <Link
                 href={"/dashboard"}
-                className="text-white flex items-center gap-1 cursor-pointer font-extrabold text-xl py-1  w-full sm:hidden"
+                className="text-white cursor-pointer font-extrabold text-xl py-1 sm:hidden"
               >
-                <img
-              src="/workbyhomeicon.jpeg"
-              alt="EstateAI"
-              className="w-8 rounded-full h-auto"
-            />
-             <h1 className=" font-extrabold text-lg max-[320px]:text-sm">Work<span className=" text-[#F5A623]">By</span>Home</h1>
+                Dashboard
               </Link>
 
-              <div className="ml-auto ">
+              <div className="ml-auto w-full">
                 <Navbar />
               </div>
             </header>
@@ -67,7 +72,7 @@ export default function AppLayoutClient({ children }: { children: ReactNode }) {
             {/* Content */}
             <main className="flex-1 overflow-y-auto bg-[var(--color-childbglight)] max-md:dark:bg-[var(--color-bgdark)]">
 
-              <div className="flex items-center gap-2 max-w-[100px] mt-4 ml-4 md:hidden">
+              <div className="flex items-center gap-2 max-w-[100px] mt-4 ml-4 sm:hidden">
                 <SidebarTrigger className="ml-1" />
                 <Separator orientation="vertical" className="mr-2 h-4" />
               </div>

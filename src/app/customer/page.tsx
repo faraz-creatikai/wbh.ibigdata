@@ -10,7 +10,7 @@ import Link from "next/link";
 import { ArrowDown, ArrowUp, ArrowUpRight, Bot, ChevronsLeft, ChevronsRight, PlusSquare, Sparkles, UserPlus, Zap } from "lucide-react";
 import ProtectedRoute from "../component/ProtectedRoutes";
 import toast, { Toaster } from "react-hot-toast";
-import { getCustomer, deleteCustomer, getFilteredCustomer, updateCustomer, assignCustomer, deleteAllCustomer, getDuplicateContacts, getTodayCustomer, startCallByAIAgent, getCallLogs, getCallReport } from "@/store/customer";
+import { getCustomer, deleteCustomer, getFilteredCustomer, updateCustomer, assignCustomer, deleteAllCustomer, getDuplicateContacts, getTodayCustomer, startCallByAIAgent, getCallLogs, getCallReport, closeCustomerDeal } from "@/store/customer";
 import { CheckDialogDataInterface, CustomerAdvInterface, customerAssignInterface, customerGetDataInterface, DeleteDialogDataInterface } from "@/store/customer.interface";
 import DeleteDialog from "../component/popups/DeleteDialog";
 import { getCampaign } from "@/store/masters/campaign/campaign";
@@ -84,6 +84,8 @@ import AIAgentSidebar from "../component/aiagents/AIAgentSidebar";
 import DataMiningAgentWorkspace from "../component/aiagents/AnalyticsAgentWorkspace";
 import AnalyticsAgentWorkspace from "../component/aiagents/AnalyticsAgentWorkspace";
 import SocialMiningAgentWorkspace from "../component/aiagents/MiningAgentWorkspace";
+import SocialAgentWorkspace from "../component/aiagents/SocialAgentWorkspace";
+import { FaHandshakeSimple } from "react-icons/fa6";
 
 
 interface DeleteAllDialogDataInterface { }
@@ -163,6 +165,8 @@ export default function Customer() {
   const [tableDialogcustomerData, setTableDialogCustomerData] = useState<customerGetDataInterface[]>([]);
 
   const [isFollowupOpen, setIsFollowupOpen] = useState(false);
+  const [isDealCloseOpen, setIsDealCloseOpen] = useState(false);
+  const [dealCloseData, setDealCloseData] = useState<any>(null);
   const [selectedCustomerFollowupId, setSelectedCustomerFollowupId] = useState<string | null>(null);
   const [followupDialogData, setFollowupDialogData] = useState<customerFollowupAllDataInterface[] | null>([]);
   const [isfollowupDialogOpen, setIsFollowupDialogOpen] = useState(false);
@@ -181,6 +185,7 @@ export default function Customer() {
   const [isTemperatureDialogOpen, setIsTemperatureDialogOpen] = useState(false);
   const [temperatureDialogData, setTemperatureDialogData] = useState<any>(null);
   const [isTodayDialogOpen, setIsTodayDialogOpen] = useState(false);
+
 
   const temperatureConfig: any = {
     hot: {
@@ -398,103 +403,85 @@ export default function Customer() {
     setAgents(agents);
   }
 
+  // ── Derive which param and which options array are active ─────────────────────
+  // Computed outside the effect so it can be used as a precise dependency.
+  const status = searchParams.get("Campaign");
+  const reference = searchParams.get("ReferenceId");
+  const leadtemperature = searchParams.get("LeadTemperature");
+
+  const activeParam = status
+    ? "Campaign"
+    : reference
+      ? "ReferenceId"
+      : leadtemperature
+        ? "LeadTemperature"
+        : null;
+
+  const relevantOptions = activeParam ? fieldOptions?.[activeParam] : null;
+
+
+  // ── Effect 1: Mount-only ──────────────────────────────────────────────────────
   useEffect(() => {
-    const status = searchParams.get("Campaign");
-    const reference = searchParams.get("ReferenceId");
-    const leadtemperature = searchParams.get("LeadTemperature");
-    if (!fieldOptions?.Campaign?.length) return;
-    if (!fieldOptions?.ReferenceId?.length) return;
-    if (!fieldOptions?.LeadTemperature?.length) return;
-
-    if (status) {
-
-      const campaignObj = fieldOptions?.Campaign?.find(
-        (c) => c.Name === status
-      );
-      // Auto set filter
-      setFilters((prev) => ({
-        ...prev,
-        StatusAssign: [status],
-      }));
-      setDependent((prev) => ({
-        ...prev,
-        Campaign: { id: campaignObj?._id, name: campaignObj?.Name }
-      }))
-
-      const updatedFilters = {
-        ...filters,
-        Campaign: [status],
-      };
-
-      setCustomerTableLoader(false);
-
-      // Fetch filtered data
-      handleSelectChange("Campaign", status, updatedFilters);
-    }
-    else if (reference) {
-
-      const referenceObj = fieldOptions?.ReferenceId?.find(
-        (c) => c.Name === reference
-      );
-      // Auto set filter
-      setFilters((prev) => ({
-        ...prev,
-        ReferenceId: [reference],
-      }));
-      setDependent((prev) => ({
-        ...prev,
-        ReferenceId: { id: referenceObj?._id, name: referenceObj?.Name }
-      }))
-
-      const updatedFilters = {
-        ...filters,
-        ReferenceId: [reference],
-      };
-
-      setCustomerTableLoader(false);
-
-      // Fetch filtered data
-      handleSelectChange("ReferenceId", reference, updatedFilters);
-    }
-    else if (leadtemperature) {
-
-      const leadtemperatureObj = fieldOptions?.LeadTemperature?.find(
-        (c) => c.Name === leadtemperature
-      );
-      // Auto set filter
-      setFilters((prev) => ({
-        ...prev,
-        LeadTemperature: [leadtemperature],
-      }));
-      setDependent((prev) => ({
-        ...prev,
-        LeadTemperature: { id: leadtemperatureObj?._id, name: leadtemperatureObj?.Name }
-      }))
-
-      const updatedFilters = {
-        ...filters,
-        LeadTemperature: [leadtemperature],
-      };
-
-      setCustomerTableLoader(false);
-
-      // Fetch filtered data
-      handleSelectChange("LeadTemperature", leadtemperature, updatedFilters);
-    }
-    else {
-      getCustomers();
-      fetchFields();
-      getTotalCustomerPage();
-    }
     fetchAiAgents();
     fetchTodayCustomer();
+    fetchcalllogs();
     audioRef.current = new Audio(
       "https://res.cloudinary.com/dsyzuwice/video/upload/v1774423860/voicepop_ypkmtz.mp3"
     );
 
-    fetchcalllogs();
+    if (!activeParam) {
+      getCustomers();
+      getTotalCustomerPage();
+    }
 
-  }, [searchParams, fieldOptions.Campaign, fieldOptions.ReferenceId]);
+    fetchFields();
+  }, []);
+
+
+  // ── Effect 2: Fires only when the ONE relevant options array changes ───────────
+  // Because `relevantOptions` points to only Campaign OR ReferenceId OR
+  // LeadTemperature — not all three — this effect runs exactly once when
+  // the needed options load. Other arrays loading won't trigger it.
+  useEffect(() => {
+    if (!activeParam || !relevantOptions?.length) return;
+
+    if (status) {
+      const campaignObj = fieldOptions?.Campaign?.find((c) => c.Name === status);
+      setFilters((prev) => ({ ...prev, StatusAssign: [status] }));
+      setDependent((prev) => ({
+        ...prev,
+        Campaign: { id: campaignObj?._id, name: campaignObj?.Name },
+      }));
+      setCustomerTableLoader(false);
+      handleSelectChange("Campaign", status, { ...filters, Campaign: [status] });
+
+    } else if (reference) {
+      const referenceObj = fieldOptions?.ReferenceId?.find((c) => c.Name === reference);
+      setFilters((prev) => ({ ...prev, ReferenceId: [reference] }));
+      setDependent((prev) => ({
+        ...prev,
+        ReferenceId: { id: referenceObj?._id, name: referenceObj?.Name },
+      }));
+      setCustomerTableLoader(false);
+      handleSelectChange("ReferenceId", reference, { ...filters, ReferenceId: [reference] });
+
+    } else if (leadtemperature) {
+      const leadtemperatureObj = fieldOptions?.LeadTemperature?.find(
+        (c) => c.Name === leadtemperature
+      );
+      setFilters((prev) => ({ ...prev, LeadTemperature: [leadtemperature] }));
+      setDependent((prev) => ({
+        ...prev,
+        LeadTemperature: { id: leadtemperatureObj?._id, name: leadtemperatureObj?.Name },
+      }));
+      setCustomerTableLoader(false);
+      handleSelectChange("LeadTemperature", leadtemperature, {
+        ...filters,
+        LeadTemperature: [leadtemperature],
+      });
+    }
+
+  }, [searchParams, relevantOptions]); // only the ONE array that matters
 
   const fetchcalllogs = async () => {
     const res = await getCallReport();
@@ -1752,11 +1739,24 @@ export default function Customer() {
     Qualification: <img src="https://res.cloudinary.com/djipgt6vc/image/upload/v1774335520/img-1_nz99v7.png" alt="Qualification" className=" object-contain w-10 h-10" />,
     Recommendation: <img src="https://res.cloudinary.com/djipgt6vc/image/upload/v1774335520/img-3_scja92.png" alt="Recommendation" className=" object-contain w-10 h-10" />,
     Mining: <img src="https://res.cloudinary.com/djipgt6vc/image/upload/v1774335520/img-3_scja92.png" alt="Mining" className=" object-contain w-10 h-10" />,
+    Social: <img src="https://res.cloudinary.com/djipgt6vc/image/upload/v1774335521/img-4_damgxf.png" alt="Social" className=" object-contain w-10 h-10" />,
     default: "AG",
   };
 
+  const closeDeal = async (id: string) => {
+    const response = await closeCustomerDeal(id);
+    if (response) {
+      setIsDealCloseOpen(false); setDealCloseData(null);
+      toast.success("Deal closed successfully");
+      return;
+    }
+    toast.error("Failed to close deal");
+  };
+
+
   return (
     <ProtectedRoute>
+
       {/* whatsapp all popup */}
       <Toaster position="top-right" />
       {isWhatsappAllOpen && selectedCustomers.length > 0 && (
@@ -2077,6 +2077,56 @@ export default function Customer() {
       }
 
       {
+        isDealCloseOpen && (
+          <PopupMenu onClose={() => { setIsDealCloseOpen(false); setDealCloseData(null); }}>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 w-full max-w-md mx-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--color-primary-lighter)] flex items-center justify-center">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900">Close Deal</h3>
+                    <p className="text-xs text-gray-500">This action will mark the deal as closed</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 mb-5">
+                  Are you sure you want to close the deal for{" "}
+                  <span className="font-semibold text-gray-900">{dealCloseData?.name}</span>?
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => {
+                      setDealCloseData(null)
+                      setIsDealCloseOpen(false);
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => closeDeal(dealCloseData?.id)}
+                    // disabled={loading}
+                    className="px-4 py-2 text-sm font-semibold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {/*  {loading && (
+              <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"/>
+              </svg>
+            )} */}
+                    Yes, Close Deal
+                  </button>
+                </div>
+              </div>
+            </div>
+          </PopupMenu>
+        )
+      }
+
+      {
         isTemperatureDialogOpen && temperatureDialogData && (
           <PopupMenu
             onClose={() => {
@@ -2141,6 +2191,7 @@ export default function Customer() {
                     </div>
                   )}
                 </button>
+
 
                 {/* WARM */}
                 <button
@@ -2570,7 +2621,7 @@ export default function Customer() {
             handleTableDialogData(contactNumber);
           }}
           renderActions={(item) => (
-             <div className=" flex justify-between w-full">
+            <div className=" flex justify-between w-full">
 
               <Button
                 className=" bg-gray-500"
@@ -2714,18 +2765,31 @@ export default function Customer() {
 
 
           <div className="mb-4 mx-4 flex justify-between items-center">
-            <button
-              onClick={handleOpenTodayCustomers}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/8 dark:bg-[var(--color-primary)]/12 text-[var(--color-primary)] text-[13px] font-semibold transition-all duration-150 hover:bg-[var(--color-primary)]/15 hover:border-[var(--color-primary)]/40 active:scale-[0.97] cursor-pointer"
-            >
-              <HiCalendar size={14} className="opacity-80" />
-              Today
-              {todaycustomerData?.length > 0 && (
-                <span className="min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-[var(--color-primary)] text-white text-[10px] font-bold leading-none">
-                  {todaycustomerData.length}
-                </span>
-              )}
-            </button>
+            <div className=" flex justify-center items-center gap-3">
+              <button
+                onClick={handleOpenTodayCustomers}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/8 dark:bg-[var(--color-primary)]/12 text-[var(--color-primary)] text-[13px] font-semibold transition-all duration-150 hover:bg-[var(--color-primary)]/15 hover:border-[var(--color-primary)]/40 active:scale-[0.97] cursor-pointer"
+              >
+                <HiCalendar size={14} className="opacity-80" />
+                Today
+                {todaycustomerData?.length > 0 && (
+                  <span className="min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-[var(--color-primary)] text-white text-[10px] font-bold leading-none">
+                    {todaycustomerData.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => router.push("/customer/closed-deals")}
+                className="flex items-center cursor-pointer gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] transition-colors shadow-sm"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+                Closed Deals
+              </button>
+            </div>
+
+
             <AIAgentDropdown
               agents={agents}
               setSelectedAgent={setSelectedAgent}
@@ -3024,6 +3088,12 @@ export default function Customer() {
                   ) : selectedAgent && selectedAgent.type === "Mining" ? (
                     <div className="flex-1 overflow-hidden ">
                       <SocialMiningAgentWorkspace isOpen={isAIAgentsDialogOpen} />
+                    </div>
+
+                    /* ── Error STATE ── */
+                  ) : selectedAgent && selectedAgent.type === "Social" ? (
+                    <div className="flex-1 overflow-hidden ">
+                      <SocialAgentWorkspace isOpen={isAIAgentsDialogOpen} />
                     </div>
 
                     /* ── Error STATE ── */
@@ -3862,6 +3932,51 @@ export default function Customer() {
                                           }}
                                         >
                                           {temperatureConfig[item.LeadTemperature || "cold"]?.icon}
+                                        </Button>
+                                        <Button
+                                          onClick={() => {
+                                            router.push(`/customer/${item._id}`)
+                                          }}
+                                          sx={{
+                                            backgroundColor: "#E8F5E9",
+                                            color: "var(--color-primary)",
+                                            minWidth: "32px",
+                                            height: "32px",
+                                            borderRadius: "8px",
+                                            transition: "all 0.2s ease",
+                                            "&:hover": {
+                                              filter: "brightness(0.95)",
+                                              transform: "scale(1.05)"
+                                            }
+                                          }}
+
+                                        >
+                                          <FaEye size={12} />
+                                        </Button>
+                                        <Button
+                                          onClick={() => {
+                                            setDealCloseData({
+                                              id: item._id,
+                                              name: item.Name,
+                                              current: item.LeadTemperature || "cold"
+                                            });
+                                            setIsDealCloseOpen(true);
+                                          }}
+                                          sx={{
+                                            backgroundColor: "#E8F5E9",
+                                            color: "var(--color-primary)",
+                                            minWidth: "32px",
+                                            height: "32px",
+                                            borderRadius: "8px",
+                                            transition: "all 0.2s ease",
+                                            "&:hover": {
+                                              filter: "brightness(0.95)",
+                                              transform: "scale(1.05)"
+                                            }
+                                          }}
+
+                                        >
+                                          <FaHandshakeSimple size={20} />
                                         </Button>
                                       </div>
                                     );

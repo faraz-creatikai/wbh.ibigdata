@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import PopupMenu from "./PopupMenu";
 
 interface ListItem {
@@ -46,8 +46,6 @@ export default function ListPopup({
       setPreviewItem(null);
     }
   };
-
-  useEffect(()=>{console.log(" list is ",list)},[list])
 
   return (
     <PopupMenu onClose={onClose}>

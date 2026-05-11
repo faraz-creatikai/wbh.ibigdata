@@ -1,4 +1,4 @@
-export const BASE_URL = "https://apiwbh.ibigdata.in/api";
+export const BASE_URL = "http://localhost:5000/api";
 //https://live-project-backend-1.onrender.com
 //https://propertyapi.aileadgenie.cloud/api
 //https://apidomain.ibigdata.in
@@ -42,6 +42,11 @@ export const API_ROUTES = {
     GETCALLLOGS: `${BASE_URL}/customer/getcalllogs`,
     GETCALLREPORT: `${BASE_URL}/customer/get-call-report`,
     DELETECALLLOG: (id: string) => `${BASE_URL}/customer/delete-calllog/${id}`,
+
+    GETCLOSEDDEAL: `${BASE_URL}/customer/closed-deals`,
+    GET_CLOSEDDEAL_BY_PARAMS: (params: string) => `${BASE_URL}/customer/closed-deals?${params}`,
+    CLOSEDEAL: (id: string) => `${BASE_URL}/customer/close-deal/${id}`,
+    REOPENDEAL: (id: string) => `${BASE_URL}/customer/reopen-deal/${id}`,
   },
   COMPANYPROJECTS: {
     GET_ALL: `${BASE_URL}/com/pro`,
@@ -90,6 +95,12 @@ export const API_ROUTES = {
     UPDATE: (id: string) => `${BASE_URL}/task/${id}`,
     DELETE: `${BASE_URL}/task`,
   },
+  NOTIFICATIONS:{
+    GET_ALL: `${BASE_URL}/notifications`,
+    GET_BY_PARAMS: (params: string) => `${BASE_URL}/notifications?${params}`,
+    MARK_READ: (id: string) => `${BASE_URL}/notifications/mark-read/${id}`,
+    MARK_ALL_READ: `${BASE_URL}/notifications/mark-all-read`,
+  },
   AIAGENT: {
     GET_ALL: `${BASE_URL}/aiagent`,
     GET_BY_ID: (id: string) => `${BASE_URL}/aiagent/${id}`,
@@ -117,7 +128,27 @@ export const API_ROUTES = {
       SAVE: `${BASE_URL}/social-content/minedlead/save`,
       GET: `${BASE_URL}/social-content/minedlead/get`,
       GET_BY_QUERY: (params: string) => `${BASE_URL}/social-content/minedlead/get?${params}`,
-      CONVERT:`${BASE_URL}/social-content/minedlead/convert`,
+      CONVERT: `${BASE_URL}/social-content/minedlead/convert`,
+    }
+  },
+  SOCIALMEDIA: {
+    INSTAGRAM: {
+      GET_LIVE_POST: `${BASE_URL}/social-auth/get-instagram-posts`,
+      GET_ANALYTICS: `${BASE_URL}/social-auth/get-instagram-analytics`,
+      DISCONNECT_ACCOUNT: `${BASE_URL}/social-auth/disconnect-instagram`,
+      SCHEDULE_POST: `${BASE_URL}/social-auth/schedule-instagram-post`,
+      GET_SCHEDULED_POST : (params:string)=> `${BASE_URL}/social-auth/scheduled-posts-data?platform=${params}`,
+
+    },
+    FACEBOOK: {
+      GET_LIVE_POST: `${BASE_URL}/social-auth/get-facebook-posts`,
+      GET_ANALYTICS: `${BASE_URL}/social-auth/get-facebook-analytics`,
+      DISCONNECT_ACCOUNT: `${BASE_URL}/social-auth/disconnect-facebook`,
+      SCHEDULE_POST: `${BASE_URL}/social-auth/schedule-facebook-post`,
+      GET_SCHEDULED_POST : (params:string)=> `${BASE_URL}/social-auth/scheduled-posts-data?platform=${params}`,
+    },
+    AUTOSOCIALAGENT:{
+      RUN: `${BASE_URL}/social-auth/auto-social-agent`
     }
   },
   MASTERS: {
@@ -406,3 +437,5 @@ export const API_ROUTES = {
     DENYREQUEST: (id: String) => `${BASE_URL}/user/newusers/${id}`
   }
 };
+
+export const API_URL = "http://localhost:5000";
