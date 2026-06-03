@@ -8,36 +8,51 @@ import { useAuth } from "@/context/AuthContext";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Link from "next/link";
 
+
 const Login = () => {
   const router = useRouter();
   const { admin, isLoading, login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false)
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+  const togglePassword = () => {
+    setShowPassword(!showPassword)
+  };
 
+
+  // Redirect if already logged in
   useEffect(() => {
-    if (admin) router.push("/dashboard");
+    const date = new Date();
+    setCurrentYear(date.getFullYear());
+    if (admin) {
+      router.push("/dashboard");
+    }
   }, [admin]);
 
   if (isLoading || loading) {
     return (
-      <div className="grid place-items-center min-h-screen w-full text-lg text-gray-500">
+      <div className="grid place-items-center min-h-screen w-full text-lg text-gray-600">
         Loading...
       </div>
     );
   }
 
+
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+
     await login({ email, password });
     if (admin) router.push("/dashboard");
     setLoading(false);
   };
 
+  //bg-[url('/bgimage.webp')]
   return (
-    <div
+       <div
       className="min-h-screen w-full flex flex-col lg:flex-row overflow-hidden"
       style={{ backgroundColor: "var(--color-bg, #f0f4ff)" }}
     >

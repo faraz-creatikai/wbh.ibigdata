@@ -1,1522 +1,1140 @@
 "use client";
-// Note: Move metadata to your app/layout.tsx — client components can't export metadata.
-// Suggested metadata: title: "TiffinZayka – Ghar Ka Khana, Delivered Fresh"
 
 import { useState, useEffect, useRef } from "react";
-import { Cormorant_Garamond, Manrope } from "next/font/google";
 
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  variable: "--font-display",
-  weight: ["300", "400", "500", "600", "700"],
-  style: ["normal", "italic"],
-});
-const manrope = Manrope({
-  subsets: ["latin"],
-  variable: "--font-body",
-  weight: ["300", "400", "500", "600", "700", "800"],
-});
-
-// ─── Types ─────────────────────────────────────────────────────────────────────
-interface MenuItem {
-  emoji: string; name: string; tag: string; price: string; cook: string;
-  cookCity: string; rating: string; reviews: number; badge: string | null;
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface NavItem {
+  label: string;
+  href: string;
+  children?: { label: string; href: string }[];
 }
-interface Cook {
-  emoji: string; name: string; age: number; city: string; specialty: string;
-  story: string; meals: string; rating: string; earnings: string; since: string;
-}
-interface FAQ { q: string; a: string }
-interface CompRow { feature: string; us: boolean | string; restaurant: boolean | string | null; apps: boolean | string | null }
 
-// ─── Data ──────────────────────────────────────────────────────────────────────
-const MARQUEE = ["🍛 Dal Tadka","🫓 Tawa Roti","🥘 Rajma Chawal","🍲 Kadhi Rice","🥗 Palak Paneer","🫕 Chicken Curry","🍚 Curd Rice","🥙 Paneer Bhurji","🌶️ Aloo Sabzi","🍱 Thali Special","🫙 Achaar + More","🧅 Pyaaz Paratha"];
-
-const STEPS = [
-  { step:"01", icon:"📍", color:"#E8560C", title:"Enter Your Location", desc:"We map all verified home cooks within a 2–5 km radius. Real people, real kitchens — not ghost restaurants.", detail:"We use precise geolocation. The shorter the distance, the hotter your tiffin arrives at your door." },
-  { step:"02", icon:"📋", color:"#D4A017", title:"Browse Today's Tiffin", desc:"Every morning, cooks publish exactly what they're making for their own family's lunch or dinner.", detail:"No mystery ingredients. Full transparency — allergens, spice level, cooking time, photos, and reviews." },
-  { step:"03", icon:"🤝", color:"#1B7A3E", title:"Customise & Order", desc:"Request less oil, extra roti, no garlic — cooks are your neighbours, not a call centre. They listen.", detail:"Pay securely online. Chat directly with your cook in-app. Real-time prep status updates." },
-  { step:"04", icon:"🛵", color:"#E8560C", title:"Delivered Warm to You", desc:"Your tiffin is packed the moment it's cooked — never hours in advance. Arrives in insulated steel containers.", detail:"Average delivery: 25–40 mins. Every order includes a freshness timestamp so you know exactly when it was made." },
+// ─── Data ─────────────────────────────────────────────────────────────────────
+const navItems: NavItem[] = [
+  { label: "Home", href: "/" },
+  {
+    label: "Company",
+    href: "#",
+    children: [
+      { label: "About Us", href: "/about-us" },
+      { label: "Contact Us", href: "/contact-us" },
+      { label: "Why Choose Us", href: "/why-choose-us" },
+      { label: "FAQs", href: "/faqs" },
+    ],
+  },
+  {
+    label: "Industries",
+    href: "#",
+    children: [
+      { label: "Education", href: "/education" },
+      { label: "Medical", href: "/medical" },
+      { label: "Finance", href: "/finance" },
+      { label: "Real Estate", href: "/real-estate" },
+    ],
+  },
+  { label: "Services", href: "/our-services" },
+  { label: "Case Studies", href: "/case-studies" },
+  { label: "Blog", href: "/blogs-2" },
 ];
 
-const MENU: MenuItem[] = [
-  { emoji:"🍛", name:"Dal Tadka + 4 Rotis + Salad", tag:"Veg", price:"₹80", cook:"Sunita Devi", cookCity:"Vaishali Nagar", rating:"4.9", reviews:312, badge:"Bestseller" },
-  { emoji:"🥘", name:"Chicken Curry + Steamed Rice", tag:"Non-Veg", price:"₹130", cook:"Fatima Begum", cookCity:"Mansarovar", rating:"5.0", reviews:198, badge:"Top Rated" },
-  { emoji:"🫕", name:"Rajma Chawal + Raita + Achaar", tag:"Veg", price:"₹90", cook:"Priya Sharma", cookCity:"Jagatpura", rating:"4.8", reviews:256, badge:null },
-  { emoji:"🥗", name:"Paneer Butter Masala + 3 Rotis", tag:"Veg", price:"₹110", cook:"Kavita Ji", cookCity:"Malviya Nagar", rating:"4.9", reviews:445, badge:"Fan Favourite" },
-  { emoji:"🍲", name:"Mutton Keema + Rice + Salad", tag:"Non-Veg", price:"₹150", cook:"Razia Bi", cookCity:"Sanganer", rating:"4.7", reviews:87, badge:"Special Today" },
-  { emoji:"🫓", name:"Stuffed Paratha Trio + Dahi + Pickle", tag:"Veg", price:"₹70", cook:"Kamla Devi", cookCity:"Tonk Road", rating:"4.8", reviews:189, badge:null },
-  { emoji:"🍚", name:"South Indian Thali – Sambar, 2 Sabzi", tag:"Veg", price:"₹100", cook:"Meenakshi S.", cookCity:"Pratap Nagar", rating:"4.9", reviews:203, badge:"New Cook" },
-  { emoji:"🥙", name:"Egg Curry + Dal + 3 Rotis", tag:"Non-Veg", price:"₹100", cook:"Anita Bhatia", cookCity:"Bapu Nagar", rating:"4.6", reviews:134, badge:null },
+const services = [
+  {
+    num: "01",
+    title: "Tailored Lead Strategies",
+    desc: "Custom acquisition plans engineered around your ICP, vertical, and sales cycle — not templates.",
+    tag: "STRATEGY",
+  },
+  {
+    num: "02",
+    title: "AI Prospect Detection",
+    desc: "Machine-learning models that score, rank, and surface high-intent buyers before your competitors find them.",
+    tag: "AI / ML",
+  },
+  {
+    num: "03",
+    title: "Multi-Channel Outreach",
+    desc: "Orchestrated touchpoints across LinkedIn, email, and search that keep your brand top-of-mind at every stage.",
+    tag: "OUTREACH",
+  },
+  {
+    num: "04",
+    title: "CRM & Funnel Integration",
+    desc: "Seamless pipelines into Salesforce, HubSpot, Zoho and more — zero friction from lead to closed deal.",
+    tag: "AUTOMATION",
+  },
+  {
+    num: "05",
+    title: "Industry-Specific Verticals",
+    desc: "Deep domain expertise across Finance, Medical, Real Estate, Education and Consultancy sectors.",
+    tag: "INDUSTRIES",
+  },
+  {
+    num: "06",
+    title: "Data Security & Compliance",
+    desc: "Bank-grade encryption, GDPR-compliant workflows, and full audit trails for every lead record.",
+    tag: "SECURITY",
+  },
 ];
 
-const COOKS: Cook[] = [
-  { emoji:"👩‍🍳", name:"Sunita Devi", age:48, city:"Vaishali Nagar, Jaipur", specialty:"Rajasthani Dal Baati, Home-style Dal Tadka, Ker Sangri", story:"I've been cooking for my family for 25 years. My husband said my dal was too good to keep at home. Now over 300 people wake up asking what I'm making today.", meals:"4,200+", rating:"4.9", earnings:"₹18,000/mo", since:"March 2023" },
-  { emoji:"👩‍🍳", name:"Fatima Begum", age:52, city:"Mansarovar, Jaipur", specialty:"Chicken Curry, Mutton Biryani, Egg Dishes", story:"TiffinZayka gave me what no job ever could — financial independence and pride in my cooking. I cook the same amount I always did. Now I earn from it too.", meals:"2,800+", rating:"5.0", earnings:"₹22,000/mo", since:"June 2023" },
+const stats = [
+  { value: "1790+", label: "Happy Clients", sub: "Across 12 industries" },
+  { value: "491+", label: "Projects Delivered", sub: "On-time, every time" },
+  { value: "99%", label: "Satisfaction Rate", sub: "Based on surveys" },
+  { value: "11 Yrs", label: "In Market", sub: "Since 2013" },
 ];
 
-const COMP: CompRow[] = [
-  { feature:"Made fresh daily", us:true, restaurant:null, apps:null },
-  { feature:"Same food the cook eats", us:true, restaurant:false, apps:false },
-  { feature:"Price per meal", us:"₹60–130", restaurant:"₹250–500", apps:"₹300–650" },
-  { feature:"Cook is your neighbour", us:true, restaurant:false, apps:false },
-  { feature:"Fully customisable", us:true, restaurant:null, apps:false },
-  { feature:"Zero preservatives", us:true, restaurant:null, apps:null },
-  { feature:"Supports local families", us:true, restaurant:null, apps:false },
-  { feature:"Know who cooked it", us:true, restaurant:false, apps:false },
-  { feature:"Direct cook chat", us:true, restaurant:false, apps:false },
+const caseStudies = [
+  {
+    cat: "Real Estate",
+    title: "JaipurRental Portal",
+    result: "3.2× lead volume in 90 days",
+    color: "#086ad8",
+    icon: "🏠",
+  },
+  {
+    cat: "Finance",
+    title: "Financial Lead Advisor",
+    result: "₹4.8Cr pipeline generated",
+    color: "#002fa6",
+    icon: "📈",
+  },
+  {
+    cat: "Cyber Security",
+    title: "Freeserve Rebrand",
+    result: "220% organic traffic lift",
+    color: "#d2a98e",
+    icon: "🔐",
+  },
+  {
+    cat: "Education",
+    title: "Student Lead Engine",
+    result: "18K enrollments in one cycle",
+    color: "#086ad8",
+    icon: "🎓",
+  },
 ];
 
-const QUALITY = [
-  { num:"01", icon:"🔍", title:"Kitchen Inspected", desc:"Every cook's kitchen is physically inspected for hygiene before they can accept orders. Inspection photos are available on request." },
-  { num:"02", icon:"🪪", title:"Aadhaar Verified", desc:"All cooks are identity-verified via Aadhaar. You know exactly who is cooking your food — name, face, address." },
-  { num:"03", icon:"⭐", title:"Rating Enforced", desc:"Cooks below a 4.0 star average are automatically paused and reviewed. The community sets the quality bar." },
-  { num:"04", icon:"🌡️", title:"Temperature Guaranteed", desc:"Delivery partners use food-grade insulated bags. Your tiffin arrives at the right temperature or we refund it." },
-  { num:"05", icon:"💬", title:"Direct Communication", desc:"Chat directly with your cook before and after every order. Ask questions, give feedback, build a real relationship." },
+const testimonials = [
+  {
+    name: "Rajesh Singh",
+    role: "Business Owner",
+    quote: "MakeMyLeads expanded our client base faster than any agency we'd tried before. Genuinely invaluable.",
+    initials: "RS",
+    color: "#086ad8",
+  },
+  {
+    name: "Priya Sharma",
+    role: "Marketing Head",
+    quote: "Their strategy moved the needle on revenue in ways we didn't expect. The ROI speaks for itself.",
+    initials: "PS",
+    color: "#d2a98e",
+  },
+  {
+    name: "Rahul Gupta",
+    role: "CEO",
+    quote: "Consistent, high-quality leads every single month. They don't just promise — they deliver.",
+    initials: "RG",
+    color: "#002fa6",
+  },
+  {
+    name: "Ananya Mishra",
+    role: "Sales Manager",
+    quote: "Working with the team has been a genuine game-changer for our pipeline and growth trajectory.",
+    initials: "AM",
+    color: "#086ad8",
+  },
 ];
 
-const FAQS: FAQ[] = [
-  { q:"How do I know the food is safe and hygienic?", a:"Every cook passes a kitchen inspection, Aadhaar verification, and basic food hygiene training. The strongest quality signal: the cook eats the same meal. Customer ratings do the rest — cooks below 4.0 stars are suspended automatically." },
-  { q:"What if I have dietary restrictions or allergies?", a:"You can add custom instructions at checkout. Cook profiles list common allergens. We strongly recommend messaging the cook directly through the app to confirm before ordering." },
-  { q:"What cities does TiffinZayka serve right now?", a:"We're live in Jaipur, Pune, Delhi NCR, Bengaluru, Hyderabad, Lucknow, Indore, Bhopal, Nagpur, Surat, Vadodara, and Patna. Expanding monthly — join the waitlist if your city isn't listed." },
-  { q:"How fresh is the food really? What are the timings?", a:"Cooks list by 9 AM for lunch (12–1:30 PM delivery) and 4 PM for dinner (7–8:30 PM). Orders are packed after cooking, never before. You get a 'just cooked' notification when your tiffin is being packed." },
-  { q:"Can I register as a cook even if I cook for a small family?", a:"Absolutely. You only need to make 1–5 extra portions beyond your family's meal. Many cooks start with 3 orders a day and scale up. Registration is completely free, always." },
-  { q:"What's the cancellation and refund policy?", a:"Cancel up to 1 hour before prep starts for a full refund within 5–7 business days. Late by 30+ minutes or unsatisfied with quality? Instant credits on your account, no questions asked." },
-  { q:"How are cooks paid?", a:"Cooks keep 85% of the tiffin price. Payments are weekly via UPI or bank transfer. Consistently high-rated cooks get priority listing and monthly performance bonuses." },
-  { q:"Is there a subscription / meal plan?", a:"Yes — TiffinPass gives you 20 meals/month at a flat 15% discount. Mix and match any cook, any meal type. Perfect for professionals, students, and anyone who wants ghar ka khana every day." },
+const marqueeItems = [
+  "AI Lead Generation",
+  "CRM Integration",
+  "Prospect Intelligence",
+  "Funnel Automation",
+  "Multi-Channel Outreach",
+  "Sales Enablement",
+  "Data Security",
+  "Industry Verticals",
 ];
 
-const CITIES = ["Jaipur","Pune","Delhi NCR","Bengaluru","Hyderabad","Lucknow","Indore","Bhopal","Nagpur","Surat","Vadodara","Patna"];
+// ─── Animated Counter ─────────────────────────────────────────────────────────
+function Counter({ value }: { value: string }) {
+  const [display, setDisplay] = useState("0");
+  const ref = useRef<HTMLSpanElement>(null);
+  const started = useRef(false);
 
-const TESTIMONIALS = [
-  { name:"Rahul Verma", city:"Jaipur", role:"Software Engineer", emoji:"👨‍💻", quote:"After 8 months in a PG eating packaged food, TiffinZayka felt like eating at home again. Sunita Ji's dal makes me emotional every time.", rating:5 },
-  { name:"Anjali Mehta", city:"Pune", role:"Doctor, Sahyadri Hospital", emoji:"👩‍⚕️", quote:"As someone who studies nutrition, I was skeptical of delivery food. TiffinZayka is genuinely different — real ingredients, real cooking. I can taste the difference.", rating:5 },
-  { name:"Deepak Rathore", city:"Delhi NCR", role:"MBA Student", emoji:"👨‍🎓", quote:"Ordered Rajma Chawal on a Sunday. Better than any dhaba I've visited in Delhi. The cook left a handwritten note in the box. That's never happened on Zomato.", rating:5 },
-  { name:"Pooja Iyer", city:"Bengaluru", role:"UX Designer", emoji:"👩‍🎨", quote:"My cook, Meenakshi, makes the most authentic South Indian food. She remembers I prefer less tamarind. A restaurant has never done that for me.", rating:5 },
-  { name:"Arjun Singh", city:"Lucknow", role:"CA, Private Firm", emoji:"👨‍💼", quote:"The economics alone make sense — ₹90 for a full fresh meal vs ₹400 on Swiggy. But the quality difference is what actually kept me coming back.", rating:5 },
-  { name:"Nisha Gupta", city:"Indore", role:"Homemaker & Mother", emoji:"👩‍👧", quote:"I use TiffinZayka when I'm unwell and can't cook. I know my kids are eating real food — not reheated restaurant leftovers. That peace of mind is priceless.", rating:5 },
-];
+  useEffect(() => {
+    const numMatch = value.match(/[\d.]+/);
+    if (!numMatch) { setDisplay(value); return; }
+    const target = parseFloat(numMatch[0]);
+    const suffix = value.replace(numMatch[0], "");
 
-// ─── CSS Tiffin Box Component ──────────────────────────────────────────────────
-function TiffinBox() {
-  return (
-    <div className="relative flex flex-col items-center select-none" style={{ width: 220 }}>
-      {/* Steam wisps */}
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="absolute" style={{
-          top: -32, left: `${70 + i * 28}px`,
-          width: 8, height: 32, borderRadius: 99,
-          background: "rgba(255,255,255,0.18)",
-          animation: `steam ${1.6 + i * 0.4}s ease-in-out infinite`,
-          animationDelay: `${i * 0.4}s`,
-        }} />
-      ))}
+    const observer = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !started.current) {
+        started.current = true;
+        let start = 0;
+        const step = target / 50;
+        const id = setInterval(() => {
+          start += step;
+          if (start >= target) { setDisplay(value); clearInterval(id); }
+          else setDisplay(Math.floor(start) + suffix);
+        }, 40);
+      }
+    }, { threshold: 0.5 });
 
-      {/* Lid */}
-      <div style={{
-        width: "100%", height: 52, borderRadius: "16px 16px 0 0",
-        background: "linear-gradient(180deg, #b0bec5 0%, #78909c 100%)",
-        border: "2px solid rgba(255,255,255,0.15)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        position: "relative", boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
-      }}>
-        {/* Latches */}
-        {[-1, 1].map((side) => (
-          <div key={side} style={{
-            position: "absolute", top: "50%", transform: "translateY(-50%)",
-            [side === -1 ? "left" : "right"]: -10,
-            width: 10, height: 22, borderRadius: 4,
-            background: "#546e7a",
-            boxShadow: "inset 0 1px 2px rgba(255,255,255,0.2)",
-          }} />
-        ))}
-        {/* Handle dots */}
-        <div style={{ display: "flex", gap: 8 }}>
-          {[0, 1, 2].map((i) => (
-            <div key={i} style={{
-              width: 10, height: 10, borderRadius: "50%",
-              background: "#37474f",
-              boxShadow: "inset 0 1px 2px rgba(255,255,255,0.3), 0 1px 3px rgba(0,0,0,0.4)",
-            }} />
-          ))}
-        </div>
-      </div>
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [value]);
 
-      {/* Divider line */}
-      <div style={{ width: "100%", height: 3, background: "linear-gradient(90deg,#b0bec5,#78909c,#b0bec5)" }} />
-
-      {/* Compartment 1 – Dal */}
-      <div style={{
-        width: "100%", height: 72,
-        background: "linear-gradient(180deg, #2a1400 0%, #1a0d00 100%)",
-        borderLeft: "2px solid rgba(180,160,120,0.2)",
-        borderRight: "2px solid rgba(180,160,120,0.2)",
-        display: "flex", alignItems: "center", padding: "0 14px", gap: 10,
-      }}>
-        <span style={{ fontSize: 28 }}>🍛</span>
-        <div>
-          <p style={{ color: "rgba(255,240,200,0.9)", fontSize: 11, fontWeight: 700, margin: 0 }}>Dal Makhani</p>
-          <p style={{ color: "rgba(255,200,120,0.45)", fontSize: 9, margin: 0 }}>protein rich · slow cooked</p>
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div style={{ width: "100%", height: 2, background: "linear-gradient(90deg, rgba(180,140,80,0.1), rgba(180,140,80,0.5), rgba(180,140,80,0.1))" }} />
-
-      {/* Compartment 2 – Sabzi */}
-      <div style={{
-        width: "100%", height: 72,
-        background: "linear-gradient(180deg, #1a0d00 0%, #130900 100%)",
-        borderLeft: "2px solid rgba(180,160,120,0.2)",
-        borderRight: "2px solid rgba(180,160,120,0.2)",
-        display: "flex", alignItems: "center", padding: "0 14px", gap: 10,
-      }}>
-        <span style={{ fontSize: 28 }}>🥗</span>
-        <div>
-          <p style={{ color: "rgba(255,240,200,0.9)", fontSize: 11, fontWeight: 700, margin: 0 }}>Palak Sabzi</p>
-          <p style={{ color: "rgba(255,200,120,0.45)", fontSize: 9, margin: 0 }}>fresh greens · seasonal</p>
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div style={{ width: "100%", height: 2, background: "linear-gradient(90deg, rgba(180,140,80,0.1), rgba(180,140,80,0.5), rgba(180,140,80,0.1))" }} />
-
-      {/* Compartment 3 – Roti */}
-      <div style={{
-        width: "100%", height: 72, borderRadius: "0 0 16px 16px",
-        background: "linear-gradient(180deg, #130900 0%, #0a0500 100%)",
-        border: "2px solid rgba(180,160,120,0.15)",
-        borderTop: "none",
-        display: "flex", alignItems: "center", padding: "0 14px", gap: 10,
-        boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
-      }}>
-        <span style={{ fontSize: 28 }}>🫓</span>
-        <div>
-          <p style={{ color: "rgba(255,240,200,0.9)", fontSize: 11, fontWeight: 700, margin: 0 }}>Tawa Roti × 4</p>
-          <p style={{ color: "rgba(255,200,120,0.45)", fontSize: 9, margin: 0 }}>whole wheat · fresh pressed</p>
-        </div>
-      </div>
-
-      {/* Bottom shadow */}
-      <div style={{ width: "80%", height: 8, borderRadius: "50%", marginTop: 4, background: "rgba(0,0,0,0.4)", filter: "blur(8px)" }} />
-    </div>
-  );
+  return <span ref={ref}>{display}</span>;
 }
 
-// ─── Announcement Bar ──────────────────────────────────────────────────────────
-function AnnouncementBar() {
-  return (
-    <div style={{ background: "#E8560C", overflow: "hidden", height: 36, display: "flex", alignItems: "center" }}>
-      <div className="flex gap-12 whitespace-nowrap" style={{ animation: "marquee 28s linear infinite" }}>
-        {[...MARQUEE, ...MARQUEE].map((item, i) => (
-          <span key={i} style={{ color: "white", fontSize: 13, fontWeight: 600, letterSpacing: "0.04em" }}>
-            {item} <span style={{ opacity: 0.5, margin: "0 8px" }}>·</span>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Navbar ────────────────────────────────────────────────────────────────────
-function Navbar({ scrolled }: { scrolled: boolean }) {
-  return (
-    <nav style={{
-      position: "fixed", top: 36, left: 0, right: 0, zIndex: 100,
-      background: scrolled ? "rgba(10,5,0,0.95)" : "transparent",
-      backdropFilter: scrolled ? "blur(16px)" : "none",
-      borderBottom: scrolled ? "1px solid rgba(232,86,12,0.12)" : "none",
-      transition: "all 0.35s ease",
-      padding: "0 40px", height: 64,
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-    }}>
-      {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 26 }}>🍱</span>
-        <span style={{
-          fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 22,
-          color: "white", letterSpacing: "-0.02em",
-        }}>
-          Tiffin<span style={{ color: "#E8560C" }}>Zayka</span>
-        </span>
-      </div>
-
-      {/* Nav links */}
-      <ul style={{ display: "flex", gap: 36, listStyle: "none", margin: 0, padding: 0 }} className="hidden md:flex">
-        {[["How It Works","#how-it-works"],["Menu","#menu"],["Our Cooks","#cooks"],["Cities","#cities"],["FAQ","#faq"]].map(([label,href]) => (
-          <li key={label}>
-            <a href={href} style={{ color: "rgba(229,197,140,0.75)", fontSize: 14, fontWeight: 500, textDecoration: "none", transition: "color 0.2s" }}
-              onMouseEnter={e => (e.currentTarget.style.color = "white")}
-              onMouseLeave={e => (e.currentTarget.style.color = "rgba(229,197,140,0.75)")}>
-              {label}
-            </a>
-          </li>
-        ))}
-      </ul>
-
-      {/* CTAs */}
-      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-        <button style={{
-          background: "transparent", border: "1px solid rgba(232,86,12,0.4)",
-          color: "#E8560C", padding: "8px 20px", borderRadius: 99,
-          fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
-        }}
-          className="hidden md:block"
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(232,86,12,0.1)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
-          Log In
-        </button>
-        <button style={{
-          background: "linear-gradient(135deg, #E8560C, #C94500)",
-          color: "white", padding: "10px 24px", borderRadius: 99,
-          fontSize: 13, fontWeight: 700, cursor: "pointer", border: "none",
-          boxShadow: "0 4px 20px rgba(232,86,12,0.35)", transition: "all 0.2s",
-        }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.04)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}>
-          Order Tiffin →
-        </button>
-      </div>
-    </nav>
-  );
-}
-
-// ─── Hero ──────────────────────────────────────────────────────────────────────
-function Hero() {
-  return (
-    <section style={{
-      minHeight: "100vh", background: "#0A0500",
-      display: "flex", flexDirection: "column",
-      justifyContent: "center", overflow: "hidden",
-      position: "relative", paddingTop: 100,
-    }}>
-      {/* Ambient glow blobs */}
-      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: "20%", left: "55%", width: 480, height: 480, borderRadius: "50%", background: "radial-gradient(circle, rgba(232,86,12,0.14) 0%, transparent 70%)", filter: "blur(40px)" }} />
-        <div style={{ position: "absolute", top: "60%", left: "10%", width: 320, height: 320, borderRadius: "50%", background: "radial-gradient(circle, rgba(212,160,23,0.08) 0%, transparent 70%)", filter: "blur(60px)" }} />
-      </div>
-
-      {/* Giant decorative background word */}
-      <div style={{
-        position: "absolute", top: "50%", left: "50%",
-        transform: "translate(-50%, -50%)",
-        fontFamily: "var(--font-display)", fontWeight: 700,
-        fontSize: "clamp(120px, 22vw, 340px)",
-        color: "rgba(232,86,12,0.04)", whiteSpace: "nowrap",
-        userSelect: "none", pointerEvents: "none", letterSpacing: "-0.04em",
-        lineHeight: 1,
-      }}>
-        ज़ायका
-      </div>
-
-      {/* Content grid */}
-      <div style={{
-        maxWidth: 1280, margin: "0 auto", width: "100%",
-        padding: "60px 40px",
-        display: "grid", gridTemplateColumns: "1fr auto",
-        gap: 60, alignItems: "center",
-      }}>
-        {/* Left: Copy */}
-        <div style={{ position: "relative", zIndex: 10 }}>
-          {/* Badge */}
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            background: "rgba(232,86,12,0.12)", border: "1px solid rgba(232,86,12,0.3)",
-            borderRadius: 99, padding: "6px 16px", marginBottom: 28,
-          }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#E8560C", display: "block", animation: "pulse 2s infinite" }} />
-            <span style={{ color: "#E8560C", fontSize: 12, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-              Now Live in 12 Indian Cities
-            </span>
-          </div>
-
-          {/* Headline */}
-          <h1 style={{
-            fontFamily: "var(--font-display)", fontWeight: 700,
-            fontSize: "clamp(48px, 6vw, 96px)",
-            color: "white", lineHeight: 1.04,
-            letterSpacing: "-0.03em", margin: 0, marginBottom: 10,
-          }}>
-            India's First
-          </h1>
-          <h1 style={{
-            fontFamily: "var(--font-display)", fontWeight: 700,
-            fontSize: "clamp(48px, 6vw, 96px)",
-            color: "#E8560C", lineHeight: 1.04,
-            letterSpacing: "-0.03em", margin: 0, marginBottom: 10,
-            fontStyle: "italic",
-          }}>
-            Homemade Tiffin
-          </h1>
-          <h1 style={{
-            fontFamily: "var(--font-display)", fontWeight: 700,
-            fontSize: "clamp(48px, 6vw, 96px)",
-            color: "rgba(229,197,140,0.9)", lineHeight: 1.04,
-            letterSpacing: "-0.03em", margin: 0, marginBottom: 32,
-          }}>
-            Network
-          </h1>
-
-          <p style={{
-            color: "rgba(190,155,100,0.85)", fontSize: "clamp(15px, 1.4vw, 19px)",
-            lineHeight: 1.65, maxWidth: 520, margin: "0 0 40px",
-            fontWeight: 400,
-          }}>
-            Your neighbour is cooking Dal Makhani for dinner. We bring that same pot to your door.
-            Real homemade food, from real families nearby — not a restaurant, not a cloud kitchen.
-            <em style={{ color: "rgba(232,86,12,0.9)", fontStyle: "normal", fontWeight: 600 }}> Ghar ka khana, finally for everyone.</em>
-          </p>
-
-          {/* CTA Buttons */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginBottom: 52 }}>
-            <button style={{
-              background: "linear-gradient(135deg, #E8560C 0%, #C94500 100%)",
-              color: "white", padding: "16px 36px", borderRadius: 99,
-              fontSize: 16, fontWeight: 700, border: "none", cursor: "pointer",
-              boxShadow: "0 8px 32px rgba(232,86,12,0.4)", display: "flex",
-              alignItems: "center", gap: 8, transition: "all 0.25s",
-              letterSpacing: "0.01em",
-            }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 12px 40px rgba(232,86,12,0.5)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 8px 32px rgba(232,86,12,0.4)"; }}>
-              🍱 Order Today's Tiffin
-            </button>
-            <button style={{
-              background: "transparent", border: "1.5px solid rgba(229,197,140,0.3)",
-              color: "rgba(229,197,140,0.85)", padding: "16px 36px", borderRadius: 99,
-              fontSize: 16, fontWeight: 600, cursor: "pointer", display: "flex",
-              alignItems: "center", gap: 8, transition: "all 0.25s",
-            }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(232,86,12,0.6)"; (e.currentTarget as HTMLButtonElement).style.color = "#E8560C"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(229,197,140,0.3)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(229,197,140,0.85)"; }}>
-              🍳 Become a Cook
-            </button>
-          </div>
-
-          {/* Mini stats */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "20px 40px" }}>
-            {[["2,000+","Happy Customers"],["450+","Verified Cooks"],["₹80","Avg. Tiffin Price"],["4.9★","Platform Rating"]].map(([val,lbl]) => (
-              <div key={lbl}>
-                <p style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700, color: "white", lineHeight: 1 }}>{val}</p>
-                <p style={{ margin: "3px 0 0", fontSize: 12, color: "rgba(190,155,100,0.6)", fontWeight: 500 }}>{lbl}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right: Tiffin illustration + floating emojis */}
-        <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }} className="hidden lg:flex">
-          {/* Orbital ring */}
-          <div style={{
-            position: "absolute", width: 380, height: 380, borderRadius: "50%",
-            border: "1px dashed rgba(232,86,12,0.15)",
-          }} />
-          <div style={{
-            position: "absolute", width: 300, height: 300, borderRadius: "50%",
-            border: "1px dashed rgba(232,86,12,0.08)",
-          }} />
-
-          {/* Floating food emojis */}
-          {[
-            { emoji: "🍛", angle: 30,  r: 190, size: 36, delay: 0 },
-            { emoji: "🥗", angle: 120, r: 180, size: 30, delay: 0.5 },
-            { emoji: "🫓", angle: 200, r: 190, size: 34, delay: 1 },
-            { emoji: "🥘", angle: 290, r: 185, size: 32, delay: 0.7 },
-            { emoji: "🌶️", angle: 160, r: 165, size: 26, delay: 1.4 },
-            { emoji: "🧅", angle: 70,  r: 170, size: 24, delay: 0.3 },
-          ].map(({ emoji, angle, r, size, delay }) => {
-            const rad = (angle * Math.PI) / 180;
-            return (
-              <div key={angle} style={{
-                position: "absolute",
-                left: `calc(50% + ${Math.cos(rad) * r}px - ${size / 2}px)`,
-                top: `calc(50% + ${Math.sin(rad) * r}px - ${size / 2}px)`,
-                fontSize: size,
-                animation: `float 4s ease-in-out infinite`,
-                animationDelay: `${delay}s`,
-              }}>
-                {emoji}
-              </div>
-            );
-          })}
-
-          {/* Glow behind tiffin */}
-          <div style={{
-            position: "absolute", width: 200, height: 200, borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(232,86,12,0.2) 0%, transparent 70%)",
-            filter: "blur(30px)",
-          }} />
-
-          <TiffinBox />
-        </div>
-      </div>
-
-      {/* Bottom scroll hint */}
-      <div style={{
-        position: "absolute", bottom: 32, left: "50%", transform: "translateX(-50%)",
-        display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-      }}>
-        <div style={{ width: 1, height: 48, background: "linear-gradient(to bottom, rgba(232,86,12,0.6), transparent)", animation: "pulse 2s infinite" }} />
-        <span style={{ color: "rgba(190,155,100,0.4)", fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase" }}>scroll</span>
-      </div>
-    </section>
-  );
-}
-
-// ─── Media Bar ─────────────────────────────────────────────────────────────────
-function MediaBar() {
-  const items = ["🗞 The Hindu","📺 NDTV Food","📱 YourStory","🎙 Shark Tank India","📰 Inc42","🎬 Food Insider","📡 Aaj Tak","🏆 StartupIndia"];
-  return (
-    <div style={{ background: "#0D0600", borderTop: "1px solid rgba(232,86,12,0.08)", borderBottom: "1px solid rgba(232,86,12,0.08)", padding: "16px 0", overflow: "hidden" }}>
-      <p style={{ textAlign: "center", fontSize: 11, color: "rgba(190,155,100,0.35)", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 12 }}>As Featured In</p>
-      <div style={{ display: "flex", gap: 60, animation: "marquee 22s linear infinite", whiteSpace: "nowrap" }}>
-        {[...items, ...items].map((item, i) => (
-          <span key={i} style={{ color: "rgba(229,197,140,0.35)", fontSize: 13, fontWeight: 600 }}>{item}</span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── How It Works ──────────────────────────────────────────────────────────────
-function HowItWorks() {
-  return (
-    <section id="how-it-works" style={{ background: "#0A0500", padding: "120px 40px" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: 80 }}>
-          <span style={{ color: "#E8560C", fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>Simple Process</span>
-          <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "clamp(36px, 4.5vw, 64px)", color: "white", margin: "12px 0 16px", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-            From Their Kitchen<br />
-            <span style={{ color: "#E8560C", fontStyle: "italic" }}>To Your Door</span>
-          </h2>
-          <p style={{ color: "rgba(190,155,100,0.65)", fontSize: 16, maxWidth: 480, margin: "0 auto" }}>Four simple steps that connect real home cooking with people who deserve it.</p>
-        </div>
-
-        {/* Steps */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          {STEPS.map((s, i) => (
-            <div key={i} style={{
-              display: "grid", gridTemplateColumns: i % 2 === 0 ? "1fr 80px 1fr" : "1fr 80px 1fr",
-              alignItems: "center", marginBottom: i < STEPS.length - 1 ? 0 : 0,
-            }}>
-              {/* Left content or spacer */}
-              {i % 2 === 0 ? (
-                <div style={{
-                  background: "linear-gradient(135deg, rgba(232,86,12,0.06) 0%, rgba(232,86,12,0.02) 100%)",
-                  border: "1px solid rgba(232,86,12,0.1)", borderRadius: 24,
-                  padding: "40px 48px", margin: "12px 0",
-                  transition: "all 0.3s",
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
-                    <div style={{
-                      width: 52, height: 52, borderRadius: "50%",
-                      background: `${s.color}18`, border: `1.5px solid ${s.color}40`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 22,
-                    }}>{s.icon}</div>
-                    <span style={{ fontFamily: "var(--font-display)", fontSize: 56, fontWeight: 700, color: "rgba(232,86,12,0.08)", lineHeight: 1 }}>{s.step}</span>
-                  </div>
-                  <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 600, color: "white", margin: "0 0 12px", letterSpacing: "-0.01em" }}>{s.title}</h3>
-                  <p style={{ color: "rgba(229,197,140,0.75)", fontSize: 15, lineHeight: 1.7, margin: "0 0 12px" }}>{s.desc}</p>
-                  <p style={{ color: "rgba(190,155,100,0.45)", fontSize: 13, lineHeight: 1.65, margin: 0, fontStyle: "italic" }}>{s.detail}</p>
-                </div>
-              ) : (
-                <div style={{ height: 80 }} />
-              )}
-
-              {/* Center line */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <div style={{ width: 2, flex: 1, background: i === 0 ? "transparent" : "linear-gradient(to bottom, rgba(232,86,12,0.2), rgba(232,86,12,0.06))" }} />
-                <div style={{
-                  width: 40, height: 40, borderRadius: "50%",
-                  background: "#0A0500", border: `2px solid ${s.color}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 16, flexShrink: 0, boxShadow: `0 0 24px ${s.color}30`,
-                }}>{s.icon}</div>
-                <div style={{ width: 2, flex: 1, background: i === STEPS.length - 1 ? "transparent" : "linear-gradient(to bottom, rgba(232,86,12,0.06), rgba(232,86,12,0.2))" }} />
-              </div>
-
-              {/* Right content or spacer */}
-              {i % 2 === 1 ? (
-                <div style={{
-                  background: "linear-gradient(135deg, rgba(232,86,12,0.06) 0%, rgba(212,160,23,0.04) 100%)",
-                  border: "1px solid rgba(212,160,23,0.12)", borderRadius: 24,
-                  padding: "40px 48px", margin: "12px 0",
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
-                    <div style={{
-                      width: 52, height: 52, borderRadius: "50%",
-                      background: `${s.color}18`, border: `1.5px solid ${s.color}40`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 22,
-                    }}>{s.icon}</div>
-                    <span style={{ fontFamily: "var(--font-display)", fontSize: 56, fontWeight: 700, color: "rgba(212,160,23,0.08)", lineHeight: 1 }}>{s.step}</span>
-                  </div>
-                  <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 600, color: "white", margin: "0 0 12px", letterSpacing: "-0.01em" }}>{s.title}</h3>
-                  <p style={{ color: "rgba(229,197,140,0.75)", fontSize: 15, lineHeight: 1.7, margin: "0 0 12px" }}>{s.desc}</p>
-                  <p style={{ color: "rgba(190,155,100,0.45)", fontSize: 13, lineHeight: 1.65, margin: 0, fontStyle: "italic" }}>{s.detail}</p>
-                </div>
-              ) : (
-                <div style={{ height: 80 }} />
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Stats ─────────────────────────────────────────────────────────────────────
-function Stats() {
-  return (
-    <section style={{ background: "#E8560C", padding: "100px 40px", position: "relative", overflow: "hidden" }}>
-      {/* Texture lines */}
-      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: "repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 80px)", backgroundSize: "80px 100%" }} />
-
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <p style={{ textAlign: "center", color: "rgba(255,255,255,0.55)", fontSize: 12, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 60 }}>By The Numbers</p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 2 }}>
-          {[
-            { val: "2,000+", lbl: "Happy Customers", sub: "and counting every day" },
-            { val: "450+", lbl: "Verified Home Cooks", sub: "across 12 Indian cities" },
-            { val: "₹80", lbl: "Average Tiffin Price", sub: "affordable, always" },
-            { val: "4.9 ★", lbl: "Platform Rating", sub: "from verified purchases" },
-          ].map(({ val, lbl, sub }) => (
-            <div key={lbl} style={{ textAlign: "center", padding: "20px 10px" }}>
-              <p style={{ fontFamily: "var(--font-display)", fontSize: "clamp(44px, 5vw, 72px)", fontWeight: 700, color: "white", margin: 0, lineHeight: 1, letterSpacing: "-0.03em" }}>{val}</p>
-              <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 15, fontWeight: 700, margin: "10px 0 4px" }}>{lbl}</p>
-              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, margin: 0 }}>{sub}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Comparison ────────────────────────────────────────────────────────────────
-function Comparison() {
-  const renderCell = (val: boolean | string | null, highlight = false) => {
-    if (val === true) return <span style={{ color: highlight ? "#E8560C" : "#1B7A3E", fontSize: 20 }}>✓</span>;
-    if (val === false) return <span style={{ color: "rgba(255,90,90,0.6)", fontSize: 16 }}>✕</span>;
-    if (val === null) return <span style={{ color: "rgba(190,155,100,0.4)", fontSize: 13 }}>~</span>;
-    return <span style={{ color: highlight ? "white" : "rgba(190,155,100,0.7)", fontSize: 13, fontWeight: highlight ? 700 : 500 }}>{val}</span>;
-  };
-
-  return (
-    <section style={{ background: "#0D0600", padding: "120px 40px" }}>
-      <div style={{ maxWidth: 900, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 60 }}>
-          <span style={{ color: "#E8560C", fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>Comparison</span>
-          <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "clamp(32px, 4vw, 56px)", color: "white", margin: "12px 0 16px", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-            Why TiffinZayka<br /><span style={{ color: "#E8560C", fontStyle: "italic" }}>Wins Every Time</span>
-          </h2>
-        </div>
-
-        {/* Table */}
-        <div style={{ borderRadius: 20, overflow: "hidden", border: "1px solid rgba(232,86,12,0.15)" }}>
-          {/* Header */}
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", background: "rgba(10,5,0,0.9)" }}>
-            <div style={{ padding: "18px 24px" }} />
-            {[
-              { label: "🍱 TiffinZayka", highlight: true },
-              { label: "🍽 Restaurants", highlight: false },
-              { label: "📱 Food Apps", highlight: false },
-            ].map(({ label, highlight }) => (
-              <div key={label} style={{
-                padding: "18px 16px", textAlign: "center",
-                background: highlight ? "rgba(232,86,12,0.15)" : "transparent",
-                borderTop: highlight ? "2px solid #E8560C" : "2px solid transparent",
-              }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: highlight ? "white" : "rgba(190,155,100,0.55)" }}>{label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Rows */}
-          {COMP.map((row, i) => (
-            <div key={i} style={{
-              display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr",
-              background: i % 2 === 0 ? "rgba(10,5,0,0.6)" : "rgba(15,8,0,0.4)",
-              borderBottom: i < COMP.length - 1 ? "1px solid rgba(255,255,255,0.03)" : "none",
-            }}>
-              <div style={{ padding: "16px 24px", color: "rgba(229,197,140,0.7)", fontSize: 14, fontWeight: 500 }}>{row.feature}</div>
-              {[
-                { val: row.us, highlight: true },
-                { val: row.restaurant, highlight: false },
-                { val: row.apps, highlight: false },
-              ].map(({ val, highlight }, j) => (
-                <div key={j} style={{
-                  padding: "16px 16px", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center",
-                  background: highlight ? "rgba(232,86,12,0.06)" : "transparent",
-                }}>
-                  {renderCell(val, highlight)}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-
-        <p style={{ textAlign: "center", marginTop: 20, color: "rgba(190,155,100,0.3)", fontSize: 12 }}>~ = depends on the specific restaurant or app. ✕ = generally not available.</p>
-      </div>
-    </section>
-  );
-}
-
-// ─── Cook Spotlight ─────────────────────────────────────────────────────────────
-function CookSpotlight() {
-  const [active, setActive] = useState(0);
-  const cook = COOKS[active];
-
-  return (
-    <section id="cooks" style={{ background: "#F5EDD8", padding: "120px 40px", position: "relative", overflow: "hidden" }}>
-      {/* Subtle grain overlay */}
-      <div style={{ position: "absolute", inset: 0, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E\")", backgroundSize: "200px 200px", opacity: 0.6, pointerEvents: "none" }} />
-
-      <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative", zIndex: 10 }}>
-        {/* Header */}
-        <div style={{ marginBottom: 64 }}>
-          <span style={{ color: "#E8560C", fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>Cook Spotlight</span>
-          <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "clamp(32px, 4vw, 56px)", color: "#1A0A00", margin: "12px 0 0", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-            Meet the <span style={{ color: "#E8560C", fontStyle: "italic" }}>Hands</span> Behind<br />Every Tiffin
-          </h2>
-        </div>
-
-        {/* Tab switcher */}
-        <div style={{ display: "flex", gap: 12, marginBottom: 48 }}>
-          {COOKS.map((c, i) => (
-            <button key={i} onClick={() => setActive(i)} style={{
-              padding: "10px 20px", borderRadius: 99, border: "1.5px solid",
-              borderColor: active === i ? "#E8560C" : "rgba(30,15,0,0.2)",
-              background: active === i ? "#E8560C" : "transparent",
-              color: active === i ? "white" : "rgba(30,15,0,0.55)",
-              fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
-            }}>
-              {c.emoji} {c.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Magazine layout */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "start" }}>
-          {/* Left: Quote + Story */}
-          <div>
-            <div style={{
-              borderLeft: "4px solid #E8560C", paddingLeft: 28, marginBottom: 36,
-            }}>
-              <p style={{
-                fontFamily: "var(--font-display)", fontSize: "clamp(22px, 2.5vw, 36px)",
-                fontWeight: 500, color: "#1A0A00", lineHeight: 1.45, fontStyle: "italic",
-                margin: 0,
-              }}>
-                "{cook.story}"
-              </p>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 32 }}>
-              <div style={{
-                width: 60, height: 60, borderRadius: "50%",
-                background: "linear-gradient(135deg, #E8560C, #C94500)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 28,
-              }}>{cook.emoji}</div>
-              <div>
-                <p style={{ margin: 0, fontWeight: 700, color: "#1A0A00", fontSize: 17 }}>{cook.name}</p>
-                <p style={{ margin: "2px 0 0", color: "rgba(30,15,0,0.5)", fontSize: 13 }}>Age {cook.age} · {cook.city}</p>
-              </div>
-            </div>
-
-            <div style={{ background: "rgba(232,86,12,0.06)", border: "1px solid rgba(232,86,12,0.15)", borderRadius: 16, padding: "20px 24px", marginBottom: 24 }}>
-              <p style={{ margin: 0, color: "rgba(30,15,0,0.55)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 700, marginBottom: 6 }}>Speciality</p>
-              <p style={{ margin: 0, color: "#1A0A00", fontSize: 14, fontWeight: 600 }}>{cook.specialty}</p>
-            </div>
-
-            <p style={{ color: "rgba(30,15,0,0.45)", fontSize: 13, fontStyle: "italic" }}>On TiffinZayka since {cook.since}</p>
-          </div>
-
-          {/* Right: Stats grid */}
-          <div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 28 }}>
-              {[
-                { lbl: "Total Meals Served", val: cook.meals, icon: "🍱" },
-                { lbl: "Customer Rating", val: cook.rating + " ★", icon: "⭐" },
-                { lbl: "Monthly Earnings", val: cook.earnings, icon: "💰" },
-                { lbl: "Member Since", val: cook.since, icon: "🗓️" },
-              ].map(({ lbl, val, icon }) => (
-                <div key={lbl} style={{
-                  background: "white", border: "1px solid rgba(232,86,12,0.1)",
-                  borderRadius: 16, padding: "20px 20px",
-                  boxShadow: "0 2px 20px rgba(0,0,0,0.04)",
-                }}>
-                  <p style={{ margin: "0 0 8px", fontSize: 22 }}>{icon}</p>
-                  <p style={{ margin: "0 0 4px", fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700, color: "#1A0A00", letterSpacing: "-0.02em" }}>{val}</p>
-                  <p style={{ margin: 0, color: "rgba(30,15,0,0.45)", fontSize: 12, fontWeight: 500 }}>{lbl}</p>
-                </div>
-              ))}
-            </div>
-
-            <button style={{
-              width: "100%", background: "linear-gradient(135deg, #E8560C, #C94500)",
-              color: "white", border: "none", padding: "16px", borderRadius: 14,
-              fontSize: 15, fontWeight: 700, cursor: "pointer",
-              boxShadow: "0 6px 24px rgba(232,86,12,0.3)", transition: "all 0.2s",
-            }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}>
-              Order from {cook.name.split(" ")[0]} →
-            </button>
-
-            <div style={{ marginTop: 24, padding: "18px", background: "rgba(27,122,62,0.08)", border: "1px solid rgba(27,122,62,0.2)", borderRadius: 12 }}>
-              <p style={{ margin: 0, color: "#1B5E35", fontSize: 13, fontWeight: 600 }}>🌱 By ordering, you directly support {cook.name.split(" ")[0]}'s family income. 85% of your payment goes to her.</p>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ marginTop: 60, textAlign: "center" }}>
-          <a href="#" style={{ color: "#E8560C", fontSize: 15, fontWeight: 700, textDecoration: "none", borderBottom: "1.5px solid rgba(232,86,12,0.3)", paddingBottom: 3 }}>
-            Meet all 450+ cooks on TiffinZayka →
-          </a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Menu ──────────────────────────────────────────────────────────────────────
-function TodaysMenu() {
-  const [filter, setFilter] = useState<"All" | "Veg" | "Non-Veg">("All");
-  const filtered = filter === "All" ? MENU : MENU.filter(m => m.tag === filter);
-
-  return (
-    <section id="menu" style={{ background: "#0A0500", padding: "120px 40px" }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-        {/* Header */}
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 24, marginBottom: 48 }}>
-          <div>
-            <span style={{ color: "#E8560C", fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>Live Menu</span>
-            <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "clamp(32px, 4vw, 56px)", color: "white", margin: "12px 0 0", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-              Today's Fresh<br /><span style={{ color: "#E8560C", fontStyle: "italic" }}>Homemade Tiffins</span>
-            </h2>
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            {(["All", "Veg", "Non-Veg"] as const).map(f => (
-              <button key={f} onClick={() => setFilter(f)} style={{
-                padding: "9px 20px", borderRadius: 99, border: "1.5px solid",
-                borderColor: filter === f ? "#E8560C" : "rgba(229,197,140,0.2)",
-                background: filter === f ? "#E8560C" : "transparent",
-                color: filter === f ? "white" : "rgba(229,197,140,0.55)",
-                fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
-              }}>{f}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* Cards grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20 }}>
-          {filtered.map((item, i) => (
-            <div key={i} style={{
-              background: "linear-gradient(160deg, #1a0c00, #120800)",
-              border: "1px solid rgba(229,197,140,0.07)",
-              borderRadius: 20, overflow: "hidden",
-              transition: "all 0.3s", cursor: "pointer",
-            }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)";
-                (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(232,86,12,0.3)";
-                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 16px 48px rgba(0,0,0,0.5)";
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
-                (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(229,197,140,0.07)";
-                (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
-              }}>
-              {/* Visual area */}
-              <div style={{
-                height: 140, background: "linear-gradient(135deg, #2a1400, #1a0d00)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 64, position: "relative",
-              }}>
-                {item.emoji}
-                {/* Badge */}
-                {item.badge && (
-                  <div style={{
-                    position: "absolute", top: 12, right: 12,
-                    background: "#E8560C", color: "white",
-                    fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 99,
-                    letterSpacing: "0.05em",
-                  }}>{item.badge}</div>
-                )}
-                {/* Veg/Non-veg dot */}
-                <div style={{
-                  position: "absolute", top: 12, left: 12,
-                  background: "rgba(10,5,0,0.8)", borderRadius: 6, padding: "4px 8px",
-                  display: "flex", alignItems: "center", gap: 4,
-                }}>
-                  <span style={{ display: "block", width: 7, height: 7, borderRadius: "50%", background: item.tag === "Veg" ? "#1B7A3E" : "#cc2200", border: "1.5px solid", borderColor: item.tag === "Veg" ? "#1B7A3E" : "#cc2200" }} />
-                  <span style={{ color: "rgba(229,197,140,0.7)", fontSize: 10, fontWeight: 600 }}>{item.tag}</span>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div style={{ padding: "18px 20px 20px" }}>
-                <h3 style={{ color: "rgba(229,197,140,0.95)", fontSize: 14, fontWeight: 700, margin: "0 0 8px", lineHeight: 1.4 }}>{item.name}</h3>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 16 }}>
-                  <span style={{ fontSize: 13 }}>👩‍🍳</span>
-                  <span style={{ color: "rgba(190,155,100,0.55)", fontSize: 12 }}>{item.cook} · {item.cookCity}</span>
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div>
-                    <p style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, color: "white", letterSpacing: "-0.02em", lineHeight: 1 }}>{item.price}</p>
-                    <p style={{ margin: "2px 0 0", color: "rgba(190,155,100,0.4)", fontSize: 11 }}>⭐ {item.rating} · {item.reviews} reviews</p>
-                  </div>
-                  <button style={{
-                    background: "linear-gradient(135deg, #E8560C, #C94500)",
-                    color: "white", border: "none", padding: "10px 20px",
-                    borderRadius: 99, fontSize: 13, fontWeight: 700, cursor: "pointer",
-                    boxShadow: "0 4px 16px rgba(232,86,12,0.3)", transition: "all 0.2s",
-                  }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.05)"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}>
-                    Order
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ textAlign: "center", marginTop: 48 }}>
-          <button style={{
-            background: "transparent", border: "1.5px solid rgba(232,86,12,0.35)",
-            color: "#E8560C", padding: "14px 36px", borderRadius: 99,
-            fontSize: 14, fontWeight: 700, cursor: "pointer", transition: "all 0.2s",
-          }}>
-            View Full Menu for Your Location →
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Quality Promise ───────────────────────────────────────────────────────────
-function QualityPromise() {
-  return (
-    <section style={{ background: "#0D0600", padding: "120px 40px", borderTop: "1px solid rgba(232,86,12,0.06)" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 80, alignItems: "start" }}>
-          {/* Left */}
-          <div style={{ position: "sticky", top: 120 }}>
-            <span style={{ color: "#E8560C", fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>Our Promise</span>
-            <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "clamp(32px, 3.5vw, 52px)", color: "white", margin: "12px 0 20px", letterSpacing: "-0.02em", lineHeight: 1.15 }}>
-              Quality You Can<br /><span style={{ color: "#E8560C", fontStyle: "italic" }}>Taste & Trust</span>
-            </h2>
-            <p style={{ color: "rgba(190,155,100,0.6)", fontSize: 15, lineHeight: 1.7, margin: 0 }}>
-              We've built every safeguard so you never have to wonder if the food is safe, fresh, or worth it. Here's exactly what we promise.
-            </p>
-            <div style={{ marginTop: 32, padding: "20px 24px", background: "rgba(232,86,12,0.08)", border: "1px solid rgba(232,86,12,0.15)", borderRadius: 14 }}>
-              <p style={{ margin: "0 0 6px", color: "#E8560C", fontSize: 13, fontWeight: 700 }}>🛡️ Our Guarantee</p>
-              <p style={{ margin: 0, color: "rgba(229,197,140,0.7)", fontSize: 13, lineHeight: 1.65 }}>
-                If you're ever unsatisfied with a meal — temperature, taste, or portion — we issue an instant full credit. No forms, no waiting.
-              </p>
-            </div>
-          </div>
-
-          {/* Right: promise list */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {QUALITY.map((q, i) => (
-              <div key={i} style={{
-                display: "flex", gap: 28, padding: "32px 0",
-                borderBottom: i < QUALITY.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
-                transition: "all 0.2s",
-              }}>
-                <div>
-                  <span style={{ fontFamily: "var(--font-display)", fontSize: 48, fontWeight: 700, color: "rgba(232,86,12,0.12)", lineHeight: 1, display: "block", minWidth: 56 }}>{q.num}</span>
-                </div>
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                    <span style={{ fontSize: 24 }}>{q.icon}</span>
-                    <h3 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 600, color: "white", letterSpacing: "-0.01em" }}>{q.title}</h3>
-                  </div>
-                  <p style={{ margin: 0, color: "rgba(190,155,100,0.65)", fontSize: 14, lineHeight: 1.7 }}>{q.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── City Coverage ─────────────────────────────────────────────────────────────
-function CityCoverage() {
-  return (
-    <section id="cities" style={{ background: "#0A0500", padding: "100px 40px" }}>
-      <div style={{ maxWidth: 960, margin: "0 auto", textAlign: "center" }}>
-        <span style={{ color: "#E8560C", fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>Coverage</span>
-        <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "clamp(28px, 3.5vw, 48px)", color: "white", margin: "12px 0 16px", letterSpacing: "-0.02em" }}>
-          Available Across <span style={{ color: "#E8560C" }}>12 Cities</span> & Growing
-        </h2>
-        <p style={{ color: "rgba(190,155,100,0.55)", fontSize: 15, marginBottom: 52, maxWidth: 460, margin: "0 auto 52px" }}>We're expanding every month. If you don't see your city below, join the waitlist and we'll notify you first.</p>
-
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center", marginBottom: 40 }}>
-          {CITIES.map((city, i) => (
-            <div key={i} style={{
-              background: "rgba(232,86,12,0.08)", border: "1px solid rgba(232,86,12,0.2)",
-              borderRadius: 99, padding: "10px 22px",
-              color: "rgba(229,197,140,0.8)", fontSize: 14, fontWeight: 600,
-              display: "flex", alignItems: "center", gap: 7,
-            }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#E8560C", display: "block" }} />
-              {city}
-            </div>
-          ))}
-          <div style={{
-            background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(229,197,140,0.15)",
-            borderRadius: 99, padding: "10px 22px",
-            color: "rgba(190,155,100,0.35)", fontSize: 14, fontWeight: 600,
-            display: "flex", alignItems: "center", gap: 7,
-          }}>
-            + Your City Next?
-          </div>
-        </div>
-
-        <button style={{
-          background: "transparent", border: "1.5px solid rgba(229,197,140,0.2)",
-          color: "rgba(229,197,140,0.65)", padding: "12px 28px", borderRadius: 99,
-          fontSize: 13, fontWeight: 600, cursor: "pointer",
-        }}>
-          Join the Waitlist for Your City →
-        </button>
-      </div>
-    </section>
-  );
-}
-
-// ─── Testimonials ──────────────────────────────────────────────────────────────
-function Testimonials() {
-  return (
-    <section style={{ background: "#F5EDD8", padding: "120px 40px", position: "relative", overflow: "hidden" }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 64 }}>
-          <span style={{ color: "#E8560C", fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>What People Say</span>
-          <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "clamp(32px, 4vw, 56px)", color: "#1A0A00", margin: "12px 0 0", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-            Real Customers,<br /><span style={{ color: "#E8560C", fontStyle: "italic" }}>Real Stories</span>
-          </h2>
-        </div>
-
-        {/* Featured large testimonial */}
-        <div style={{
-          background: "white", borderRadius: 28, padding: "48px 56px",
-          boxShadow: "0 8px 60px rgba(30,15,0,0.08)", marginBottom: 24,
-          border: "1px solid rgba(232,86,12,0.08)",
-        }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 40, alignItems: "center" }}>
-            <div>
-              <p style={{ fontFamily: "var(--font-display)", fontSize: "clamp(22px, 2.5vw, 36px)", fontWeight: 500, color: "#1A0A00", lineHeight: 1.5, margin: "0 0 28px", fontStyle: "italic" }}>
-                "{TESTIMONIALS[0].quote}"
-              </p>
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg, #E8560C, #C94500)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>{TESTIMONIALS[0].emoji}</div>
-                <div>
-                  <p style={{ margin: 0, fontWeight: 700, color: "#1A0A00", fontSize: 16 }}>{TESTIMONIALS[0].name}</p>
-                  <p style={{ margin: "2px 0 0", color: "rgba(30,15,0,0.45)", fontSize: 13 }}>{TESTIMONIALS[0].role} · {TESTIMONIALS[0].city}</p>
-                </div>
-                <div style={{ marginLeft: 20, color: "#E8560C", fontSize: 20 }}>{"★".repeat(TESTIMONIALS[0].rating)}</div>
-              </div>
-            </div>
-            <div style={{ textAlign: "center" }} className="hidden md:block">
-              <p style={{ fontFamily: "var(--font-display)", fontSize: 180, color: "rgba(232,86,12,0.06)", lineHeight: 0.8, margin: 0 }}>"</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Grid of smaller testimonials */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-          {TESTIMONIALS.slice(1).map((t, i) => (
-            <div key={i} style={{
-              background: "white", borderRadius: 20, padding: "28px 28px",
-              boxShadow: "0 2px 24px rgba(30,15,0,0.04)",
-              border: "1px solid rgba(232,86,12,0.06)",
-            }}>
-              <div style={{ color: "#E8560C", fontSize: 18, marginBottom: 12 }}>{"★".repeat(t.rating)}</div>
-              <p style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 400, color: "#1A0A00", lineHeight: 1.6, fontStyle: "italic", margin: "0 0 20px" }}>
-                "{t.quote}"
-              </p>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(135deg, rgba(232,86,12,0.15), rgba(201,69,0,0.1))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{t.emoji}</div>
-                <div>
-                  <p style={{ margin: 0, fontWeight: 700, color: "#1A0A00", fontSize: 13 }}>{t.name}</p>
-                  <p style={{ margin: 0, color: "rgba(30,15,0,0.4)", fontSize: 11 }}>{t.role} · {t.city}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── App Section ───────────────────────────────────────────────────────────────
-function AppSection() {
-  return (
-    <section style={{ background: "#0D0600", padding: "120px 40px", borderTop: "1px solid rgba(232,86,12,0.06)" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }}>
-        {/* Left: CSS Phone mockup */}
-        <div style={{ display: "flex", justifyContent: "center" }} className="hidden md:flex">
-          <div style={{ position: "relative" }}>
-            {/* Glow */}
-            <div style={{ position: "absolute", inset: -40, borderRadius: "50%", background: "radial-gradient(circle, rgba(232,86,12,0.15) 0%, transparent 70%)", filter: "blur(30px)" }} />
-            {/* Phone */}
-            <div style={{
-              width: 260, height: 520, borderRadius: 40, background: "linear-gradient(180deg, #1a0d00, #0a0500)",
-              border: "2px solid rgba(229,197,140,0.12)", position: "relative", overflow: "hidden",
-              boxShadow: "0 32px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05)",
-            }}>
-              {/* Status bar */}
-              <div style={{ height: 40, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px" }}>
-                <span style={{ color: "rgba(229,197,140,0.5)", fontSize: 11 }}>9:41</span>
-                <div style={{ width: 32, height: 8, background: "rgba(229,197,140,0.2)", borderRadius: 99 }} />
-                <span style={{ color: "rgba(229,197,140,0.5)", fontSize: 10 }}>●●●</span>
-              </div>
-              {/* Notch */}
-              <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: 80, height: 24, background: "#0a0500", borderRadius: "0 0 16px 16px" }} />
-
-              {/* App UI */}
-              <div style={{ padding: "8px 16px" }}>
-                {/* Header */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <div>
-                    <p style={{ margin: 0, color: "rgba(190,155,100,0.5)", fontSize: 10 }}>Good afternoon!</p>
-                    <p style={{ margin: 0, color: "white", fontSize: 14, fontWeight: 700 }}>What's for lunch? 🍱</p>
-                  </div>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(232,86,12,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🍴</div>
-                </div>
-
-                {/* Search bar */}
-                <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "8px 12px", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ color: "rgba(190,155,100,0.3)", fontSize: 12 }}>🔍</span>
-                  <span style={{ color: "rgba(190,155,100,0.3)", fontSize: 11 }}>Search cooks or dishes...</span>
-                </div>
-
-                {/* Mini cards */}
-                {[{ e: "🍛", n: "Dal Tadka", p: "₹80", r: "4.9", c: "Sunita Ji" }, { e: "🥘", n: "Rajma Rice", p: "₹90", r: "4.8", c: "Priya S." }].map((card, ci) => (
-                  <div key={ci} style={{
-                    background: ci === 0 ? "rgba(232,86,12,0.12)" : "rgba(255,255,255,0.04)",
-                    border: `1px solid ${ci === 0 ? "rgba(232,86,12,0.25)" : "rgba(255,255,255,0.06)"}`,
-                    borderRadius: 12, padding: "12px", marginBottom: 10,
-                    display: "flex", alignItems: "center", gap: 10,
-                  }}>
-                    <span style={{ fontSize: 28 }}>{card.e}</span>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ margin: 0, color: "white", fontSize: 12, fontWeight: 600 }}>{card.n}</p>
-                      <p style={{ margin: "2px 0 0", color: "rgba(190,155,100,0.5)", fontSize: 10 }}>by {card.c} · ⭐ {card.r}</p>
-                    </div>
-                    <span style={{ color: "#E8560C", fontWeight: 700, fontSize: 14 }}>{card.p}</span>
-                  </div>
-                ))}
-
-                {/* Order button */}
-                <div style={{ background: "linear-gradient(135deg, #E8560C, #C94500)", borderRadius: 10, padding: "12px", textAlign: "center", marginTop: 8 }}>
-                  <span style={{ color: "white", fontSize: 12, fontWeight: 700 }}>Order Now — Arrives in 30 min</span>
-                </div>
-              </div>
-
-              {/* Bottom nav */}
-              <div style={{
-                position: "absolute", bottom: 0, left: 0, right: 0,
-                background: "rgba(10,5,0,0.95)", borderTop: "1px solid rgba(255,255,255,0.04)",
-                padding: "12px 24px",
-                display: "flex", justifyContent: "space-between",
-              }}>
-                {["🏠", "🔍", "📋", "👤"].map((icon, ii) => (
-                  <div key={ii} style={{ textAlign: "center" }}>
-                    <span style={{ fontSize: 18, opacity: ii === 0 ? 1 : 0.35 }}>{icon}</span>
-                    {ii === 0 && <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#E8560C", margin: "2px auto 0" }} />}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Copy */}
-        <div>
-          <span style={{ color: "#E8560C", fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>Mobile App</span>
-          <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "clamp(32px, 4vw, 52px)", color: "white", margin: "12px 0 16px", letterSpacing: "-0.02em", lineHeight: 1.15 }}>
-            Order Ghar Ka Khana<br /><span style={{ color: "#E8560C", fontStyle: "italic" }}>In Three Taps</span>
-          </h2>
-          <p style={{ color: "rgba(190,155,100,0.65)", fontSize: 15, lineHeight: 1.75, marginBottom: 36 }}>
-            The TiffinZayka app shows you live tiffins being cooked near you right now. Real-time cook availability, freshness timer, one-tap reorder of your favourites, and direct chat with your cook.
-          </p>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 40 }}>
-            {["Live cook availability — see who's cooking right now","Freshness timer on every tiffin","One-tap reorder your favourite meals","Direct in-app chat with your cook","Track your delivery in real time"].map((f, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 20, height: 20, borderRadius: "50%", background: "rgba(232,86,12,0.15)", border: "1.5px solid rgba(232,86,12,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <span style={{ color: "#E8560C", fontSize: 10 }}>✓</span>
-                </div>
-                <span style={{ color: "rgba(229,197,140,0.75)", fontSize: 14 }}>{f}</span>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-            {[["📱 App Store", "iPhone & iPad"], ["▶️ Play Store", "Android"]].map(([label, sub]) => (
-              <button key={label} style={{
-                background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(229,197,140,0.15)",
-                borderRadius: 14, padding: "14px 24px", cursor: "pointer",
-                textAlign: "left", transition: "all 0.2s",
-              }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(232,86,12,0.4)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(229,197,140,0.15)"; }}>
-                <p style={{ margin: 0, color: "white", fontSize: 14, fontWeight: 700 }}>{label}</p>
-                <p style={{ margin: "2px 0 0", color: "rgba(190,155,100,0.45)", fontSize: 11 }}>{sub}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Become a Cook ─────────────────────────────────────────────────────────────
-function BecomeACook() {
-  return (
-    <section style={{ background: "#E8560C", padding: "120px 40px", position: "relative", overflow: "hidden" }}>
-      {/* Pattern */}
-      <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle at 20% 50%, rgba(255,255,255,0.08) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(0,0,0,0.1) 0%, transparent 50%)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 50px)", backgroundSize: "50px 50px", pointerEvents: "none" }} />
-
-      <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative", zIndex: 10 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }}>
-          {/* Left */}
-          <div>
-            <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>For Home Cooks</span>
-            <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "clamp(36px, 4.5vw, 68px)", color: "white", margin: "12px 0 20px", letterSpacing: "-0.03em", lineHeight: 1.05 }}>
-              Cook Once.<br />
-              <span style={{ fontStyle: "italic", opacity: 0.85 }}>Earn Twice.</span>
-            </h2>
-            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 16, lineHeight: 1.75, marginBottom: 40 }}>
-              You already cook for your family every day. With TiffinZayka, make 3–8 extra portions and earn real income from something you already love doing. No investment. No extra equipment. Just your kitchen and your passion.
-            </p>
-
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 40 }}>
-              {["No joining fee, ever", "Flexible timings — you decide", "You control the menu", "Weekly UPI payouts", "Kitchen inspection support", "Dedicated cook support team"].map((b) => (
-                <span key={b} style={{
-                  background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)",
-                  borderRadius: 99, padding: "8px 16px",
-                  color: "white", fontSize: 12, fontWeight: 600,
-                }}>✓ {b}</span>
-              ))}
-            </div>
-
-            <button style={{
-              background: "white", color: "#E8560C", border: "none",
-              padding: "18px 40px", borderRadius: 99, fontSize: 16, fontWeight: 800,
-              cursor: "pointer", boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-              transition: "all 0.25s",
-            }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px) scale(1.02)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0) scale(1)"; }}>
-              🍳 Register as a Cook — Free
-            </button>
-            <p style={{ marginTop: 14, color: "rgba(255,255,255,0.5)", fontSize: 12 }}>Joined by 450+ home cooks. Takes 5 minutes to sign up.</p>
-          </div>
-
-          {/* Right: Earnings calculator style */}
-          <div style={{ background: "rgba(0,0,0,0.2)", borderRadius: 24, padding: "40px 36px", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.15)" }}>
-            <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 13, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 24px" }}>Estimated Monthly Earnings</p>
-
-            {[
-              { orders: "3 orders/day", perDay: "₹216–₹331", perMonth: "₹6,500–₹10,000", level: "Starting Out" },
-              { orders: "6 orders/day", perDay: "₹432–₹663", perMonth: "₹13,000–₹20,000", level: "Part-Time Cook" },
-              { orders: "10 orders/day", perDay: "₹720–₹1,105", perMonth: "₹21,600–₹33,000", level: "Full-Time Cook" },
-            ].map((tier, i) => (
-              <div key={i} style={{
-                background: i === 1 ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.06)",
-                border: `1px solid ${i === 1 ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.1)"}`,
-                borderRadius: 14, padding: "18px 20px", marginBottom: 12,
-                position: "relative",
-              }}>
-                {i === 1 && (
-                  <div style={{ position: "absolute", top: -10, right: 16, background: "white", color: "#E8560C", fontSize: 10, fontWeight: 800, padding: "3px 10px", borderRadius: 99, letterSpacing: "0.05em" }}>POPULAR</div>
-                )}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <p style={{ margin: 0, color: "white", fontSize: 14, fontWeight: 700 }}>{tier.orders}</p>
-                    <p style={{ margin: "2px 0 0", color: "rgba(255,255,255,0.5)", fontSize: 11 }}>{tier.level}</p>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <p style={{ margin: 0, color: "white", fontSize: 18, fontWeight: 800, fontFamily: "var(--font-display)", letterSpacing: "-0.01em" }}>{tier.perMonth}</p>
-                    <p style={{ margin: "2px 0 0", color: "rgba(255,255,255,0.5)", fontSize: 11 }}>/ month</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, textAlign: "center", margin: "16px 0 0" }}>Based on avg. tiffin price ₹80–₹130 · You keep 85% of earnings</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── FAQ ───────────────────────────────────────────────────────────────────────
-function FAQSection() {
-  const [open, setOpen] = useState<number | null>(null);
-
-  return (
-    <section id="faq" style={{ background: "#0A0500", padding: "120px 40px" }}>
-      <div style={{ maxWidth: 860, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 64 }}>
-          <span style={{ color: "#E8560C", fontSize: 11, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" }}>FAQ</span>
-          <h2 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "clamp(32px, 4vw, 52px)", color: "white", margin: "12px 0 16px", letterSpacing: "-0.02em" }}>
-            Questions You'll<br /><span style={{ color: "#E8560C", fontStyle: "italic" }}>Definitely Have</span>
-          </h2>
-          <p style={{ color: "rgba(190,155,100,0.55)", fontSize: 15, maxWidth: 440, margin: "0 auto" }}>Everything you want to know before your first tiffin order. Honest answers, no fluff.</p>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {FAQS.map((faq, i) => (
-            <div key={i} style={{
-              background: open === i ? "rgba(232,86,12,0.07)" : "rgba(255,255,255,0.02)",
-              border: `1px solid ${open === i ? "rgba(232,86,12,0.25)" : "rgba(255,255,255,0.05)"}`,
-              borderRadius: 14, overflow: "hidden", transition: "all 0.3s",
-            }}>
-              <button onClick={() => setOpen(open === i ? null : i)} style={{
-                width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "22px 28px", background: "transparent", border: "none",
-                cursor: "pointer", textAlign: "left",
-              }}>
-                <span style={{ color: "rgba(229,197,140,0.9)", fontSize: 15, fontWeight: 600, lineHeight: 1.4, flex: 1, paddingRight: 20 }}>{faq.q}</span>
-                <div style={{
-                  width: 28, height: 28, borderRadius: "50%",
-                  background: open === i ? "#E8560C" : "rgba(255,255,255,0.06)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0, transition: "all 0.3s",
-                  transform: open === i ? "rotate(45deg)" : "rotate(0deg)",
-                }}>
-                  <span style={{ color: "white", fontSize: 18, lineHeight: 1, marginTop: -1 }}>+</span>
-                </div>
-              </button>
-
-              <div style={{
-                maxHeight: open === i ? 300 : 0,
-                overflow: "hidden",
-                transition: "max-height 0.35s ease",
-              }}>
-                <p style={{ margin: 0, padding: "0 28px 24px", color: "rgba(190,155,100,0.7)", fontSize: 14, lineHeight: 1.8 }}>{faq.a}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ textAlign: "center", marginTop: 52 }}>
-          <p style={{ color: "rgba(190,155,100,0.4)", fontSize: 14, marginBottom: 16 }}>Still have questions?</p>
-          <button style={{
-            background: "transparent", border: "1.5px solid rgba(232,86,12,0.35)",
-            color: "#E8560C", padding: "12px 28px", borderRadius: 99,
-            fontSize: 14, fontWeight: 600, cursor: "pointer",
-          }}>
-            Chat With Us →
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Newsletter ─────────────────────────────────────────────────────────────────
-function Newsletter() {
-  return (
-    <section style={{ background: "#0D0600", padding: "80px 40px", borderTop: "1px solid rgba(232,86,12,0.06)" }}>
-      <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
-        <h3 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(24px, 3vw, 40px)", color: "white", margin: "0 0 12px", letterSpacing: "-0.02em", fontWeight: 700 }}>
-          Get <span style={{ color: "#E8560C" }}>Daily Tiffin</span> Updates
-        </h3>
-        <p style={{ color: "rgba(190,155,100,0.55)", fontSize: 14, marginBottom: 28 }}>Know what's cooking in your area every morning. No spam — just food.</p>
-        <div style={{ display: "flex", gap: 10, maxWidth: 440, margin: "0 auto" }}>
-          <input
-            type="email"
-            placeholder="your@email.com"
-            style={{
-              flex: 1, background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(229,197,140,0.15)",
-              borderRadius: 99, padding: "14px 20px", color: "white", fontSize: 14,
-              outline: "none",
-            }}
-          />
-          <button style={{
-            background: "linear-gradient(135deg, #E8560C, #C94500)",
-            color: "white", border: "none", padding: "14px 24px",
-            borderRadius: 99, fontSize: 14, fontWeight: 700, cursor: "pointer",
-            whiteSpace: "nowrap", boxShadow: "0 4px 20px rgba(232,86,12,0.3)",
-          }}>
-            Subscribe
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Footer ────────────────────────────────────────────────────────────────────
-function Footer() {
-  return (
-    <footer style={{ background: "#060300", borderTop: "1px solid rgba(232,86,12,0.08)", padding: "72px 40px 32px" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 64 }}>
-          {/* Brand */}
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-              <span style={{ fontSize: 28 }}>🍱</span>
-              <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 24, color: "white", letterSpacing: "-0.02em" }}>
-                Tiffin<span style={{ color: "#E8560C" }}>Zayka</span>
-              </span>
-            </div>
-            <p style={{ color: "rgba(190,155,100,0.5)", fontSize: 14, lineHeight: 1.75, maxWidth: 280, margin: "0 0 24px" }}>
-              Bringing the warmth of homemade food to your doorstep. Real meals, real families, real India.
-            </p>
-            <div style={{ display: "flex", gap: 10 }}>
-              {["𝕏 Twitter", "📸 Instagram", "💼 LinkedIn", "▶️ YouTube"].map((s) => (
-                <a key={s} href="#" style={{
-                  color: "rgba(190,155,100,0.35)", fontSize: 11, fontWeight: 600,
-                  border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8,
-                  padding: "6px 10px", textDecoration: "none", transition: "all 0.2s",
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.color = "#E8560C"; e.currentTarget.style.borderColor = "rgba(232,86,12,0.3)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = "rgba(190,155,100,0.35)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; }}>
-                  {s}
-                </a>
-              ))}
-            </div>
-          </div>
-
-          {/* Platform */}
-          <div>
-            <h4 style={{ color: "rgba(229,197,140,0.4)", fontSize: 11, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", margin: "0 0 18px" }}>Platform</h4>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 11 }}>
-              {["How It Works", "Browse Today's Menu", "TiffinPass Subscription", "Refer a Friend", "Gift a Tiffin"].map((l) => (
-                <li key={l}><a href="#" style={{ color: "rgba(190,155,100,0.55)", fontSize: 14, textDecoration: "none", transition: "color 0.2s" }}
-                  onMouseEnter={e => { e.currentTarget.style.color = "rgba(229,197,140,0.9)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = "rgba(190,155,100,0.55)"; }}>{l}</a></li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Cooks */}
-          <div>
-            <h4 style={{ color: "rgba(229,197,140,0.4)", fontSize: 11, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", margin: "0 0 18px" }}>For Cooks</h4>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 11 }}>
-              {["Register as a Cook", "Cook Dashboard", "Earnings Calculator", "Cook Success Stories", "Cook Support"].map((l) => (
-                <li key={l}><a href="#" style={{ color: "rgba(190,155,100,0.55)", fontSize: 14, textDecoration: "none", transition: "color 0.2s" }}
-                  onMouseEnter={e => { e.currentTarget.style.color = "rgba(229,197,140,0.9)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = "rgba(190,155,100,0.55)"; }}>{l}</a></li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Company */}
-          <div>
-            <h4 style={{ color: "rgba(229,197,140,0.4)", fontSize: 11, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", margin: "0 0 18px" }}>Company</h4>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 11 }}>
-              {["About TiffinZayka", "Press & Media", "Careers — We're Hiring", "Privacy Policy", "Terms of Use", "Contact Us"].map((l) => (
-                <li key={l}><a href="#" style={{ color: "rgba(190,155,100,0.55)", fontSize: 14, textDecoration: "none", transition: "color 0.2s" }}
-                  onMouseEnter={e => { e.currentTarget.style.color = "rgba(229,197,140,0.9)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = "rgba(190,155,100,0.55)"; }}>{l}</a></li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Cities strip */}
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.04)", padding: "20px 0", marginBottom: 32 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
-            {CITIES.map((c, i) => (
-              <a key={i} href="#" style={{ color: "rgba(190,155,100,0.3)", fontSize: 12, textDecoration: "none" }}
-                onMouseEnter={e => { e.currentTarget.style.color = "#E8560C"; }}
-                onMouseLeave={e => { e.currentTarget.style.color = "rgba(190,155,100,0.3)"; }}>
-                Tiffin Delivery in {c}{i < CITIES.length - 1 ? " ·" : ""}
-              </a>
-            ))}
-          </div>
-        </div>
-
-        {/* Bottom row */}
-        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-          <p style={{ color: "rgba(190,155,100,0.25)", fontSize: 12, margin: 0 }}>© 2025 TiffinZayka Technologies Pvt. Ltd. · All rights reserved.</p>
-          <p style={{ color: "rgba(190,155,100,0.25)", fontSize: 12, margin: 0 }}>Made with ❤️ and 🌶️ in India</p>
-          <p style={{ color: "rgba(190,155,100,0.25)", fontSize: 12, margin: 0 }}>FSSAI License: 10025041000123</p>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-// ─── Page Root ─────────────────────────────────────────────────────────────────
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function HomePage() {
   const [scrolled, setScrolled] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [openService, setOpenService] = useState<number | null>(0);
+  const [formData, setFormData] = useState({ name: "", email: "", service: "" });
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   return (
-    <div className={`${cormorant.variable} ${manrope.variable}`} style={{ fontFamily: "var(--font-body)", overflowX: "hidden" }}>
-      {/* Global keyframes */}
+    <>
       <style>{`
-        @keyframes marquee {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
-        @keyframes steam {
-          0%   { opacity: 0;   transform: translateY(0px)  scaleX(1);   }
-          40%  { opacity: 0.6; transform: translateY(-18px) scaleX(1.4); }
-          100% { opacity: 0;   transform: translateY(-36px) scaleX(0.7); }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0px)   rotate(0deg);  }
-          50%       { transform: translateY(-18px) rotate(6deg);  }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1;   transform: scale(1);    }
-          50%       { opacity: 0.5; transform: scale(0.85); }
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
-        ::selection { background: rgba(232,86,12,0.3); color: white; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0A0500; }
-        ::-webkit-scrollbar-thumb { background: rgba(232,86,12,0.4); border-radius: 99px; }
-        input::placeholder { color: rgba(190,155,100,0.3); }
+        body {
+          font-family: 'Outfit', sans-serif;
+          background: #f5f4f0;
+          color: #1a1a2e;
+          -webkit-font-smoothing: antialiased;
+        }
+
+        :root {
+          --blue: #086ad8;
+          --navy: #002fa6;
+          --warm: #d2a98e;
+          --ink: #0d0f1a;
+          --paper: #f5f4f0;
+          --mid: #696969;
+          --border: rgba(0,0,0,0.09);
+        }
+
+        .serif { font-family: 'Instrument Serif', serif; }
+
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(24px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes marqueeScroll {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        .anim-up { animation: fadeUp 0.7s ease forwards; }
+        .anim-up-d1 { animation: fadeUp 0.7s 0.1s ease both; }
+        .anim-up-d2 { animation: fadeUp 0.7s 0.2s ease both; }
+        .anim-up-d3 { animation: fadeUp 0.7s 0.3s ease both; }
+
+        .marquee-track {
+          display: flex;
+          gap: 0;
+          animation: marqueeScroll 20s linear infinite;
+          width: max-content;
+        }
+        .marquee-wrap { overflow: hidden; }
+
+        .service-row {
+          border-top: 1px solid var(--border);
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        .service-row:last-child { border-bottom: 1px solid var(--border); }
+        .service-row:hover { background: rgba(8,106,216,0.03); }
+
+        .cs-card {
+          position: relative;
+          overflow: hidden;
+          border-radius: 16px;
+          cursor: pointer;
+          transition: transform 0.35s cubic-bezier(0.22,1,0.36,1);
+        }
+        .cs-card:hover { transform: translateY(-6px); }
+
+        .pill {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 4px 14px; border-radius: 100px;
+          font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+        }
+
+        input, select, textarea {
+          font-family: 'Outfit', sans-serif;
+        }
+
+        input:focus, select:focus { outline: 2px solid var(--blue); outline-offset: 0; }
+
+        .spin-badge {
+          animation: spin-slow 12s linear infinite;
+        }
+
+        @media (max-width: 768px) {
+          .hero-grid { grid-template-columns: 1fr !important; }
+          .bento-grid { grid-template-columns: 1fr !important; }
+          .stats-list { grid-template-columns: 1fr 1fr !important; }
+          .case-grid { grid-template-columns: 1fr !important; }
+          .footer-cols { grid-template-columns: 1fr 1fr !important; }
+          .split-cta { grid-template-columns: 1fr !important; }
+          .nav-links { display: none !important; }
+          .testi-mini { grid-template-columns: 1fr 1fr !important; }
+        }
       `}</style>
 
-      <AnnouncementBar />
-      <Navbar scrolled={scrolled} />
-      <Hero />
-      <MediaBar />
-      <HowItWorks />
-      <Stats />
-      <Comparison />
-      <CookSpotlight />
-      <TodaysMenu />
-      <QualityPromise />
-      <CityCoverage />
-      <Testimonials />
-      <AppSection />
-      <BecomeACook />
-      <FAQSection />
-      <Newsletter />
-      <Footer />
-    </div>
+      {/* ───────────────────────────── NAVBAR ─────────────────────────────── */}
+      <header
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          transition: "all 0.3s",
+        }}
+      >
+        {/* Topbar */}
+        <div style={{ background: "#0d0f1a", padding: "6px 0" }}>
+          <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 24, fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 500 }}>
+              <span>📞 +91 9950602330</span>
+              <span>✉ info@makemyleads.com</span>
+            </div>
+            <div style={{ display: "flex", gap: 16, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>
+              {["TW", "FB", "IG", "LI"].map(s => (
+                <a key={s} href="#" style={{ color: "rgba(255,255,255,0.4)", transition: "color 0.2s", textDecoration: "none" }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#086ad8")}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.4)")}>{s}</a>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Main nav */}
+        <nav style={{
+          background: scrolled ? "rgba(245,244,240,0.97)" : "transparent",
+          backdropFilter: scrolled ? "blur(20px)" : "none",
+          borderBottom: scrolled ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.1)",
+          transition: "all 0.35s",
+        }}>
+          <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px", display: "flex", alignItems: "center", height: 64 }}>
+            {/* Logo */}
+            <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, marginRight: 48, textDecoration: "none" }}>
+              <div style={{
+                width: 36, height: 36, background: "linear-gradient(135deg,#086ad8,#002fa6)",
+                borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center"
+              }}>
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" fill="white" />
+                  <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: scrolled ? "#0d0f1a" : "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>
+                  MakeMyLeads
+                </div>
+                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "2.5px", color: scrolled ? "#086ad8" : "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>
+                  AI Lead Generation
+                </div>
+              </div>
+            </a>
+
+            {/* Links */}
+            <div className="nav-links" style={{ display: "flex", flex: 1, gap: 2 }}>
+              {navItems.map(item => (
+                <div key={item.label} style={{ position: "relative" }}
+                  onMouseEnter={() => setActiveDropdown(item.label)}
+                  onMouseLeave={() => setActiveDropdown(null)}>
+                  <a href={item.href} style={{
+                    display: "flex", alignItems: "center", gap: 4, padding: "0 14px", height: 64,
+                    fontSize: 14, fontWeight: 500,
+                    color: scrolled ? "rgba(26,26,46,0.75)" : "rgba(255,255,255,0.8)",
+                    textDecoration: "none", transition: "color 0.2s", whiteSpace: "nowrap"
+                  }}
+                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = scrolled ? "#086ad8" : "#fff")}
+                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = scrolled ? "rgba(26,26,46,0.75)" : "rgba(255,255,255,0.8)")}>
+                    {item.label}
+                    {item.children && <span style={{ fontSize: 10, opacity: 0.6 }}>▾</span>}
+                  </a>
+                  {item.children && activeDropdown === item.label && (
+                    <div style={{
+                      position: "absolute", top: "100%", left: 0, minWidth: 200,
+                      background: "#fff", borderRadius: 12, boxShadow: "0 12px 40px rgba(0,0,0,0.12)",
+                      border: "1px solid rgba(0,0,0,0.07)", padding: "8px 0",
+                      animation: "fadeIn 0.18s ease"
+                    }}>
+                      {item.children.map(c => (
+                        <a key={c.label} href={c.href} style={{
+                          display: "block", padding: "8px 18px", fontSize: 13,
+                          color: "#444", textDecoration: "none", transition: "all 0.15s"
+                        }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#086ad8"; (e.currentTarget as HTMLElement).style.paddingLeft = "24px"; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#444"; (e.currentTarget as HTMLElement).style.paddingLeft = "18px"; }}>
+                          {c.label}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <a href="tel:+919950602330" style={{
+              display: "flex", alignItems: "center", gap: 8, padding: "0 20px", height: 40,
+              background: scrolled ? "#086ad8" : "rgba(255,255,255,0.15)",
+              border: scrolled ? "none" : "1px solid rgba(255,255,255,0.3)",
+              borderRadius: 8, fontSize: 13, fontWeight: 700,
+              color: "#fff", textDecoration: "none", transition: "all 0.2s"
+            }}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = scrolled ? "#054fa0" : "rgba(255,255,255,0.25)")}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = scrolled ? "#086ad8" : "rgba(255,255,255,0.15)")}>
+              Get Started →
+            </a>
+          </div>
+        </nav>
+      </header>
+
+      {/* ───────────────────────────── HERO ───────────────────────────────── */}
+      <section style={{
+        minHeight: "100vh",
+        background: "linear-gradient(150deg, #0d0f1a 0%, #072a83 55%, #086ad8 100%)",
+        paddingTop: 130,
+        paddingBottom: 80,
+        position: "relative",
+        overflow: "hidden",
+      }}>
+        {/* Giant background number */}
+        <div style={{
+          position: "absolute", top: "50%", right: "-60px",
+          transform: "translateY(-55%)",
+          fontSize: "clamp(280px, 30vw, 420px)",
+          fontWeight: 900,
+          color: "rgba(255,255,255,0.03)",
+          lineHeight: 1,
+          pointerEvents: "none",
+          userSelect: "none",
+        }}>01</div>
+
+        {/* Mesh orbs */}
+        <div style={{ position: "absolute", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(210,169,142,0.12) 0%, transparent 70%)", top: "-100px", left: "-100px", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(8,106,216,0.25) 0%, transparent 70%)", bottom: "0", right: "200px", pointerEvents: "none" }} />
+
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px", position: "relative", zIndex: 2 }}>
+          <div className="hero-grid" style={{ display: "grid", gridTemplateColumns: "1fr 440px", gap: 64, alignItems: "center" }}>
+
+            {/* LEFT */}
+            <div>
+              <div className="anim-up" style={{ marginBottom: 32 }}>
+                <span className="pill" style={{ background: "rgba(210,169,142,0.15)", border: "1px solid rgba(210,169,142,0.3)", color: "#d2a98e" }}>
+                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#d2a98e" }} />
+                  Since 2013 · Jaipur, India
+                </span>
+              </div>
+
+              <h1 className="anim-up-d1 serif" style={{
+                fontSize: "clamp(3rem, 6.5vw, 5.5rem)",
+                fontWeight: 400,
+                color: "#fff",
+                lineHeight: 1.08,
+                letterSpacing: "-0.02em",
+                marginBottom: 28,
+              }}>
+                Turn <span style={{ color: "#d2a98e", fontStyle: "italic" }}>intent</span> into<br />
+                <span style={{
+                  background: "linear-gradient(90deg, #fff 40%, rgba(255,255,255,0.5))",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent"
+                }}>qualified leads.</span>
+              </h1>
+
+              <p className="anim-up-d2" style={{
+                fontSize: 17, color: "rgba(255,255,255,0.6)", lineHeight: 1.8,
+                maxWidth: 520, marginBottom: 40
+              }}>
+                AI-powered lead generation built for Finance, Medical, Real Estate, and Education — precision-engineered to fill your pipeline with buyers who are ready to act.
+              </p>
+
+              <div className="anim-up-d3" style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 60 }}>
+                <a href="https://wa.me/919950602330" target="_blank" rel="noopener noreferrer" style={{
+                  display: "flex", alignItems: "center", gap: 8, padding: "14px 28px",
+                  background: "#086ad8", color: "#fff", borderRadius: 10,
+                  fontWeight: 700, fontSize: 15, textDecoration: "none",
+                  boxShadow: "0 8px 30px rgba(8,106,216,0.4)", transition: "all 0.25s"
+                }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.transform = "translateY(-2px)")}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.transform = "translateY(0)")}>
+                  Start for Free →
+                </a>
+                <a href="/case-studies" style={{
+                  display: "flex", alignItems: "center", gap: 8, padding: "14px 28px",
+                  background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)",
+                  color: "#fff", borderRadius: 10, fontWeight: 600, fontSize: 15,
+                  textDecoration: "none", transition: "all 0.25s"
+                }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.14)")}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)")}>
+                  View Case Studies
+                </a>
+              </div>
+
+              {/* Trust row */}
+              <div style={{ display: "flex", gap: 40, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 32 }}>
+                {[{ n: "1790+", l: "Clients" }, { n: "491+", l: "Projects" }, { n: "11 Yrs", l: "Experience" }].map(b => (
+                  <div key={b.l}>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em" }}>{b.n}</div>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: 500, letterSpacing: "1px", textTransform: "uppercase" }}>{b.l}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* RIGHT: Appointment Card */}
+            <div className="anim-up-d2" style={{
+              background: "rgba(255,255,255,0.06)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 20,
+              padding: "36px 32px",
+            }}>
+              <div style={{ marginBottom: 28 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2.5px", color: "#d2a98e", textTransform: "uppercase", marginBottom: 8 }}>
+                  Free Consultation
+                </div>
+                <h3 className="serif" style={{ fontSize: 28, color: "#fff", fontWeight: 400, lineHeight: 1.2 }}>
+                  Book a strategy<br />session today
+                </h3>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {[
+                  { key: "name", type: "text", placeholder: "Your full name" },
+                  { key: "email", type: "email", placeholder: "Work email address" },
+                ].map(f => (
+                  <input key={f.key} type={f.type} placeholder={f.placeholder}
+                    value={formData[f.key as keyof typeof formData]}
+                    onChange={e => setFormData({ ...formData, [f.key]: e.target.value })}
+                    style={{
+                      width: "100%", height: 50, padding: "0 16px",
+                      background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
+                      borderRadius: 10, color: "#fff", fontSize: 14,
+                      transition: "border-color 0.2s",
+                    }}
+                    onFocus={e => ((e.target as HTMLInputElement).style.borderColor = "#086ad8")}
+                    onBlur={e => ((e.target as HTMLInputElement).style.borderColor = "rgba(255,255,255,0.12)")} />
+                ))}
+
+                <select value={formData.service}
+                  onChange={e => setFormData({ ...formData, service: e.target.value })}
+                  style={{
+                    width: "100%", height: 50, padding: "0 16px",
+                    background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
+                    borderRadius: 10, color: formData.service ? "#fff" : "rgba(255,255,255,0.45)",
+                    fontSize: 14, cursor: "pointer",
+                  }}>
+                  <option value="">Select service area</option>
+                  <option>Lead Generation</option>
+                  <option>CRM Integration</option>
+                  <option>AI Automation</option>
+                  <option>Industry Consulting</option>
+                </select>
+
+                <button onClick={() => alert("Booking confirmed! We'll reach out shortly.")} style={{
+                  width: "100%", height: 52, background: "#d2a98e", border: "none",
+                  borderRadius: 10, color: "#fff", fontWeight: 800, fontSize: 15,
+                  cursor: "pointer", fontFamily: "'Outfit', sans-serif",
+                  transition: "all 0.25s", marginTop: 4,
+                }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#c4967a"; (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#d2a98e"; (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
+                  Book Free Session
+                </button>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 18, padding: "12px 16px", background: "rgba(255,255,255,0.05)", borderRadius: 8 }}>
+                <span style={{ fontSize: 18 }}>🔒</span>
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>Your data is encrypted & never sold. Avg response: &lt; 2 hrs.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom diagonal */}
+        <div style={{ position: "absolute", bottom: -1, left: 0, right: 0 }}>
+          <svg viewBox="0 0 1440 80" fill="none" preserveAspectRatio="none" style={{ display: "block" }}>
+            <path d="M0 80 L1440 0 L1440 80 Z" fill="#f5f4f0" />
+          </svg>
+        </div>
+      </section>
+
+      {/* ───────────────────────────── MARQUEE ────────────────────────────── */}
+      <div style={{ background: "#086ad8", padding: "14px 0", overflow: "hidden" }}>
+        <div className="marquee-wrap">
+          <div className="marquee-track">
+            {[...marqueeItems, ...marqueeItems].map((item, i) => (
+              <span key={i} style={{
+                display: "inline-flex", alignItems: "center", gap: 16,
+                padding: "0 28px",
+                fontSize: 12, fontWeight: 700, letterSpacing: "2px",
+                textTransform: "uppercase", color: "rgba(255,255,255,0.85)",
+                whiteSpace: "nowrap"
+              }}>
+                {item}
+                <span style={{ width: 4, height: 4, borderRadius: "50%", background: "rgba(255,255,255,0.4)" }} />
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ───────────────────────────── SERVICES ───────────────────────────── */}
+      <section style={{ padding: "100px 0", background: "#f5f4f0" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 56, flexWrap: "wrap", gap: 24 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "3px", color: "#086ad8", textTransform: "uppercase", marginBottom: 12 }}>
+                What We Do
+              </div>
+              <h2 className="serif" style={{ fontSize: "clamp(2.2rem, 4vw, 3.5rem)", color: "#0d0f1a", lineHeight: 1.1, fontWeight: 400 }}>
+                Six pillars of<br />
+                <span style={{ fontStyle: "italic", color: "#086ad8" }}>lead excellence</span>
+              </h2>
+            </div>
+            <a href="/our-services" style={{
+              display: "flex", alignItems: "center", gap: 8, padding: "12px 24px",
+              border: "1.5px solid #0d0f1a", borderRadius: 8, fontWeight: 700,
+              fontSize: 14, color: "#0d0f1a", textDecoration: "none", transition: "all 0.2s"
+            }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#0d0f1a"; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "#0d0f1a"; }}>
+              All Services →
+            </a>
+          </div>
+
+          {/* Accordion list */}
+          <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid rgba(0,0,0,0.08)", background: "#fff" }}>
+            {services.map((svc, i) => (
+              <div key={i} className="service-row"
+                onClick={() => setOpenService(openService === i ? null : i)}
+                style={{ borderTop: i === 0 ? "none" : "1px solid rgba(0,0,0,0.07)" }}>
+                <div style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+                  {/* Number */}
+                  <div style={{
+                    width: 80, padding: "24px 0", textAlign: "center",
+                    fontSize: 13, fontWeight: 800, color: "#d2a98e",
+                    letterSpacing: "1px", flexShrink: 0,
+                    borderRight: "1px solid rgba(0,0,0,0.07)"
+                  }}>
+                    {svc.num}
+                  </div>
+
+                  {/* Tag */}
+                  <div style={{ width: 130, padding: "24px 20px", flexShrink: 0 }}>
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, letterSpacing: "1.5px",
+                      color: "#086ad8", background: "rgba(8,106,216,0.08)",
+                      padding: "4px 10px", borderRadius: 4, textTransform: "uppercase"
+                    }}>
+                      {svc.tag}
+                    </span>
+                  </div>
+
+                  {/* Title */}
+                  <div style={{ flex: 1, padding: "24px 20px" }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#0d0f1a" }}>{svc.title}</div>
+                    {openService === i && (
+                      <div style={{
+                        fontSize: 14, color: "#696969", lineHeight: 1.75,
+                        marginTop: 10, maxWidth: 600,
+                        animation: "fadeUp 0.25s ease"
+                      }}>
+                        {svc.desc}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Toggle */}
+                  <div style={{
+                    width: 64, display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 20, color: openService === i ? "#086ad8" : "#ccc",
+                    transition: "color 0.2s", flexShrink: 0,
+                  }}>
+                    {openService === i ? "−" : "+"}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────────────────────── BENTO ABOUT ────────────────────────── */}
+      <section style={{ padding: "100px 0", background: "#0d0f1a" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "3px", color: "#d2a98e", textTransform: "uppercase", marginBottom: 12 }}>
+            Discover Our Company
+          </div>
+          <h2 className="serif" style={{ fontSize: "clamp(2rem, 4vw, 3.5rem)", color: "#fff", fontWeight: 400, marginBottom: 48, lineHeight: 1.1 }}>
+            Thriving for <span style={{ color: "#d2a98e", fontStyle: "italic" }}>11 years</span> —<br />
+            and just getting started.
+          </h2>
+
+          {/* Bento grid */}
+          <div className="bento-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+
+            {/* Big mission cell */}
+            <div style={{
+              gridColumn: "1 / 3",
+              background: "linear-gradient(135deg, #086ad8 0%, #002fa6 100%)",
+              borderRadius: 20, padding: "48px 48px",
+              position: "relative", overflow: "hidden"
+            }}>
+              <div style={{ position: "absolute", right: -40, top: -40, width: 280, height: 280, borderRadius: "50%", background: "rgba(255,255,255,0.04)" }} />
+              <div style={{ position: "absolute", right: 20, bottom: -30, width: 160, height: 160, borderRadius: "50%", background: "rgba(255,255,255,0.04)" }} />
+              <div style={{ position: "relative", zIndex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2.5px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase", marginBottom: 16 }}>
+                  Our Mission
+                </div>
+                <p style={{ fontSize: 20, fontWeight: 300, color: "#fff", lineHeight: 1.7, maxWidth: 480 }}>
+                  We believe progress is possible even when it's gradual. Our AI applications are dedicated to <strong style={{ fontWeight: 700 }}>elevating businesses</strong> through intelligent automation and data-driven outreach.
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 28 }}>
+                  {["Lead Automation", "AI Prospect Detection", "Smart CRM Integration", "Contact & Follow-Up Systems"].map(p => (
+                    <span key={p} style={{
+                      background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)",
+                      color: "#fff", padding: "6px 14px", borderRadius: 6,
+                      fontSize: 12, fontWeight: 600
+                    }}>✓ {p}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Awards cell */}
+            <div style={{ background: "#1a1f36", borderRadius: 20, padding: 32 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2px", color: "#d2a98e", textTransform: "uppercase", marginBottom: 20 }}>
+                Recognition
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {[
+                  "Top Training Companies 2016",
+                  "CIO Big Data 100",
+                  "Top 20 Sales Training 2015",
+                  "Pharma Tech Outlook",
+                ].map(award => (
+                  <div key={award} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ fontSize: 18 }}>🏆</span>
+                    <span style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", fontWeight: 500 }}>{award}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Partners cell */}
+            <div style={{ background: "#1a1f36", borderRadius: 20, padding: 32 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "2px", color: "#d2a98e", textTransform: "uppercase", marginBottom: 20 }}>
+                Tech Partners
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {["Salesforce", "HubSpot", "Google", "Zoho", "AWS", "Microsoft"].map(p => (
+                  <div key={p} style={{
+                    background: "rgba(255,255,255,0.05)", borderRadius: 8,
+                    padding: "10px 14px", fontSize: 12, fontWeight: 700,
+                    color: "rgba(255,255,255,0.7)", textAlign: "center",
+                    border: "1px solid rgba(255,255,255,0.06)"
+                  }}>{p}</div>
+                ))}
+              </div>
+            </div>
+
+            {/* CTA cell */}
+            <div style={{
+              background: "#d2a98e", borderRadius: 20, padding: 32,
+              display: "flex", flexDirection: "column", justifyContent: "space-between"
+            }}>
+              <div>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>🚀</div>
+                <h4 style={{ fontSize: 20, fontWeight: 800, color: "#fff", lineHeight: 1.3, marginBottom: 8 }}>
+                  Ready to scale your pipeline?
+                </h4>
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", lineHeight: 1.6 }}>
+                  Let's build a strategy that works for your industry and budget.
+                </p>
+              </div>
+              <a href="/contact-us" style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                height: 44, background: "#fff", borderRadius: 8, marginTop: 20,
+                fontWeight: 800, fontSize: 14, color: "#d2a98e", textDecoration: "none",
+                transition: "opacity 0.2s"
+              }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = "0.9")}
+                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = "1")}>
+                Let's Talk →
+              </a>
+            </div>
+
+            {/* Spin badge cell */}
+            <div style={{
+              background: "rgba(8,106,216,0.08)", border: "1px dashed rgba(8,106,216,0.25)",
+              borderRadius: 20, padding: 32,
+              display: "flex", alignItems: "center", justifyContent: "center"
+            }}>
+              <div style={{ position: "relative", width: 140, height: 140 }}>
+                <svg className="spin-badge" viewBox="0 0 140 140" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+                  <defs>
+                    <path id="circle-text" d="M 70,70 m -45,0 a 45,45 0 1,1 90,0 a 45,45 0 1,1 -90,0" />
+                  </defs>
+                  <text fill="#086ad8" fontSize="11" fontWeight="700" letterSpacing="3" fontFamily="Outfit,sans-serif">
+                    <textPath href="#circle-text">AI-POWERED · LEAD GENERATION · JAIPUR INDIA ·</textPath>
+                  </text>
+                </svg>
+                <div style={{
+                  position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+                  width: 64, height: 64, background: "linear-gradient(135deg,#086ad8,#002fa6)",
+                  borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 26
+                }}>🎯</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────────────────────── STATS ─────────────────────────────── */}
+      <section style={{ padding: "100px 0", background: "#f5f4f0" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
+          <div style={{ textAlign: "center", marginBottom: 64 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "3px", color: "#086ad8", textTransform: "uppercase", marginBottom: 12 }}>
+              By the Numbers
+            </div>
+            <h2 className="serif" style={{ fontSize: "clamp(2rem, 4vw, 3.25rem)", color: "#0d0f1a", fontWeight: 400 }}>
+              Results that <span style={{ fontStyle: "italic", color: "#086ad8" }}>speak louder</span> than claims
+            </h2>
+          </div>
+
+          <div className="stats-list" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 1, background: "rgba(0,0,0,0.08)", borderRadius: 20, overflow: "hidden" }}>
+            {stats.map((s, i) => (
+              <div key={i} style={{
+                background: i % 2 === 0 ? "#0d0f1a" : "#1a1f36",
+                padding: "48px 40px",
+                position: "relative", overflow: "hidden"
+              }}>
+                <div style={{
+                  position: "absolute", top: 16, right: 20,
+                  fontSize: 11, fontWeight: 700, letterSpacing: "1.5px",
+                  color: "rgba(255,255,255,0.2)", textTransform: "uppercase"
+                }}>0{i + 1}</div>
+                <div style={{
+                  fontSize: "clamp(2.5rem,4vw,3.5rem)",
+                  fontWeight: 900, color: "#fff",
+                  letterSpacing: "-0.04em", lineHeight: 1,
+                  marginBottom: 8
+                }}>
+                  <Counter value={s.value} />
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#d2a98e", marginBottom: 4 }}>{s.label}</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────────────────────── CASE STUDIES ───────────────────────── */}
+      <section style={{ padding: "100px 0", background: "#fff" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 56, flexWrap: "wrap", gap: 20 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "3px", color: "#086ad8", textTransform: "uppercase", marginBottom: 12 }}>
+                Case Studies
+              </div>
+              <h2 className="serif" style={{ fontSize: "clamp(2rem, 4vw, 3.25rem)", color: "#0d0f1a", fontWeight: 400, lineHeight: 1.1 }}>
+                Work that <span style={{ fontStyle: "italic", color: "#d2a98e" }}>defines</span> us
+              </h2>
+            </div>
+            <a href="/case-studies" style={{ fontSize: 14, fontWeight: 700, color: "#086ad8", textDecoration: "none", borderBottom: "2px solid #086ad8", paddingBottom: 2 }}>
+              All Case Studies →
+            </a>
+          </div>
+
+          <div className="case-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 20 }}>
+            {caseStudies.map((cs, i) => (
+              <div key={i} className="cs-card" style={{ height: 320, background: `linear-gradient(135deg, ${cs.color}18, ${cs.color}30)`, border: `1px solid ${cs.color}25` }}>
+                {/* Background pattern */}
+                <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(circle at 70% 30%, ${cs.color}20 0%, transparent 60%)` }} />
+
+                {/* Content */}
+                <div style={{ position: "absolute", inset: 0, zIndex: 1, padding: 32, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <span className="pill" style={{ background: cs.color, color: "#fff" }}>
+                      {cs.cat}
+                    </span>
+                    <span style={{ fontSize: 40 }}>{cs.icon}</span>
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: 22, fontWeight: 800, color: "#0d0f1a", marginBottom: 8 }}>{cs.title}</h4>
+                    <div style={{ fontSize: 14, color: cs.color, fontWeight: 700, marginBottom: 16 }}>📊 {cs.result}</div>
+                    <a href="/case-studies" style={{
+                      display: "inline-flex", alignItems: "center", gap: 8,
+                      fontSize: 13, fontWeight: 700, color: "#0d0f1a",
+                      textDecoration: "none", borderBottom: `2px solid ${cs.color}`, paddingBottom: 2
+                    }}>View Full Study →</a>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────────────────────── TESTIMONIALS ───────────────────────── */}
+      <section style={{ padding: "100px 0", background: "#f5f4f0" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "3px", color: "#086ad8", textTransform: "uppercase", marginBottom: 12 }}>
+              Client Voices
+            </div>
+            <h2 className="serif" style={{ fontSize: "clamp(2rem, 4vw, 3.25rem)", color: "#0d0f1a", fontWeight: 400 }}>
+              What our clients <span style={{ fontStyle: "italic", color: "#086ad8" }}>actually say</span>
+            </h2>
+          </div>
+
+          {/* Featured testimonial */}
+          <div style={{
+            background: "#0d0f1a", borderRadius: 24, padding: "56px 64px",
+            marginBottom: 20, position: "relative", overflow: "hidden"
+          }}>
+            <div style={{ position: "absolute", top: 32, right: 64, fontSize: "120px", color: "rgba(210,169,142,0.08)", fontFamily: "Georgia,serif", lineHeight: 1 }}>
+              &#8220;
+            </div>
+            <div style={{ maxWidth: 680, position: "relative", zIndex: 1 }}>
+              <div style={{ display: "flex", gap: 4, marginBottom: 24 }}>
+                {Array(5).fill(0).map((_, i) => (
+                  <svg key={i} width="16" height="16" fill="#d2a98e" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
+                ))}
+              </div>
+              <blockquote className="serif" style={{ fontSize: "clamp(1.25rem,2.5vw,1.75rem)", color: "#fff", fontWeight: 400, lineHeight: 1.55, marginBottom: 32, fontStyle: "italic" }}>
+                &ldquo;{testimonials[activeTestimonial].quote}&rdquo;
+              </blockquote>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: "50%",
+                  background: `linear-gradient(135deg, ${testimonials[activeTestimonial].color}, ${testimonials[activeTestimonial].color}aa)`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "#fff", fontWeight: 800, fontSize: 15
+                }}>
+                  {testimonials[activeTestimonial].initials}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, color: "#fff", fontSize: 15 }}>{testimonials[activeTestimonial].name}</div>
+                  <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>{testimonials[activeTestimonial].role}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mini cards */}
+          <div className="testi-mini" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
+            {testimonials.map((t, i) => (
+              <div key={i} onClick={() => setActiveTestimonial(i)} style={{
+                background: i === activeTestimonial ? "#0d0f1a" : "#fff",
+                border: `1.5px solid ${i === activeTestimonial ? "#086ad8" : "rgba(0,0,0,0.08)"}`,
+                borderRadius: 14, padding: "18px 20px", cursor: "pointer", transition: "all 0.25s"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: "50%",
+                    background: `linear-gradient(135deg, ${t.color}, ${t.color}aa)`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#fff", fontWeight: 800, fontSize: 12
+                  }}>{t.initials}</div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: i === activeTestimonial ? "#fff" : "#0d0f1a" }}>{t.name}</div>
+                    <div style={{ fontSize: 11, color: "rgba(105,105,105,0.8)" }}>{t.role}</div>
+                  </div>
+                </div>
+                <p style={{ fontSize: 12, color: i === activeTestimonial ? "rgba(255,255,255,0.6)" : "#696969", lineHeight: 1.6 }}>
+                  {t.quote.slice(0, 60)}…
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────────────────────── SPLIT CTA ─────────────────────────── */}
+      <section style={{ background: "#086ad8" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+          <div className="split-cta" style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+            {/* Left */}
+            <div style={{ padding: "80px 64px", borderRight: "1px solid rgba(255,255,255,0.12)" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "3px", color: "rgba(255,255,255,0.6)", textTransform: "uppercase", marginBottom: 16 }}>
+                Talk To Us
+              </div>
+              <h2 className="serif" style={{ fontSize: "clamp(2rem, 3.5vw, 3rem)", color: "#fff", fontWeight: 400, lineHeight: 1.15, marginBottom: 24 }}>
+                Ready to transform<br />
+                your <span style={{ color: "#d2a98e", fontStyle: "italic" }}>lead pipeline?</span>
+              </h2>
+              <p style={{ fontSize: 16, color: "rgba(255,255,255,0.7)", lineHeight: 1.75, marginBottom: 36 }}>
+                Get a personalized strategy session — no obligation. We'll audit your current approach and show you exactly where the opportunities lie.
+              </p>
+              <a href="/contact-us" style={{
+                display: "inline-flex", alignItems: "center", gap: 10, padding: "14px 32px",
+                background: "#fff", color: "#086ad8", borderRadius: 10,
+                fontWeight: 800, fontSize: 15, textDecoration: "none",
+                boxShadow: "0 8px 30px rgba(0,0,0,0.15)", transition: "opacity 0.2s"
+              }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = "0.9")}
+                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = "1")}>
+                Book a Free Audit →
+              </a>
+            </div>
+            {/* Right */}
+            <div style={{ padding: "80px 64px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {[
+                  { icon: "📞", label: "Call Us Now", value: "+91 9950602330", href: "tel:+919950602330" },
+                  { icon: "✉", label: "Email Us", value: "info@makemyleads.com", href: "mailto:info@makemyleads.com" },
+                  { icon: "💬", label: "WhatsApp", value: "Message us instantly", href: "https://wa.me/919950602330" },
+                ].map(c => (
+                  <a key={c.label} href={c.href} style={{
+                    display: "flex", alignItems: "center", gap: 16, textDecoration: "none",
+                    padding: "20px 24px", background: "rgba(255,255,255,0.08)",
+                    borderRadius: 12, border: "1px solid rgba(255,255,255,0.12)", transition: "background 0.2s"
+                  }}
+                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.16)")}
+                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)")}>
+                    <span style={{ fontSize: 24, width: 40, textAlign: "center" }}>{c.icon}</span>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.5px", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", marginBottom: 4 }}>{c.label}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{c.value}</div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────────────────────── FOOTER ────────────────────────────── */}
+      <footer style={{ background: "#0a0b14", paddingTop: 72 }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
+          {/* Top row */}
+          <div className="footer-cols" style={{ display: "grid", gridTemplateColumns: "2.2fr 1fr 1fr 1fr", gap: 48, paddingBottom: 56, borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+                <div style={{ width: 36, height: 36, background: "linear-gradient(135deg,#086ad8,#002fa6)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z" fill="white" />
+                    <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <span style={{ fontWeight: 800, fontSize: 16, color: "#fff" }}>MakeMyLeads</span>
+              </div>
+              <address style={{ fontStyle: "normal", fontSize: 13, color: "rgba(255,255,255,0.45)", lineHeight: 1.9 }}>
+                30 A, Sultan Nagar #2<br />
+                Gurjar Ki Thadi, Jaipur<br />
+                Rajasthan, India – 302019
+              </address>
+              <div style={{ marginTop: 20, display: "flex", gap: 8 }}>
+                {["TW", "FB", "IG", "LI"].map(s => (
+                  <a key={s} href="#" style={{
+                    width: 34, height: 34, borderRadius: 7,
+                    background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.45)",
+                    textDecoration: "none", transition: "all 0.2s"
+                  }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#086ad8"; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.45)"; }}>
+                    {s}
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {[
+              { heading: "Services", links: ["Lead Generation", "AI Automation", "CRM Setup", "Data Security", "Consulting"] },
+              { heading: "Company", links: ["About Us", "Case Studies", "Blog", "Why Choose Us", "FAQs"] },
+              { heading: "Industries", links: ["Finance", "Medical", "Real Estate", "Education", "Rentals"] },
+            ].map(col => (
+              <div key={col.heading}>
+                <h6 style={{ fontWeight: 700, color: "#fff", fontSize: 13, marginBottom: 20, letterSpacing: "0.5px" }}>{col.heading}</h6>
+                <ul style={{ listStyle: "none" }}>
+                  {col.links.map(link => (
+                    <li key={link} style={{ marginBottom: 10 }}>
+                      <a href="#" style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", textDecoration: "none", transition: "color 0.2s" }}
+                        onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#d2a98e")}
+                        onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.45)")}>
+                        {link}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/* Bottom bar */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 0", flexWrap: "wrap", gap: 12 }}>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>
+              © 2024 MakeMyLeads.com · All Rights Reserved · Jaipur, India
+            </p>
+            <div style={{ display: "flex", gap: 20 }}>
+              {["Privacy Policy", "Terms of Service", "Sitemap"].map(l => (
+                <a key={l} href="#" style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", textDecoration: "none", transition: "color 0.2s" }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#086ad8")}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.3)")}>
+                  {l}
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {/* Scroll to top */}
+      {scrolled && (
+        <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} style={{
+          position: "fixed", bottom: 28, right: 28, width: 44, height: 44,
+          borderRadius: "50%", background: "#0d0f1a", border: "1px solid rgba(255,255,255,0.12)",
+          color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.3)", zIndex: 9998, transition: "background 0.2s",
+          animation: "fadeUp 0.3s ease"
+        }}
+          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = "#086ad8")}
+          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = "#0d0f1a")}
+          aria-label="Back to top">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+            <path d="M12 19V5M5 12l7-7 7 7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
+    </>
   );
 }
