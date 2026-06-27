@@ -101,15 +101,15 @@ const Login = () => {
         <div className="relative z-10 flex flex-col items-center justify-center h-full px-6 pb-10 lg:pb-0 gap-3">
           <Link href="https://estateai.in">
             <img
-              src="/workbyhomeicon.jpeg"
+              src="/edu.ibigdataicon.png"
               alt="EstateAI"
               className="w-20 rounded-full sm:w-22 lg:w-26 h-auto"
             />
           </Link>
 
           <div className=" text-white text-center">
-            <h1 className=" font-extrabold text-3xl">Work<span className=" text-[#F5A623]">By</span>Home</h1>
-            <p className=" text-[#F5A623]">Earn Money From Home</p>
+            <h1 className=" font-extrabold text-3xl">Edu.<span className=" text-[#F5A623]">ibigdata</span></h1>
+            <p className=" text-[#F5A623]">Work Hard Be Smart</p>
           </div>
 
           <p className="text-white/75 text-sm text-center max-w-xs leading-relaxed">
