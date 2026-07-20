@@ -7,6 +7,7 @@ import { FaUserAlt, FaLock, FaGoogle, FaGithub, FaCog } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Link from "next/link";
+import { sidebarLogoPath } from "../data/PlatformData";
 
 
 const Login = () => {
@@ -52,7 +53,7 @@ const Login = () => {
 
   //bg-[url('/bgimage.webp')]
   return (
-       <div
+    <div
       className="min-h-screen w-full flex flex-col lg:flex-row overflow-hidden"
       style={{ backgroundColor: "var(--color-bg, #f0f4ff)" }}
     >

@@ -4,17 +4,26 @@ import React, { useState, useEffect, JSX } from "react";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 import { FaUserAlt, FaLock, FaPhone, FaCog, FaGithub, FaGoogle } from "react-icons/fa";
-import { IoMdMail } from "react-icons/io";
 import { useAuth } from "@/context/AuthContext";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Link from "next/link";
 import { registerRequestUser } from "@/store/requestusers/requestusers";
+import PopupMenu from "../component/popups/PopupMenu";
 import RegisterPopup from "../component/popups/RegisterPopup";
 import { passwordRules, ValidatePassword } from "../utils/ValidatePassword";
+import { IoMdMail } from "react-icons/io";
+import { sidebarLogoPath } from "../data/PlatformData";
+
+
+
+type PasswordValidationResult = {
+  messages: JSX.Element[]; // for inline display
+  errorString: string | null; // for toast
+};
 
 const Register = () => {
   const router = useRouter();
-  const { admin, isLoading } = useAuth();
+  const { admin, isLoading, login } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,19 +33,32 @@ const Register = () => {
   const [phoneError, setPhoneError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
-
-  const validatePhone = (phone: string) => {
-    if (!phone) return "Phone number is required";
-    if (!/^(?:\+91|0)?[6-9]\d{9}$/.test(phone))
-      return "Enter a valid Indian phone number";
-    return "";
+  const togglePassword = () => {
+    setShowPassword(!showPassword)
   };
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+
+
+  useEffect(() => {
+    const date = new Date();
+    setCurrentYear(date.getFullYear());
+  }, [])
+
+  /*   if (isLoading || loading) {
+      return (
+        <div className="grid place-items-center min-h-screen w-full text-lg text-gray-600">
+          Loading...
+        </div>
+      );
+    } */
+
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const PhoneValidationError = validatePhone(phone);
     const PasswordValidationError = ValidatePassword(password);
+    // const PasswordValidationError = validatePassword(password)
 
     if (PasswordValidationError) {
       setPasswordError(PasswordValidationError);
@@ -48,33 +70,80 @@ const Register = () => {
       toast.error(PhoneValidationError);
       return;
     }
-
+    // if (PasswordValidationError) {
+    //   // setPasswordError(PasswordValidationError)
+    //   toast.error(PasswordValidationError);
+    //   return;
+    // }
     setLoading(true);
+
     const res = await registerRequestUser({ name, email, password, phone });
     if (res) {
+      //router.push("/dashboard")
       setIsPopupOpen(true);
       setLoading(false);
       return;
-    }
+    };
     setLoading(false);
-    toast.error("Failed To Register");
+    setIsPopupOpen(false);
+    toast.error("Failed To Register")
   };
+
+  //for phone number validation
+  const validatePhone = (phone: string) => {
+    if (!phone) return "Phone number is required";
+    if (!/^(?:\+91|0)?[6-9]\d{9}$/.test(phone)) {
+      return "Enter a valid Indian phone number";
+    }
+    return "";
+  };
+  // const validatePassword = (password: string) => {
+  //   // Define rules
+  //   const rules = [
+  //     {
+  //       test: /.{6,}/,
+  //       message: "Password must be at least 6 characters long",
+  //     },
+  //     {
+  //       test: /[A-Z]/,
+  //       message: "Password must include at least one uppercase letter",
+  //     },
+  //     {
+  //       test: /\d/,
+  //       message: "Password must include at least one number",
+  //     },
+  //     {
+  //       test: /[!@#$%^&*]/,
+  //       message: "Password must include at least one special character",
+  //     },
+  //   ];
+
+  //   // Map over rules and return <p> with conditional class
+  //   return rules.map((rule, idx) => {
+  //     const passed = rule.test.test(password);
+  //     return (
+  //       <p key={idx} className={passed ? "text-green-600" : "text-red-600"}>
+  //         {rule.message}
+  //       </p>
+  //     );
+  //   });
+  // };
+
+
+
+
 
   return (
     <>
-      {isPopupOpen && (
-        <RegisterPopup
-          onClose={() => {
-            setIsPopupOpen(false);
-            setEmail("");
-            setPassword("");
-            setName("");
-            setPhone("");
-            setPasswordError("");
-          }}
-        />
-      )}
-
+      {isPopupOpen && <RegisterPopup onClose={() => {
+        setIsPopupOpen(false)
+        setEmail("")
+        setPassword("")
+        setName("")
+        setPhone("")
+        setPasswordError("")
+      }} />
+      }
       <div
         className="min-h-screen w-full flex flex-col lg:flex-row overflow-hidden"
         style={{ backgroundColor: "var(--color-bg, #f0f4ff)" }}
@@ -377,6 +446,7 @@ const Register = () => {
           </div>
         </div>
       </div>
+
     </>
   );
 };
