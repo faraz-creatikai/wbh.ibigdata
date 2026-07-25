@@ -32,6 +32,8 @@ import { getCustomerFields } from "@/store/masters/customerfields/customerfields
 import { useCustomerFieldLabel } from "@/context/customer/CustomerFieldLabelContext";
 import dayjs from "dayjs";
 import { getLeadType } from "@/store/masters/leadtype/leadtype";
+import { COUNTRY_CODES, DEFAULT_COUNTRY_CODE, getCountryLenRule } from "@/app/utils/countryCodes";
+import PhoneInputField from "@/app/component/datafields/PhoneInputField";
 
 interface ErrorInterface {
   [key: string]: string;
@@ -75,6 +77,7 @@ export default function CustomerAdd() {
   const [customFields, setCustomFields] = useState<CustomFieldsType>({});
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [sitePlanPreview, setSitePlanPreview] = useState<string>("");
+  const [countryCode, setCountryCode] = useState<string>(DEFAULT_COUNTRY_CODE);
   const [errors, setErrors] = useState<ErrorInterface>({});
   const { getLabel } = useCustomerFieldLabel();
   const router = useRouter();
@@ -95,18 +98,15 @@ export default function CustomerAdd() {
     getCustomerFieldsFunc();
   }, [])
 
-  const handleContactExist = async (contactNo: string) => {
-    const duplicate = await isContactNoExist(contactNo);
+  const handleContactExist = async (contactNo: string, code: string) => {
+    const duplicate = await isContactNoExist(contactNo, code);
     if (duplicate) return;
-  }
+  };
 
   // 🟩 Handle Input
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const { name, value } = e.target;
-      if (name === "ContactNumber") {
-        handleContactExist(value);
-      }
       setCustomerData((prev) => ({ ...prev, [name]: value }));
       setErrors((prev) => ({ ...prev, [name]: "" }));
     },
@@ -172,8 +172,14 @@ export default function CustomerAdd() {
       newErrors.Email = "Invalid email format";
     if (!customerData.ContactNumber.trim())
       newErrors.ContactNumber = "Contact No is required";
-    if (customerData.ContactNumber && customerData.ContactNumber.trim().length < 10)
-      newErrors.ContactNumber = "Contact No should atlest be 10 digit";
+    const rule = getCountryLenRule(countryCode);
+    const digits = customerData.ContactNumber.trim().replace(/[^0-9]/g, "");
+    if (!digits) {
+      newErrors.ContactNumber = "Contact No is required";
+    } else if (digits.length < rule.minLen || digits.length > rule.maxLen) {
+      newErrors.ContactNumber = `Contact No should be ${rule.minLen === rule.maxLen ? rule.minLen : `${rule.minLen}-${rule.maxLen}`} digits for ${rule.name}`;
+    }
+
     return newErrors;
   };
 
@@ -182,19 +188,22 @@ export default function CustomerAdd() {
     return num.startsWith("+91") ? num.slice(3) : num;
   };
 
-  const isContactNoExist = async (contactNo: string) => {
-    if (contactNo.trim().length > 0 && contactNo.trim().length < 10) {
+  const isContactNoExist = async (contactNo: string, code: string) => {
+    const digits = contactNo.trim();
+    const rule = getCountryLenRule(code);
+
+    if (digits.length === 0) return false;
+
+    if (digits.length < rule.minLen || digits.length > rule.maxLen) {
       setErrors((prev) => ({
         ...prev,
-        ContactNumber: "Contact No should at least 10 digits",
+        ContactNumber: `Contact No should be ${rule.minLen === rule.maxLen ? rule.minLen : `${rule.minLen}-${rule.maxLen}`
+          } digits for ${rule.name}`,
       }));
       return true;
     }
-    if (contactNo.trim().length === 0) {
-      return false;
-    }
 
-    const res = await getFilteredCustomer(`Keyword=${contactNo}`);
+    const res = await getFilteredCustomer(`Keyword=${digits}&CountryCode=${code}`);
     const isExist = res.length;
 
     if (isExist && isExist > 0) {
@@ -229,6 +238,7 @@ export default function CustomerAdd() {
     if (customerData.customerName) formData.append("customerName", customerData.customerName);
     if (customerData.CustomerSubtype) formData.append("CustomerSubType", customerData.CustomerSubtype?.name);
     if (customerData.ContactNumber) formData.append("ContactNumber", trimCountryCodeHelper(customerData.ContactNumber));
+    formData.append("CountryCode", countryCode);
     if (customerData.City) formData.append("City", customerData.City.name);
     if (customerData.Location) formData.append("Location", customerData.Location?.name);
     if (customerData.SubLocation) formData.append("SubLocation", customerData.SubLocation?.name);
@@ -249,6 +259,7 @@ export default function CustomerAdd() {
     if (customerData.Video) formData.append("Video", customerData.Video);
     if (customerData.GoogleMap) formData.append("GoogleMap", customerData.GoogleMap);
     if (customerData.Verified) formData.append("Verified", customerData.Verified);
+
     formData.append("updatedAt", new Date().toISOString());
 
     // Append files correctly
@@ -458,7 +469,25 @@ export default function CustomerAdd() {
 
 
               <InputField label={getLabel("customerName", "Customer Name")} name="customerName" value={customerData.customerName} onChange={handleInputChange} error={errors.customerName} />
-              <InputField label={getLabel("ContactNumber", "Customer No")} name="ContactNumber" value={customerData.ContactNumber} onChange={handleInputChange} error={errors.ContactNumber} />
+              <PhoneInputField
+                label={getLabel("ContactNumber", "Contact Number")}
+                numberValue={customerData.ContactNumber}
+                countryCode={countryCode}
+                onNumberChange={(val) => {
+                  setCustomerData((prev) => ({ ...prev, ContactNumber: val }));
+                  setErrors((prev) => ({ ...prev, ContactNumber: "" }));
+                  handleContactExist(val, countryCode);
+                }}
+                onCountryChange={(code) => {
+                  setCountryCode(code);
+                  setErrors((prev) => ({ ...prev, ContactNumber: "" }));
+                  if (customerData.ContactNumber) {
+                    handleContactExist(customerData.ContactNumber, code);
+                  }
+                }}
+                error={errors.ContactNumber}
+              />
+              {/*  <InputField label={getLabel("ContactNumber", "Customer No")} name="ContactNumber" value={customerData.ContactNumber} onChange={handleInputChange} error={errors.ContactNumber} /> */}
               <ObjectSelect
                 options={Array.isArray(fieldOptions?.City) ? fieldOptions.City : []}
                 label={getLabel("City", "City")}

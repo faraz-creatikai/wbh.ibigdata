@@ -10,7 +10,7 @@ import Link from "next/link";
 import { ArrowDown, ArrowUp, ArrowUpRight, Bot, ChevronsLeft, ChevronsRight, PlusSquare, Sparkles, UserPlus, Zap } from "lucide-react";
 import ProtectedRoute from "../component/ProtectedRoutes";
 import toast, { Toaster } from "react-hot-toast";
-import { getCustomer, deleteCustomer, getFilteredCustomer, updateCustomer, assignCustomer, deleteAllCustomer, getDuplicateContacts, getTodayCustomer, startCallByAIAgent, getCallLogs, getCallReport, closeCustomerDeal, getCustomerCount, getCustomFieldValues } from "@/store/customer";
+import { getCustomer, deleteCustomer, getFilteredCustomer, updateCustomer, assignCustomer, deleteAllCustomer, getDuplicateContacts, getTodayCustomer, startCallByAIAgent, getCallLogs, getCallReport, closeCustomerDeal, getCustomerCount, getCustomFieldValues, archieveCustomer } from "@/store/customer";
 import { CheckDialogDataInterface, CustomerAdvInterface, customerAssignInterface, customerGetDataInterface, DeleteDialogDataInterface } from "@/store/customer.interface";
 import DeleteDialog from "../component/popups/DeleteDialog";
 import { getCampaign } from "@/store/masters/campaign/campaign";
@@ -95,6 +95,8 @@ import SendDirectWhatsappDialog from "../component/popups/SendDirectWhatsappDial
 import CustomerViewDialog from "../component/popups/CustomerviewDialog";
 import { getCustomerFields } from "@/store/masters/customerfields/customerfields";
 import EmailCampaignAgentWorkspace from "../component/aiagents/EmailCampaignAgentWorkspace";
+import { COUNTRY_CODES, DEFAULT_COUNTRY_CODE, isoToFlagEmoji } from "../utils/countryCodes";
+import AssignCustomersPopup from "../component/popups/AssignCustomerPopup";
 
 
 interface DeleteAllDialogDataInterface { }
@@ -159,7 +161,6 @@ export default function Customer() {
   /*REST OF YOUR STATES (UNCHANGED) */
   const [toggleSearchDropdown, setToggleSearchDropdown] = useState(false);
   const [currentTablePage, setCurrentTablePage] = useState(1);
-  const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [isMailAllOpen, setIsMailAllOpen] = useState(false);
   const [isWhatsappAllOpen, setIsWhatsappAllOpen] = useState(false);
   const [isSendPropertiesOpen, setIsSendPropertiesOpen] = useState(false);
@@ -179,6 +180,8 @@ export default function Customer() {
   const [isFollowupOpen, setIsFollowupOpen] = useState(false);
   const [isDealCloseOpen, setIsDealCloseOpen] = useState(false);
   const [dealCloseData, setDealCloseData] = useState<any>(null);
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [archiveData, setArchiveData] = useState<any>(null);
   const [selectedCustomerFollowupId, setSelectedCustomerFollowupId] = useState<string | null>(null);
   const [followupDialogData, setFollowupDialogData] = useState<customerFollowupAllDataInterface[] | null>([]);
   const [isfollowupDialogOpen, setIsFollowupDialogOpen] = useState(false);
@@ -215,6 +218,17 @@ export default function Customer() {
   const [isFetchingWhatsappTemplates, setIsFetchingWhatsappTemplates] = useState(false);
   const [isFetchingMailTemplates, setIsFetchingMailTemplates] = useState(false);
   const [isFetchingUsers, setIsFetchingUsers] = useState(false);
+
+  const [isAssignOpen, setIsAssignOpen] = useState(false);
+  const [assignTargetIds, setAssignTargetIds] = useState<string[]>([]);
+  const [assignTargetLabel, setAssignTargetLabel] = useState('');
+
+  // after user selects a city_admin/user from your existing users list UI:
+  const openAssignFor = (userIds: string[], label: string) => {
+    setAssignTargetIds(userIds);
+    setAssignTargetLabel(label);
+    setIsAssignOpen(true);
+  };
 
 
   // Derives from your existing users array — assumes users have a `role` field
@@ -815,7 +829,8 @@ export default function Customer() {
       ClientId: item.ClientId,
       CustomerYear: item.CustomerYear,
       Facillities: item.Facillities,
-      ContactNumber: item.ContactNumber?.slice(0, 10),
+      ContactNumber: item.ContactNumber,
+      CountryCode: item.CountryCode,
       ReferenceId: item.ReferenceId,
       AssignTo: item.AssignTo ?? [],
       isFavourite: item.isFavourite,
@@ -1630,6 +1645,9 @@ export default function Customer() {
     key: "Name", label: getLabel("customerName", "Name")
   },
   {
+    key: "Email", label: getLabel("Email", "Email")
+  },
+  {
     key: "Location", label: getLabel("Location", "Location")
   },
   {
@@ -1637,7 +1655,8 @@ export default function Customer() {
   },
   {
     key: "ContactNumber", label: "Ph. No."
-  }]
+  },
+  ]
 
   const phoneViewAllHaders = [
     {
@@ -1660,6 +1679,9 @@ export default function Customer() {
     },
     {
       key: "Adderess", label: "Address"
+    },
+    {
+      key: "URL", label: "URL"
     },
     {
       key: "ContactNumber", label: "Contact No"
@@ -1992,6 +2014,21 @@ export default function Customer() {
     toast.error("Failed to close deal");
   };
 
+  const archiveCustomerHandler = async (id: string) => {
+    const response = await archieveCustomer(id);
+    if (response?.success) {
+      setIsArchiveOpen(false);
+      setArchiveData(null);
+      toast.success("Customer archived");
+
+      setCustomerData((prevData) =>
+        prevData.filter((customer) => customer?._id !== id)
+      );
+      return;
+    }
+    toast.error("Failed to archive customer");
+  };
+
 
   return (
     <ProtectedRoute>
@@ -2215,8 +2252,13 @@ export default function Customer() {
         isOpen={isFollowupOpen}
         customerId={selectedCustomerFollowupId}
         onClose={() => {
-          setIsFollowupOpen(false)
-          setSelectedCustomerFollowupId(null)
+          setIsFollowupOpen(false);
+          setSelectedCustomerFollowupId(null);
+        }}
+        onArchived={(id) => {
+          setCustomerData((prevData) =>
+            prevData.filter((customer) => customer?._id !== id)
+          );
         }}
       />
       {
@@ -2410,6 +2452,46 @@ export default function Customer() {
       }
 
       {
+        isArchiveOpen && (
+          <PopupMenu onClose={() => { setIsArchiveOpen(false); setArchiveData(null); }}>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 w-full max-w-md mx-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--color-primary-lighter)] flex items-center justify-center">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900">Archive Customer</h3>
+                    <p className="text-xs text-gray-500">This will remove it from your list only</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 mb-5">
+                  Are you sure you want to archive{" "}
+                  <span className="font-semibold text-gray-900">{archiveData?.name}</span>?
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => { setArchiveData(null); setIsArchiveOpen(false); }}
+                    className="px-4 py-2 cursor-pointer text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => archiveCustomerHandler(archiveData?.id)}
+                    className="px-4 py-2 cursor-pointer text-sm font-semibold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    Yes, Archive
+                  </button>
+                </div>
+              </div>
+            </div>
+          </PopupMenu>
+        )
+      }
+
+      {
         isTemperatureDialogOpen && temperatureDialogData && (
           <PopupMenu
             onClose={() => {
@@ -2538,10 +2620,21 @@ export default function Customer() {
       {/* Mobile Customer Page */}
       <div className=" sm:hidden min-h-[calc(100vh-56px)] overflow-auto max-sm:py-2">
 
-        <div className=" flex justify-between items-center px-0">
-          <h1 className=" text-[var(--color-primary)] font-extrabold text-2xl ">Leads</h1>
+        <div className="flex justify-between items-center px-0">
+  <h1 className="text-[var(--color-primary)] font-extrabold text-2xl">Leads</h1>
 
-        </div>
+  <button
+    onClick={() => router.push("/customer/archieved")}
+    aria-label="View archived customers"
+    className="relative w-9 h-9 flex items-center justify-center rounded-full border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/8 dark:bg-[var(--color-primary)]/12 text-[var(--color-primary)] active:scale-[0.92] transition-all duration-150"
+  >
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4" />
+    </svg>
+
+    
+  </button>
+</div>
         <div className=" w-full">
           <DynamicAdvance>
             <ObjectSelect
@@ -2910,44 +3003,76 @@ export default function Customer() {
             setIsTableDialogOpen(true);
             handleTableDialogData(contactNumber);
           }}
+
           renderActions={(item) => (
-            <div className=" flex justify-between w-full">
+            <>
+              <div className=" flex justify-between w-full">
 
-              <Button
-                className=" bg-gray-500"
-                sx={{ backgroundColor: item.isChecked ? "#E8F5E9" : "#FFF0F5", color: item.isChecked ? "var(--color-primary)" : "#E91E63", minWidth: "32px", minHeight: "35px", borderRadius: "100%" }}
-                onClick={() =>
-                  handleChecked({ id: item._id, isChecked: item.isChecked })
-                }
-              >
-                {item.isChecked ? <IoCheckmarkDoneOutline size={20} /> : <IoCheckmark size={20} />}
-              </Button>
-
-              <Button
-                sx={{
-                  backgroundColor: temperatureConfig[item.LeadTemperature || "cold"]?.bg,
-                  color: temperatureConfig[item.LeadTemperature || "cold"]?.color,
-                  minWidth: "32px",
-                  height: "35px",
-                  borderRadius: "100%",
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    filter: "brightness(0.95)",
-                    transform: "scale(1.05)"
+                <Button
+                  className=" bg-gray-500"
+                  sx={{ backgroundColor: item.isChecked ? "#E8F5E9" : "#FFF0F5", color: item.isChecked ? "var(--color-primary)" : "#E91E63", minWidth: "32px", minHeight: "35px", borderRadius: "100%" }}
+                  onClick={() =>
+                    handleChecked({ id: item._id, isChecked: item.isChecked })
                   }
-                }}
-                onClick={() => {
-                  setTemperatureDialogData({
-                    id: item._id,
-                    name: item.CustomerName,
-                    current: item.LeadTemperature || "cold"
-                  });
-                  setIsTemperatureDialogOpen(true);
-                }}
-              >
-                {temperatureConfig[item.LeadTemperature || "cold"]?.icon}
-              </Button>
-            </div>
+                >
+                  {item.isChecked ? <IoCheckmarkDoneOutline size={20} /> : <IoCheckmark size={20} />}
+                </Button>
+
+                <Button
+                  sx={{
+                    backgroundColor: temperatureConfig[item.LeadTemperature || "cold"]?.bg,
+                    color: temperatureConfig[item.LeadTemperature || "cold"]?.color,
+                    minWidth: "32px",
+                    height: "35px",
+                    borderRadius: "100%",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      filter: "brightness(0.95)",
+                      transform: "scale(1.05)"
+                    }
+                  }}
+                  onClick={() => {
+                    setTemperatureDialogData({
+                      id: item._id,
+                      name: item.CustomerName,
+                      current: item.LeadTemperature || "cold"
+                    });
+                    setIsTemperatureDialogOpen(true);
+                  }}
+                >
+                  {temperatureConfig[item.LeadTemperature || "cold"]?.icon}
+                </Button>
+
+              </div>
+              <div className=" flex justify-between w-full">
+                <div />
+                <Button
+                  onClick={() => {
+                    setArchiveData({
+                      id: item._id,
+                      name: item.Name,
+                    });
+                    setIsArchiveOpen(true);
+                  }}
+                  sx={{
+                    backgroundColor: "#E8F5E9",
+                    color: "var(--color-primary)",
+                    minWidth: "32px",
+                    height: "32px",
+                    borderRadius: "8px",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      filter: "brightness(0.95)",
+                      transform: "scale(1.05)"
+                    }
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4" />
+                  </svg>
+                </Button>
+              </div>
+            </>
           )}
         />
 
@@ -3083,6 +3208,18 @@ export default function Customer() {
           </ListPopup>
         )}
 
+        {isAssignOpen && (
+          <AssignCustomersPopup
+            isOpen={isAssignOpen}
+            onClose={() => setIsAssignOpen(false)}
+            users={users}
+            isFetchingUsers={isFetchingUsers}
+            fetchUsers={fetchUsers}
+            initialSelectedCustomerIds={selectedCustomers} // optional: pre-check table selection
+            onAssigned={getCustomers}
+          />
+        )}
+
 
         {/* ---------- TABLE START ---------- */}
 
@@ -3128,6 +3265,15 @@ export default function Customer() {
                 )}
               </button>
               <button
+                onClick={() => router.push("/customer/archieved")}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/8 dark:bg-[var(--color-primary)]/12 text-[var(--color-primary)] text-[13px] font-semibold transition-all duration-150 hover:bg-[var(--color-primary)]/15 hover:border-[var(--color-primary)]/40 active:scale-[0.97] cursor-pointer"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+                Archived
+              </button>
+              <button
                 onClick={() => router.push("/customer/closed-deals")}
                 className="flex items-center cursor-pointer gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] transition-colors shadow-sm"
               >
@@ -3136,6 +3282,7 @@ export default function Customer() {
                 </svg>
                 Closed Deals
               </button>
+
             </div>
 
 
@@ -3871,14 +4018,15 @@ export default function Customer() {
                     <div className="absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300"></div>
                     <span className="relative">Select All</span>
                   </label>
-                  <button type="button" className="relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)] rounded-tr-sm rounded-br-sm border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
-                    if (selectedCustomers.length <= 0) toast.error("please select atleast 1 customer")
-                    else {
+                  {
+                    admin?.role !== "user" && <button type="button" className="relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)] rounded-tr-sm rounded-br-sm border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
+
                       setIsAssignOpen(true);
                       fetchUsers()
-                    } 0
-                  }}><div className="absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300"></div>
-                    <span className="relative">Asign To</span></button>
+
+                    }}><div className="absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300"></div>
+                      <span className="relative">Asign To</span></button>
+                  }
                   <button type="button" className="relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)] rounded-tr-sm rounded-br-sm border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
                     if (selectedCustomers.length <= 0) toast.error("please select atleast 1 customer")
                     else {
@@ -3937,7 +4085,7 @@ export default function Customer() {
       [scrollbar-width:auto] [scrollbar-color:#d1d5db_#f3f4f6]"
               >
                 <table className="table-auto min-w-full border-separate border-spacing-0 text-sm">
-                  <thead className="bg-[var(--color-primary)] text-white sticky top-0 z-30">
+                  <thead className="bg-[var(--color-primary)] text-white sticky top-0 " style={{ zIndex: 1 }}>
                     <tr>
 
                       {/* SELECT ALL CHECKBOX COLUMN — pinned left. Fixed width (w-12) matches the row checkbox
@@ -4024,7 +4172,7 @@ export default function Customer() {
                             <tr key={item._id} className={`${rowBg} hover:bg-[#f7f6f3] transition-colors duration-150`}>
 
                               {/* ROW CHECKBOX — pinned left. Same fixed w-12 as the header cell above it. */}
-                              <td className={`px-3 py-3 sticky left-0 z-10 align-top w-12 min-w-[3rem] border-b border-r border-gray-200 ${rowBg}`}>
+                              <td className={`px-3 py-3 sticky left-0 align-top w-12 min-w-[3rem] border-b border-r border-gray-200 ${rowBg}`}>
                                 <div className="flex items-center justify-center pt-0.5">
                                   <input
                                     type="checkbox"
@@ -4115,17 +4263,29 @@ export default function Customer() {
                                       cellValue = item.SubLocation || "-";
                                       break;
                                     case "contact":
+                                      const countryInfo =
+                                        COUNTRY_CODES.find((c) => c.code === (item.CountryCode || DEFAULT_COUNTRY_CODE)) ||
+                                        COUNTRY_CODES.find((c) => c.code === DEFAULT_COUNTRY_CODE)!;
+                                      const fullDialNumber = `${item.CountryCode || DEFAULT_COUNTRY_CODE}${item.ContactNumber}`;
+
                                       cellValue = (
                                         <>
                                           {item.ContactNumber && (
-                                            <div className="flex flex-col items-start gap-1">
-                                              <span className="font-medium text-gray-800 cursor-pointer" onClick={() => handleAgentCalling(item._id)}>
+                                            <div className="flex flex-col items-start justify-center  gap-1">
+                                              <span
+                                                className="font-medium text-gray-800 cursor-pointer flex items-center w-full justify-center gap-1"
+                                                onClick={() => handleAgentCalling(item._id)}
+                                              >
+                                                <span className=" mb-[2px]" style={{ fontFamily: "'Noto Color Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif" }}>
+                                                  {isoToFlagEmoji(countryInfo.iso2)}
+                                                </span>
+                                                <span className="text-gray-500 text-xs mb-[2px]">+{countryInfo.code}</span>
                                                 {item.ContactNumber}
                                               </span>
-                                              <div className="flex items-center gap-1">
+                                              <div className="flex items-center w-full justify-center gap-1">
                                                 <Button
                                                   component="a"
-                                                  onClick={() => handleCall({ customerNumber: item.ContactNumber })}
+                                                  onClick={() => handleCall({ customerNumber: fullDialNumber })}
                                                   sx={{
                                                     backgroundColor: "#E8F5E9",
                                                     color: "var(--color-primary)",
@@ -4185,7 +4345,7 @@ export default function Customer() {
                                                     minWidth: "100px",
                                                     height: "24px",
                                                     borderRadius: "8px",
-                                                    margin: "2px"
+                                                    margin: "2px auto"
                                                   }}
                                                 >
                                                   <FaEye size={12} />
@@ -4275,8 +4435,8 @@ export default function Customer() {
                                   <td
                                     key={col.key}
                                     className={`px-4 py-3 align-top border-b border-r border-gray-200 text-gray-700 ${layoutClass}
-                          ${col.key === "sno" ? `sticky left-12 z-10 shadow-[6px_0_6px_-6px_rgba(0,0,0,0.12)] ${rowBg}` : ""}
-                        `}
+                                    ${col.key === "sno" ? `sticky left-12  shadow-[6px_0_6px_-6px_rgba(0,0,0,0.12)] ${rowBg}` : ""}
+                                  `}
                                   >
                                     {cellValue}
                                   </td>
@@ -4287,7 +4447,7 @@ export default function Customer() {
                       at the frozen edge instead of stacking a border on top of the shadow.
                       Gated on the same "actions" visible flag as the header cell above. */}
                               {(columns.find((col) => col.key === "actions")?.visible !== false) && (
-                                <td className={`px-3 py-3 align-top sticky right-0 z-10 min-w-[130px] border-b border-gray-200 shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.12)] ${rowBg}`}>
+                                <td className={`px-3 py-3 align-top sticky right-0 min-w-[130px] border-b border-gray-200 shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.12)] ${rowBg}`}>
                                   <div className="grid grid-cols-2 gap-2 items-center">
                                     <Button
                                       sx={{ backgroundColor: "#E8F5E9", color: "var(--color-primary)", minWidth: "32px", height: "32px", borderRadius: "8px" }}
@@ -4442,6 +4602,31 @@ export default function Customer() {
                                       }}
                                     >
                                       <FaHandshakeSimple size={20} />
+                                    </Button>
+                                    <Button
+                                      onClick={() => {
+                                        setArchiveData({
+                                          id: item._id,
+                                          name: item.Name,
+                                        });
+                                        setIsArchiveOpen(true);
+                                      }}
+                                      sx={{
+                                        backgroundColor: "#E8F5E9",
+                                        color: "var(--color-primary)",
+                                        minWidth: "32px",
+                                        height: "32px",
+                                        borderRadius: "8px",
+                                        transition: "all 0.2s ease",
+                                        "&:hover": {
+                                          filter: "brightness(0.95)",
+                                          transform: "scale(1.05)"
+                                        }
+                                      }}
+                                    >
+                                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4" />
+                                      </svg>
                                     </Button>
                                   </div>
                                 </td>

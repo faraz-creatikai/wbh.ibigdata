@@ -2,18 +2,11 @@
 import { formatDateDMY } from '@/app/utils/formatDateDMY'
 import { getCustomer } from '@/store/customer'
 import { emailCustomerViaAi } from '@/store/masters/mail/mail'
-// NOTE: adjust this import path to wherever `emailCustomerViaAi` actually lives in your project
-// (it was provided as a ready-made API call — this file only imports and uses it).
-
+import { emailTemplates, getEmailTemplateById, EmailTemplate } from '@/app/data/emailTemplate' // <-- Adjust this path
 import React, { useEffect, useRef, useState, useMemo } from 'react'
 
 /* ─────────────────────────────────────────────────────────────
    Email Campaign Agent Workspace
-   Same job as the property RecommendAgentWorkspace (browse → pick
-   customers → hand off to an AI agent), but the output here isn't
-   a shortlist, it's a live send. Everything is themed around the
-   idea of mail: an indigo "ink" for drafting/AI, and a stamp-orange
-   for the irreversible act of sending.
    ───────────────────────────────────────────────────────────── */
 
 const PAGE_SIZE = 20
@@ -141,7 +134,6 @@ const ChevronIcon = ({ open }: { open: boolean }) => (
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
     </svg>
 )
-/* decorative "postmark" watermark — the one signature flourish */
 const StampMark = ({ className = '', color = '#c7d2fe' }: { className?: string; color?: string }) => (
     <svg className={className} viewBox="0 0 64 64" fill="none" style={{ color }}>
         <rect x="2" y="2" width="60" height="60" rx="9" stroke="currentColor" strokeWidth="1.6" strokeDasharray="3 3.4" />
@@ -150,7 +142,188 @@ const StampMark = ({ className = '', color = '#c7d2fe' }: { className?: string; 
     </svg>
 )
 
-/* ── status config for send results ── */
+/* ─────────────────────────────────────────────────────────────
+   Template picker — full-screen gallery with real, live thumbnails.
+   Each card renders the actual template HTML inside a scaled-down
+   iframe, so what you pick is exactly what gets sent — no fake
+   screenshots to keep in sync.
+   ───────────────────────────────────────────────────────────── */
+
+const TEMPLATE_SRC_W = 640
+const TEMPLATE_SRC_H = 780
+
+const TemplateThumbnail = ({ html, size = 'card', label }: { html: string; size?: 'card' | 'chip'; label?: string }) => {
+    const box = size === 'chip' ? { w: 44, h: 36, scale: 0.075, radius: 7 } : { w: '100%' as const, h: 168, scale: 0.235, radius: 0 }
+    return (
+        <div
+            className="relative overflow-hidden flex-shrink-0"
+            style={{ width: box.w, height: box.h, background: '#ffffff', borderRadius: box.radius }}
+        >
+            <div
+                style={{
+                    width: TEMPLATE_SRC_W, height: TEMPLATE_SRC_H,
+                    transform: `scale(${box.scale})`, transformOrigin: 'top left',
+                    position: 'absolute', top: 0, left: 0, pointerEvents: 'none',
+                }}
+            >
+                <iframe srcDoc={html} title={label || 'template preview'} scrolling="no" style={{ width: TEMPLATE_SRC_W, height: TEMPLATE_SRC_H, border: 'none' }} />
+            </div>
+        </div>
+    )
+}
+
+const SelectedTemplateChip = ({ template, onChange, onClear }: { template: EmailTemplate; onChange: () => void; onClear?: () => void }) => (
+    <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl border" style={{ borderColor: '#e7e2da', background: '#fbfaf8' }}>
+        <TemplateThumbnail html={template.html} size="chip" label={template.name} />
+        <div className="flex-1 min-w-0">
+            <p className="text-[10.5px] font-semibold truncate" style={{ color: '#1c1917' }}>{template.name}</p>
+            <p className="text-[9px]" style={{ color: '#94a3b8' }}>{template.category || 'Template'}</p>
+        </div>
+        <button onClick={onChange} className="text-[10px] cursor-pointer font-semibold px-2 py-1 rounded-lg flex-shrink-0" style={{ color: '#0d9488' }}>Change</button>
+        {onClear && (
+            <button onClick={onClear} className="text-[10px] cursor-pointer font-semibold px-2 py-1 rounded-lg flex-shrink-0" style={{ color: '#94a3b8' }}>Clear</button>
+        )}
+    </div>
+)
+
+const ChooseTemplateButton = ({ label, onClick }: { label: string; onClick: () => void }) => (
+    <button onClick={onClick} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-dashed cursor-pointer transition-all hover:border-teal-300 hover:bg-teal-50/40" style={{ borderColor: '#e7e2da', color: '#94a3b8' }}>
+        <SparkleIcon /> <span className="text-[11px] font-semibold">{label}</span>
+    </button>
+)
+
+const BlankTemplateCard = ({ selected, onClick }: { selected: boolean; onClick: () => void }) => (
+    <button
+        onClick={onClick}
+        className="flex flex-col rounded-2xl border-2 border-dashed overflow-hidden text-left transition-all"
+        style={{ borderColor: selected ? '#0d9488' : '#e7e2da', background: selected ? 'rgba(13,148,136,0.05)' : '#fbfaf8' }}
+    >
+        <div className="flex items-center justify-center" style={{ height: 168 }}>
+            <div className="flex flex-col items-center gap-2">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: '#f1f5f9', color: '#94a3b8' }}><EditIcon /></div>
+                <span className="text-[10px] font-semibold" style={{ color: '#94a3b8' }}>Start blank</span>
+            </div>
+        </div>
+        <div className="px-3 py-2.5 border-t" style={{ borderColor: selected ? '#99f6e4' : '#e7e2da' }}>
+            <p className="text-[11px] font-bold" style={{ color: '#1c1917' }}>No template</p>
+            <p className="text-[9.5px] mt-0.5 leading-relaxed" style={{ color: '#94a3b8' }}>Write the HTML yourself, or let AI compose freely</p>
+        </div>
+    </button>
+)
+
+const TemplateCard = ({ t, selected, onClick }: { t: EmailTemplate; selected: boolean; onClick: () => void }) => (
+    <button
+        onClick={onClick}
+        className="flex flex-col rounded-2xl border overflow-hidden text-left transition-all"
+        style={{ borderColor: selected ? '#0d9488' : '#e7e2da', boxShadow: selected ? '0 0 0 3px rgba(13,148,136,0.12)' : '0 1px 3px rgba(0,0,0,0.03)', background: '#ffffff' }}
+    >
+        <div className="relative border-b" style={{ borderColor: '#e7e2da' }}>
+            <TemplateThumbnail html={t.html} size="card" label={t.name} />
+            <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.04) 100%)' }} />
+            {selected && (
+                <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: '#0d9488', boxShadow: '0 2px 6px rgba(13,148,136,0.4)' }}>
+                    <CheckIcon />
+                </div>
+            )}
+        </div>
+        <div className="px-3 py-2.5">
+            <div className="flex items-center gap-1.5">
+                <p className="text-[11px] font-bold truncate" style={{ color: '#1c1917' }}>{t.name}</p>
+                {t.category && (
+                    <span className="text-[8.5px] font-semibold px-1.5 py-0.5 rounded-md flex-shrink-0" style={{ background: '#f0fdfa', color: '#0f766e' }}>{t.category}</span>
+                )}
+            </div>
+            <p className="text-[9.5px] mt-0.5 line-clamp-2 leading-relaxed" style={{ color: '#94a3b8' }}>{t.description || 'Standard email template'}</p>
+        </div>
+    </button>
+)
+
+const TemplatePickerModal = ({
+    open, templates, selectedId, onSelect, onClose,
+}: {
+    open: boolean
+    templates: EmailTemplate[]
+    selectedId: string | null
+    onSelect: (id: string | null) => void
+    onClose: () => void
+}) => {
+    const [query, setQuery] = useState('')
+    const [category, setCategory] = useState('All')
+
+    useEffect(() => {
+        if (!open) return
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+    }, [open, onClose])
+
+    useEffect(() => { if (open) { setQuery(''); setCategory('All') } }, [open])
+
+    if (!open) return null
+
+    const categories = ['All', ...Array.from(new Set(templates.map(t => t.category).filter(Boolean))) as string[]]
+    const filtered = templates.filter(t => {
+        const matchesCategory = category === 'All' || t.category === category
+        const q = query.trim().toLowerCase()
+        const matchesQuery = !q || t.name.toLowerCase().includes(q) || (t.description || '').toLowerCase().includes(q)
+        return matchesCategory && matchesQuery
+    })
+
+    return (
+        <div className="absolute inset-0 z-50 flex flex-col" style={{ background: '#fbfaf8', animation: 'ec-modal-in 0.16s cubic-bezier(0.34,1.56,0.64,1)' }}>
+            <div className="flex-shrink-0 px-6 py-4 border-b flex items-center gap-4" style={{ borderColor: '#e7e2da', background: '#ffffff' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(13,148,136,0.1)' }}>
+                    <StampMark className="w-5 h-5" color="#0d9488" />
+                </div>
+                <div className="min-w-0">
+                    <p className="text-[14px] font-bold" style={{ color: '#1c1917' }}>Choose your stationery</p>
+                    <p className="text-[10.5px]" style={{ color: '#94a3b8' }}>Pick a layout to start from — you can still edit it, or hand it to AI as a base</p>
+                </div>
+                <button onClick={onClose} className="ml-auto cursor-pointer w-8 h-8 rounded-lg flex items-center justify-center transition-all flex-shrink-0" style={{ background: '#f1f5f9', color: '#64748b' }}>
+                    <CloseIcon />
+                </button>
+            </div>
+
+            <div className="flex-shrink-0 px-6 py-3 border-b flex items-center gap-3 flex-wrap" style={{ borderColor: '#e7e2da', background: '#ffffff' }}>
+                <div className="relative" style={{ width: 240 }}>
+                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: '#94a3b8' }}><SearchIcon /></div>
+                    <input
+                        type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search templates…"
+                        className="w-full pl-8 pr-3 py-2 rounded-xl text-[11.5px] outline-none border bg-stone-50 border-slate-200 text-slate-700 focus:border-teal-300 focus:ring-2 focus:ring-teal-100 focus:bg-white"
+                    />
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                    {categories.map(c => (
+                        <button key={c} onClick={() => setCategory(c)}
+                            className="text-[10px] cursor-pointer font-semibold px-2.5 py-1 rounded-full transition-all"
+                            style={category === c ? { background: '#0d9488', color: '#ffffff' } : { background: '#f1f5f9', color: '#94a3b8' }}>
+                            {c}
+                        </button>
+                    ))}
+                </div>
+                <span className="ml-auto text-[10.5px] font-medium" style={{ color: '#94a3b8' }}>{filtered.length} template{filtered.length !== 1 ? 's' : ''}</span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-5" style={{ scrollbarWidth: 'thin', scrollbarColor: '#e7e2da transparent' }}>
+                {filtered.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-2.5" style={{ background: '#f1f5f9', color: '#cbd5e1' }}><SearchIcon /></div>
+                        <p className="text-[12px] font-semibold" style={{ color: '#334155' }}>No templates match "{query}"</p>
+                        <p className="text-[11px] mt-1" style={{ color: '#94a3b8' }}>Try a different search term or category</p>
+                    </div>
+                ) : (
+                    <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+                        <BlankTemplateCard selected={!selectedId} onClick={() => { onSelect(null); onClose() }} />
+                        {filtered.map(t => (
+                            <TemplateCard key={t.id} t={t} selected={selectedId === t.id} onClick={() => { onSelect(t.id); onClose() }} />
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
+
 const RESULT_STATUS_CONFIG: Record<string, { label: string; bg: string; color: string; border: string; dot: string }> = {
     sent: { label: 'Sent', bg: '#f0fdf4', color: '#166534', border: '#bbf7d0', dot: '#34d399' },
     failed: { label: 'Failed', bg: '#fef2f2', color: '#b91c1c', border: '#fecaca', dot: '#f87171' },
@@ -165,15 +338,291 @@ const LANGUAGE_OPTIONS = [
     { value: 'hinglish', label: 'Hinglish' },
 ]
 
-const AI_PROMPT_HINTS = [
-    { label: 'Audit pitch', prompt: 'Reach out with a friendly audit of their property/listing — point out one specific thing we noticed and offer a quick call to walk through improvements.' },
-    { label: 'Price drop', prompt: "Let them know there's a price drop on something they showed interest in, and invite them to lock it in before it's gone." },
-    { label: 'Re-engagement', prompt: "It's been a while since we last spoke — check in warmly, remind them why they were interested, and invite them to pick up where we left off." },
+/* ─────────────────────────────────────────────────────────────
+   Campaign goal ideas — generic, business-agnostic marketing
+   intents. Not tied to any one niche (real estate, SaaS, etc.) —
+   the AI fills in specifics from each customer's real data via
+   buildCustomerContext; this just points it at the right *kind*
+   of message so users who don't know what to write aren't stuck
+   staring at a blank box.
+   ───────────────────────────────────────────────────────────── */
+
+type PromptIdea = { label: string; prompt: string }
+type PromptCategory = {
+    id: string
+    label: string
+    icon: () => React.JSX.Element
+    accent: string
+    accentBg: string
+    ideas: PromptIdea[]
+}
+
+const CAMPAIGN_GOAL_CATEGORIES: PromptCategory[] = [
+
+    {
+        id: 'intro', label: 'Introduce us', icon: SparkleIcon, accent: '#4338ca', accentBg: '#eef2ff',
+        ideas: [
+            {
+                label: 'Website & AI services pitch',
+                prompt: "Reach out about improving their website and online presence. Reference their current domain/website status if we know it, point out one specific gap or opportunity, and introduce how we can help — an AI chatbot to capture leads 24/7, SEO optimization to help them rank higher, AI agents to automate bookings and support, and a design refresh for better conversions. Invite them to a quick call to walk through it.",
+            },
+            { label: 'Cold introduction', prompt: 'Introduce ourselves for the first time — briefly explain who we are and how we could help based on what we know about them, and invite a short call.' },
+            { label: 'Free audit / review', prompt: 'Offer a free audit or quick review of their situation, point out one specific thing we noticed, and invite them to a call to walk through it.' },
+            { label: 'Referral follow-up', prompt: 'Reach out mentioning we came across them / were connected to them, briefly explain what we do, and suggest a quick intro call.' },
+        ],
+    },
+    {
+        id: 'promo', label: 'Promote an offer', icon: TagIcon, accent: '#c2410c', accentBg: '#fff7ed',
+        ideas: [
+            { label: 'Limited-time discount', prompt: "Let them know about a limited-time discount or special pricing relevant to them, and invite them to lock it in before it expires." },
+            { label: 'New plan or package', prompt: 'Introduce a new plan, package, or bundle that fits their profile, and invite them to learn more.' },
+            { label: 'Seasonal promotion', prompt: 'Share a seasonal or festive promotion relevant to them, with a light sense of urgency.' },
+        ],
+    },
+    {
+        id: 're-engage', label: 'Re-engage', icon: UsersIcon, accent: '#059669', accentBg: '#f0fdf4',
+        ideas: [
+            { label: 'Long time no talk', prompt: "It's been a while since we last spoke — check in warmly, remind them why they were interested, and invite them to pick up where we left off." },
+            { label: 'Still interested?', prompt: 'Ask if they are still interested in what we discussed before, and offer to answer any new questions.' },
+            { label: 'Win-back', prompt: 'Win back a lapsed lead or customer — acknowledge the gap, share what has improved, and invite them back with no pressure.' },
+        ],
+    },
+    {
+        id: 'update', label: 'Share an update', icon: GlobeIcon, accent: '#0369a1', accentBg: '#f0f9ff',
+        ideas: [
+            { label: 'New feature or service', prompt: "Announce something new we now offer that's specifically relevant to their situation, and explain why it matters for them." },
+            { label: 'Status update', prompt: 'Give them a friendly status update related to their inquiry or account, and let them know the next step.' },
+            { label: 'Company news', prompt: 'Share noteworthy company news or a milestone in a way that builds trust and credibility.' },
+        ],
+    },
+    {
+        id: 'follow-up', label: 'Follow up', icon: MailIcon, accent: '#7c3aed', accentBg: '#faf5ff',
+        ideas: [
+            { label: 'After a call or meeting', prompt: 'Follow up after our last conversation, recap briefly, and suggest a clear next step.' },
+            { label: "Haven't heard back", prompt: "Politely follow up since we haven't heard back, restate the value briefly, and make it easy to reply." },
+            { label: 'Nudge toward a decision', prompt: 'Gently nudge them toward a decision, address a likely hesitation, and offer to help if they have questions.' },
+        ],
+    },
+    {
+        id: 'feedback', label: 'Ask for feedback', icon: EditIcon, accent: '#be185d', accentBg: '#fdf2f8',
+        ideas: [
+            { label: 'Request a review', prompt: 'Ask them for a quick review or testimonial about their experience with us.' },
+            { label: 'Quick feedback', prompt: 'Ask for two minutes of feedback on their experience so far, framed as genuinely wanting to improve.' },
+        ],
+    },
+    {
+        id: 'reminder', label: 'Reminder', icon: CalendarIcon, accent: '#b91c1c', accentBg: '#fef2f2',
+        ideas: [
+            { label: 'Renewal or expiry', prompt: 'Remind them that something is coming up for renewal or expiring soon, and what to do next.' },
+            { label: 'Upcoming appointment', prompt: 'Remind them of an upcoming appointment or event, with the key details and what to expect.' },
+        ],
+    },
+    {
+        id: 'thanks', label: 'Thank you', icon: CheckIcon, accent: '#0f766e', accentBg: '#f0fdfa',
+        ideas: [
+            { label: 'Post-purchase thanks', prompt: 'Thank them for choosing us, confirm what happens next, and let them know we are here if they need anything.' },
+            { label: 'Welcome / onboarding', prompt: 'Welcome them warmly, set expectations for what comes next, and offer a point of contact.' },
+        ],
+    },
 ]
+
+// 6 most common intents, derived from the categories above — one place to
+// edit colors/icons/copy, used both in the always-visible quick grid and
+// (via full category) in the "browse all" modal.
+const QUICK_START_IDS = ['intro', 'promo', 're-engage', 'follow-up', 'update', 'reminder']
+const QUICK_START_GOALS = QUICK_START_IDS.map(id => {
+    const cat = CAMPAIGN_GOAL_CATEGORIES.find(c => c.id === id)!
+    return { ...cat.ideas[0], icon: cat.icon, accent: cat.accent, accentBg: cat.accentBg }
+})
+
+// Fast path — 3 most common intents, always visible, one tap away
+const QUICK_PROMPT_HINTS: PromptIdea[] = [
+    CAMPAIGN_GOAL_CATEGORIES[0].ideas[0], // Cold introduction
+    CAMPAIGN_GOAL_CATEGORIES[2].ideas[0], // Long time no talk
+    CAMPAIGN_GOAL_CATEGORIES[1].ideas[0], // Limited-time discount
+]
+
+const ArrowRightIcon = () => (
+    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+)
+
+// Always-visible quick pick — colorful, icon-led, self-explanatory at a glance
+const QuickGoalCard = ({ goal, onClick }: { goal: typeof QUICK_START_GOALS[number]; onClick: () => void }) => (
+    <button
+        onClick={onClick}
+        className="flex items-start gap-2.5 text-left cursor-pointer px-3 py-2.5 rounded-xl border transition-all hover:shadow-sm hover:-translate-y-0.5"
+        style={{ borderColor: '#e2e8f0', background: '#ffffff' }}
+    >
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: goal.accentBg, color: goal.accent }}>
+            <goal.icon />
+        </div>
+        <div className="min-w-0">
+            <p className="text-[10.5px] font-bold" style={{ color: '#1e293b' }}>{goal.label}</p>
+            <p className="text-[9px] mt-0.5 line-clamp-2 leading-relaxed" style={{ color: '#94a3b8' }}>{goal.prompt}</p>
+        </div>
+    </button>
+)
+
+// Big, hard-to-miss entry point into the full gallery — same visual weight
+// as "Choose a template", not a corner link
+const BrowseAllGoalsButton = ({ onClick }: { onClick: () => void }) => (
+    <button
+        onClick={onClick}
+        className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl border cursor-pointer transition-all hover:border-indigo-300"
+        style={{ borderColor: '#c7d2fe', background: '#eef2ff' }}
+    >
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#4f46e5', color: '#ffffff' }}>
+            <SparkleIcon />
+        </div>
+        <div className="flex-1 min-w-0 text-left">
+            <p className="text-[11px] font-bold" style={{ color: '#4338ca' }}>Browse all campaign goals</p>
+            <p className="text-[9px] mt-0.5" style={{ color: '#6366f1' }}>20+ ready-made ideas across every use case</p>
+        </div>
+        <ArrowRightIcon />
+    </button>
+)
+
+const GoalCard = ({ idea, icon: Icon, accent, accentBg, onClick }: { idea: PromptIdea; icon: () => React.JSX.Element; accent: string; accentBg: string; onClick: () => void }) => (
+    <button
+        onClick={onClick}
+        className="flex flex-col rounded-2xl border text-left p-4 transition-all hover:shadow-md hover:-translate-y-0.5"
+        style={{ borderColor: '#e7e2da', background: '#ffffff' }}
+    >
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-2.5" style={{ background: accentBg, color: accent }}>
+            <Icon />
+        </div>
+        <p className="text-[11.5px] font-bold mb-1" style={{ color: '#1c1917' }}>{idea.label}</p>
+        <p className="text-[10px] leading-relaxed line-clamp-3" style={{ color: '#94a3b8' }}>{idea.prompt}</p>
+    </button>
+)
+
+const GoalPickerModal = ({
+    open, categories, onSelect, onClose,
+}: {
+    open: boolean
+    categories: PromptCategory[]
+    onSelect: (prompt: string) => void
+    onClose: () => void
+}) => {
+    const [activeCat, setActiveCat] = useState(categories[0].id)
+
+    useEffect(() => {
+        if (!open) return
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+    }, [open, onClose])
+
+    useEffect(() => { if (open) setActiveCat(categories[0].id) }, [open])
+
+    if (!open) return null
+    const category = categories.find(c => c.id === activeCat)!
+
+    return (
+        <div className="absolute inset-0 z-50 flex flex-col" style={{ background: '#fbfaf8', animation: 'ec-modal-in 0.16s cubic-bezier(0.34,1.56,0.64,1)' }}>
+            <div className="flex-shrink-0 px-6 py-4 border-b flex items-center gap-4" style={{ borderColor: '#e7e2da', background: '#ffffff' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(79,70,229,0.1)' }}>
+                    <SparkleIcon />
+                </div>
+                <div className="min-w-0">
+                    <p className="text-[14px] font-bold" style={{ color: '#1c1917' }}>What's this campaign about?</p>
+                    <p className="text-[10.5px]" style={{ color: '#94a3b8' }}>Pick the closest goal — you can still edit the message before sending</p>
+                </div>
+                <button onClick={onClose} className="ml-auto cursor-pointer w-8 h-8 rounded-lg flex items-center justify-center transition-all flex-shrink-0" style={{ background: '#f1f5f9', color: '#64748b' }}>
+                    <CloseIcon />
+                </button>
+            </div>
+
+            <div className="flex-shrink-0 px-6 py-3 border-b flex items-center gap-1.5 flex-wrap" style={{ borderColor: '#e7e2da', background: '#ffffff' }}>
+                {categories.map(c => (
+                    <button
+                        key={c.id} onClick={() => setActiveCat(c.id)}
+                        className="flex items-center cursor-pointer gap-1.5 text-[10.5px] font-semibold px-3 py-1.5 rounded-full transition-all"
+                        style={activeCat === c.id ? { background: c.accent, color: '#ffffff' } : { background: '#f1f5f9', color: '#64748b' }}
+                    >
+                        <c.icon /> {c.label}
+                    </button>
+                ))}
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-5" style={{ scrollbarWidth: 'thin', scrollbarColor: '#e7e2da transparent' }}>
+                <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+                    {category.ideas.map(idea => (
+                        <GoalCard key={idea.label} idea={idea} icon={category.icon} accent={category.accent} accentBg={category.accentBg} onClick={() => onSelect(idea.prompt)} />
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+}
 
 const TOKEN_HINTS = ['{{Name}}', '{{City}}', '{{Campaign}}', '{{ContactNumber}}', '{{Email}}']
 
-/* ── avatar initials ── */
+const CampaignGoalPicker = ({ onPick }: { onPick: (prompt: string) => void }) => {
+    const [open, setOpen] = useState(false)
+    const [activeCat, setActiveCat] = useState(CAMPAIGN_GOAL_CATEGORIES[0].id)
+    const ref = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (!open) return
+        const onDocClick = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+        }
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+        document.addEventListener('mousedown', onDocClick)
+        window.addEventListener('keydown', onKey)
+        return () => { document.removeEventListener('mousedown', onDocClick); window.removeEventListener('keydown', onKey) }
+    }, [open])
+
+    const category = CAMPAIGN_GOAL_CATEGORIES.find(c => c.id === activeCat)!
+
+    return (
+        <div className="relative" ref={ref}>
+            <button
+                onClick={() => setOpen(v => !v)}
+                className="flex items-center cursor-pointer gap-1.5 text-[9.5px] font-semibold px-2.5 py-1 rounded-lg border transition-all"
+                style={open ? { background: '#eef2ff', borderColor: '#c7d2fe', color: '#4338ca' } : { background: '#f8fafc', borderColor: '#e2e8f0', color: '#64748b' }}
+            >
+                <SparkleIcon /> Not sure? Browse goals <ChevronIcon open={open} />
+            </button>
+
+            {open && (
+                <div
+                    className="absolute z-20 top-full left-0 mt-2 rounded-2xl border overflow-hidden"
+                    style={{ width: 360, background: '#ffffff', borderColor: '#e2e8f0', boxShadow: '0 12px 32px rgba(0,0,0,0.12)' }}
+                >
+                    <div className="flex items-center gap-1 flex-wrap px-3 pt-3 pb-2 border-b" style={{ borderColor: '#f1f5f9' }}>
+                        {CAMPAIGN_GOAL_CATEGORIES.map(c => (
+                            <button
+                                key={c.id} onClick={() => setActiveCat(c.id)}
+                                className="flex items-center cursor-pointer gap-1 text-[9.5px] font-semibold px-2 py-1 rounded-full transition-all"
+                                style={activeCat === c.id ? { background: '#4f46e5', color: '#ffffff' } : { background: '#f1f5f9', color: '#64748b' }}
+                            >
+                                <c.icon /> {c.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex flex-col gap-1.5 p-3 max-h-[220px] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                        {category.ideas.map(idea => (
+                            <button
+                                key={idea.label}
+                                onClick={() => { onPick(idea.prompt); setOpen(false) }}
+                                className="text-left cursor-pointer px-3 py-2 rounded-xl border transition-all hover:border-indigo-300 hover:bg-indigo-50/40"
+                                style={{ borderColor: '#e2e8f0', background: '#f8fafc' }}
+                            >
+                                <p className="text-[10.5px] font-semibold" style={{ color: '#1e293b' }}>{idea.label}</p>
+                                <p className="text-[9.5px] mt-0.5 line-clamp-2 leading-relaxed" style={{ color: '#94a3b8' }}>{idea.prompt}</p>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
 const Avatar = ({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' }) => {
     const initials = (name || '?').split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()
     const colors: [string, string][] = [
@@ -182,26 +631,17 @@ const Avatar = ({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg'
     ]
     const idx = (name?.charCodeAt(0) ?? 0) % colors.length
     const [bg, fg] = colors[idx]
-    const cls = size === 'sm'
-        ? 'w-6 h-6 rounded-lg text-[9px]'
-        : size === 'lg'
-            ? 'w-12 h-12 rounded-2xl text-[15px]'
-            : 'w-8 h-8 rounded-xl text-[11px]'
+    const cls = size === 'sm' ? 'w-6 h-6 rounded-lg text-[9px]' : size === 'lg' ? 'w-12 h-12 rounded-2xl text-[15px]' : 'w-8 h-8 rounded-xl text-[11px]'
     return (
-        <div className={`${cls} flex items-center justify-center font-bold flex-shrink-0`}
-            style={{ background: bg, color: fg }}>
+        <div className={`${cls} flex items-center justify-center font-bold flex-shrink-0`} style={{ background: bg, color: fg }}>
             {initials}
         </div>
     )
 }
 
-/* ── checkbox ── */
-const SelectCheckbox = ({
-    checked, onChange, indeterminate = false, disabled = false,
-}: { checked: boolean; onChange: () => void; indeterminate?: boolean; disabled?: boolean }) => (
+const SelectCheckbox = ({ checked, onChange, indeterminate = false, disabled = false }: { checked: boolean; onChange: () => void; indeterminate?: boolean; disabled?: boolean }) => (
     <div
-        role="button"
-        tabIndex={disabled ? -1 : 0}
+        role="button" tabIndex={disabled ? -1 : 0}
         onClick={(e) => { e.stopPropagation(); if (!disabled) onChange() }}
         onKeyDown={(e) => { if (!disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onChange() } }}
         className="flex-shrink-0 w-[18px] h-[18px] rounded-[5px] flex items-center justify-center transition-all duration-150 select-none"
@@ -212,14 +652,12 @@ const SelectCheckbox = ({
             cursor: disabled ? 'not-allowed' : 'pointer',
             opacity: disabled ? 0.5 : 1,
         }}
-        title={checked ? 'Deselect' : 'Select'}
     >
         {checked && <CheckIcon />}
         {!checked && indeterminate && <div className="w-2 h-0.5 rounded-full" style={{ background: '#4f46e5' }} />}
     </div>
 )
 
-/* ── toggle switch ── */
 const ToggleSwitch = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
     <button
         type="button" role="switch" aria-checked={checked} onClick={onChange}
@@ -231,13 +669,11 @@ const ToggleSwitch = ({ checked, onChange }: { checked: boolean; onChange: () =>
     </button>
 )
 
-/* ── detail row (drawer) ── */
 const DetailRow = ({ icon, label, value }: { icon: React.ReactNode; label: string; value?: string | null }) => {
     if (!value || value === '—') return null
     return (
         <div className="flex items-start gap-2.5 py-2 border-b last:border-0" style={{ borderColor: '#f1f5f9' }}>
-            <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5"
-                style={{ background: '#f1f5f9', color: '#64748b' }}>
+            <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: '#f1f5f9', color: '#64748b' }}>
                 {icon}
             </div>
             <div className="flex-1 min-w-0">
@@ -248,7 +684,6 @@ const DetailRow = ({ icon, label, value }: { icon: React.ReactNode; label: strin
     )
 }
 
-/* ── customer detail drawer ── */
 const CustomerDetailDrawer = ({ customer, onClose }: { customer: any; onClose: () => void }) => {
     const colors: [string, string][] = [
         ['#e0e7ff', '#4338ca'], ['#fce7f3', '#db2777'], ['#d1fae5', '#059669'],
@@ -264,47 +699,28 @@ const CustomerDetailDrawer = ({ customer, onClose }: { customer: any; onClose: (
         { label: customer.City, bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' },
     ].filter(t => t.label)
 
-    const extraFields = customer.CustomerFields
-        ? Object.entries(customer.CustomerFields).filter(([, v]) => v && String(v).trim())
-        : []
+    const extraFields = customer.CustomerFields ? Object.entries(customer.CustomerFields).filter(([, v]) => v && String(v).trim()) : []
 
     return (
         <>
-            <div className="absolute cursor-pointer inset-0 z-20"
-                style={{ background: 'rgba(15,23,42,0.25)', backdropFilter: 'blur(2px)' }}
-                onClick={onClose} />
+            <div className="absolute cursor-pointer inset-0 z-20" style={{ background: 'rgba(15,23,42,0.25)', backdropFilter: 'blur(2px)' }} onClick={onClose} />
             <div className="absolute right-0 top-0 bottom-0 z-30 flex flex-col overflow-hidden"
-                style={{
-                    width: '320px', background: '#ffffff',
-                    borderLeft: '1px solid #e2e8f0',
-                    boxShadow: '-8px 0 32px rgba(0,0,0,0.08)',
-                    animation: 'ec-drawer-in 0.22s cubic-bezier(0.4,0,0.2,1)',
-                }}>
-                <div className="flex-shrink-0 px-5 pt-5 pb-4 relative"
-                    style={{ background: `linear-gradient(135deg, ${heroBg} 0%, #ffffff 100%)` }}>
-                    <button onClick={onClose}
-                        className="absolute cursor-pointer top-4 right-4 w-7 h-7 rounded-lg flex items-center justify-center transition-all"
-                        style={{ background: 'rgba(0,0,0,0.06)', color: '#64748b' }}>
+                style={{ width: '320px', background: '#ffffff', borderLeft: '1px solid #e2e8f0', boxShadow: '-8px 0 32px rgba(0,0,0,0.08)', animation: 'ec-drawer-in 0.22s cubic-bezier(0.4,0,0.2,1)' }}>
+                <div className="flex-shrink-0 px-5 pt-5 pb-4 relative" style={{ background: `linear-gradient(135deg, ${heroBg} 0%, #ffffff 100%)` }}>
+                    <button onClick={onClose} className="absolute cursor-pointer top-4 right-4 w-7 h-7 rounded-lg flex items-center justify-center transition-all" style={{ background: 'rgba(0,0,0,0.06)', color: '#64748b' }}>
                         <CloseIcon />
                     </button>
                     <div className="flex items-center gap-3 mb-3">
                         <Avatar name={customer.Name} size="lg" />
                         <div className="flex-1 min-w-0 pr-8">
-                            <p className="text-[14px] font-bold leading-tight truncate" style={{ color: '#0f172a' }}>
-                                {customer.Name || '—'}
-                            </p>
-                            {customer.CustomerId && (
-                                <p className="text-[10px] font-mono mt-0.5" style={{ color: '#94a3b8' }}>
-                                    ID: {customer.CustomerId}
-                                </p>
-                            )}
+                            <p className="text-[14px] font-bold leading-tight truncate" style={{ color: '#0f172a' }}>{customer.Name || '—'}</p>
+                            {customer.CustomerId && <p className="text-[10px] font-mono mt-0.5" style={{ color: '#94a3b8' }}>ID: {customer.CustomerId}</p>}
                         </div>
                     </div>
                     {tags.length > 0 && (
                         <div className="flex items-center gap-1.5 flex-wrap">
                             {tags.map((t, i) => (
-                                <span key={i} className="text-[9.5px] font-semibold px-2 py-0.5 rounded-lg border"
-                                    style={{ background: t.bg, color: t.color, borderColor: t.border }}>
+                                <span key={i} className="text-[9.5px] font-semibold px-2 py-0.5 rounded-lg border" style={{ background: t.bg, color: t.color, borderColor: t.border }}>
                                     {t.label}
                                 </span>
                             ))}
@@ -312,8 +728,7 @@ const CustomerDetailDrawer = ({ customer, onClose }: { customer: any; onClose: (
                     )}
                 </div>
                 <div className="h-px flex-shrink-0" style={{ background: '#e2e8f0' }} />
-                <div className="flex-1 overflow-y-auto px-5 py-4"
-                    style={{ scrollbarWidth: 'thin', scrollbarColor: '#e2e8f0 transparent' }}>
+                <div className="flex-1 overflow-y-auto px-5 py-4" style={{ scrollbarWidth: 'thin', scrollbarColor: '#e2e8f0 transparent' }}>
                     <p className="text-[9.5px] font-bold uppercase tracking-widest mb-2" style={{ color: '#cbd5e1' }}>Contact</p>
                     <div className="mb-4">
                         <DetailRow icon={<PhoneIcon />} label="Phone" value={customer.ContactNumber} />
@@ -348,23 +763,17 @@ const CustomerDetailDrawer = ({ customer, onClose }: { customer: any; onClose: (
                             <p className="text-[9.5px] font-bold uppercase tracking-widest mb-2" style={{ color: '#cbd5e1' }}>Links</p>
                             <div className="flex flex-col gap-1.5 mb-4">
                                 {customer.URL && (
-                                    <a href={customer.URL} target="_blank" rel="noopener noreferrer"
-                                        className="flex items-center gap-2 px-3 py-2 rounded-xl border text-[11px] font-medium"
-                                        style={{ background: '#f8fafc', borderColor: '#e2e8f0', color: '#4f46e5' }}>
+                                    <a href={customer.URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-xl border text-[11px] font-medium" style={{ background: '#f8fafc', borderColor: '#e2e8f0', color: '#4f46e5' }}>
                                         <LinkIcon /> Website
                                     </a>
                                 )}
                                 {customer.GoogleMap && (
-                                    <a href={customer.GoogleMap} target="_blank" rel="noopener noreferrer"
-                                        className="flex items-center gap-2 px-3 py-2 rounded-xl border text-[11px] font-medium"
-                                        style={{ background: '#f8fafc', borderColor: '#e2e8f0', color: '#059669' }}>
+                                    <a href={customer.GoogleMap} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-xl border text-[11px] font-medium" style={{ background: '#f8fafc', borderColor: '#e2e8f0', color: '#059669' }}>
                                         <MapPinIcon /> Google Maps
                                     </a>
                                 )}
                                 {customer.Video && (
-                                    <a href={customer.Video} target="_blank" rel="noopener noreferrer"
-                                        className="flex items-center gap-2 px-3 py-2 rounded-xl border text-[11px] font-medium"
-                                        style={{ background: '#f8fafc', borderColor: '#e2e8f0', color: '#dc2626' }}>
+                                    <a href={customer.Video} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-xl border text-[11px] font-medium" style={{ background: '#f8fafc', borderColor: '#e2e8f0', color: '#dc2626' }}>
                                         <LinkIcon /> Video
                                     </a>
                                 )}
@@ -376,8 +785,7 @@ const CustomerDetailDrawer = ({ customer, onClose }: { customer: any; onClose: (
                             <p className="text-[9.5px] font-bold uppercase tracking-widest mb-2" style={{ color: '#cbd5e1' }}>Assigned To</p>
                             <div className="flex flex-wrap gap-1.5 mb-4">
                                 {customer.AssignTo.map((a: any, i: number) => (
-                                    <span key={i} className="text-[10.5px] font-medium px-2.5 py-1 rounded-lg border"
-                                        style={{ background: '#f8fafc', borderColor: '#e2e8f0', color: '#475569' }}>
+                                    <span key={i} className="text-[10.5px] font-medium px-2.5 py-1 rounded-lg border" style={{ background: '#f8fafc', borderColor: '#e2e8f0', color: '#475569' }}>
                                         {typeof a === 'string' ? a : (a.name || a.Name || JSON.stringify(a))}
                                     </span>
                                 ))}
@@ -389,11 +797,8 @@ const CustomerDetailDrawer = ({ customer, onClose }: { customer: any; onClose: (
                             <p className="text-[9.5px] font-bold uppercase tracking-widest mb-2" style={{ color: '#cbd5e1' }}>Additional Fields</p>
                             <div className="rounded-xl border overflow-hidden mb-4" style={{ borderColor: '#e2e8f0' }}>
                                 {extraFields.map(([key, val], i) => (
-                                    <div key={i} className="flex items-start gap-2 px-3 py-2 border-b last:border-0"
-                                        style={{ borderColor: '#f1f5f9', background: i % 2 === 0 ? '#f8fafc' : '#ffffff' }}>
-                                        <p className="text-[10px] font-semibold flex-shrink-0 w-24 truncate capitalize" style={{ color: '#64748b' }}>
-                                            {String(key).replace(/_/g, ' ')}
-                                        </p>
+                                    <div key={i} className="flex items-start gap-2 px-3 py-2 border-b last:border-0" style={{ borderColor: '#f1f5f9', background: i % 2 === 0 ? '#f8fafc' : '#ffffff' }}>
+                                        <p className="text-[10px] font-semibold flex-shrink-0 w-24 truncate capitalize" style={{ color: '#64748b' }}>{String(key).replace(/_/g, ' ')}</p>
                                         <p className="text-[10.5px] flex-1 break-words" style={{ color: '#334155' }}>{String(val)}</p>
                                     </div>
                                 ))}
@@ -406,20 +811,11 @@ const CustomerDetailDrawer = ({ customer, onClose }: { customer: any; onClose: (
     )
 }
 
-/* ── left-panel customer row (multi-select) ── */
-const CustomerRow = ({
-    c, isSelected, onToggle, onView, disabled,
-}: { c: any; isSelected: boolean; onToggle: (id: string) => void; onView: (c: any) => void; disabled: boolean }) => (
+const CustomerRow = ({ c, isSelected, onToggle, onView, disabled }: { c: any; isSelected: boolean; onToggle: (id: string) => void; onView: (c: any) => void; disabled: boolean }) => (
     <div
         onClick={() => !disabled && onToggle(c._id)}
         className="w-full text-left px-4 py-3 transition-all duration-150 border-b group"
-        style={{
-            borderColor: '#f1f5f9',
-            background: isSelected ? 'rgba(79,70,229,0.05)' : 'transparent',
-            borderLeft: isSelected ? '2px solid #4f46e5' : '2px solid transparent',
-            cursor: disabled ? 'default' : 'pointer',
-            opacity: disabled ? 0.55 : 1,
-        }}
+        style={{ borderColor: '#f1f5f9', background: isSelected ? 'rgba(79,70,229,0.05)' : 'transparent', borderLeft: isSelected ? '2px solid #4f46e5' : '2px solid transparent', cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.55 : 1 }}
     >
         <div className="flex items-start gap-2.5">
             <div className="mt-1">
@@ -428,19 +824,12 @@ const CustomerRow = ({
             <Avatar name={c.Name} />
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                    <p className="text-[12px] font-semibold truncate" style={{ color: isSelected ? '#4338ca' : '#1e293b' }}>
-                        {c.Name || '—'}
-                    </p>
+                    <p className="text-[12px] font-semibold truncate" style={{ color: isSelected ? '#4338ca' : '#1e293b' }}>{c.Name || '—'}</p>
                     {!c.Email && (
-                        <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0"
-                            style={{ background: '#fef2f2', color: '#b91c1c' }}>
-                            no email
-                        </span>
+                        <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0" style={{ background: '#fef2f2', color: '#b91c1c' }}>no email</span>
                     )}
                 </div>
-                <p className="text-[10.5px] truncate mt-0.5" style={{ color: '#94a3b8' }}>
-                    {c.Email || c.ContactNumber || '—'}
-                </p>
+                <p className="text-[10.5px] truncate mt-0.5" style={{ color: '#94a3b8' }}>{c.Email || c.ContactNumber || '—'}</p>
                 <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                     {c.Campaign && <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-md" style={{ background: '#eef2ff', color: '#4338ca' }}>{c.Campaign}</span>}
                     {c.Type && <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-md" style={{ background: '#fff7ed', color: '#c2410c' }}>{c.Type}</span>}
@@ -459,46 +848,60 @@ const CustomerRow = ({
     </div>
 )
 
-/* ── result row inside a campaign run card ── */
 const ResultRow = ({ r, customerLookup, onView }: { r: any; customerLookup: (id: string) => any; onView: (c: any) => void }) => {
+    const [showSummary, setShowSummary] = useState(false)
     const cfg = getResultStatusCfg(r.status)
     const full = customerLookup(r.id)
     const displayName = full?.Name || r.name || r.email || 'Unknown'
+    const hasSummary = !!r.workSummary && r.workSummary.trim().length > 0
+    useEffect(() => { if (hasSummary) setShowSummary(true) }, [r])
     return (
-        <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl border" style={{ background: '#f8fafc', borderColor: '#e2e8f0' }}>
-            <Avatar name={displayName} size="sm" />
-            <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-semibold truncate" style={{ color: '#1e293b' }}>{displayName}</p>
-                <p className="text-[9.5px] truncate" style={{ color: '#94a3b8' }}>
-                    {r.email || full?.Email || '—'}
-                    {r.status === 'failed' && r.error ? <span style={{ color: '#dc2626' }}> · {r.error}</span> : null}
-                </p>
+        <div className="rounded-xl border overflow-hidden" style={{ background: '#f8fafc', borderColor: '#e2e8f0' }}>
+            <div className="flex items-center gap-2.5 px-3 py-2">
+                <Avatar name={displayName} size="sm" />
+                <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold truncate" style={{ color: '#1e293b' }}>{displayName}</p>
+                    <p className="text-[9.5px] truncate" style={{ color: '#94a3b8' }}>
+                        {r.email || full?.Email || '—'}
+                        {r.status === 'failed' && r.error ? <span style={{ color: '#dc2626' }}> · {r.error}</span> : null}
+                    </p>
+                </div>
+                <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded-md border flex items-center gap-1 flex-shrink-0" style={{ background: cfg.bg, color: cfg.color, borderColor: cfg.border }}>
+                    <span className="w-1 h-1 rounded-full inline-block" style={{ background: cfg.dot }} />
+                    {cfg.label}
+                </span>
+                {hasSummary && (
+                    <button
+                        onClick={() => setShowSummary(v => !v)}
+                        className="flex-shrink-0 cursor-pointer flex items-center gap-1 px-2 py-1 rounded-lg border text-[9.5px] font-semibold transition-all"
+                        style={showSummary ? { background: '#eef2ff', borderColor: '#c7d2fe', color: '#4338ca' } : { background: '#ffffff', borderColor: '#e2e8f0', color: '#94a3b8' }}
+                    >
+                        <SparkleIcon /> Why this email
+                    </button>
+                )}
+                <button
+                    onClick={() => onView(full || { Name: displayName, Email: r.email, CustomerId: r.id })}
+                    className="flex-shrink-0 cursor-pointer flex items-center justify-center w-6 h-6 rounded-lg border"
+                    style={{ background: '#ffffff', borderColor: '#e2e8f0', color: '#94a3b8' }}
+                >
+                    <EyeIcon />
+                </button>
             </div>
-            <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded-md border flex items-center gap-1 flex-shrink-0"
-                style={{ background: cfg.bg, color: cfg.color, borderColor: cfg.border }}>
-                <span className="w-1 h-1 rounded-full inline-block" style={{ background: cfg.dot }} />
-                {cfg.label}
-            </span>
-            <button
-                onClick={() => onView(full || { Name: displayName, Email: r.email, CustomerId: r.id })}
-                className="flex-shrink-0 cursor-pointer flex items-center justify-center w-6 h-6 rounded-lg border"
-                style={{ background: '#ffffff', borderColor: '#e2e8f0', color: '#94a3b8' }}
-                title="View details"
-            >
-                <EyeIcon />
-            </button>
+            {hasSummary && showSummary && (
+                <div className="px-3 pb-3 pt-0.5">
+                    <div className="rounded-lg border px-3 py-2.5" style={{ background: '#ffffff', borderColor: '#e2e8f0' }}>
+                        <p className="text-[9px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1" style={{ color: '#94a3b8' }}>
+                            <SparkleIcon /> AI strategy for this customer
+                        </p>
+                        <p className="text-[10.5px] leading-relaxed whitespace-pre-line" style={{ color: '#475569' }}>{r.workSummary}</p>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
 
-/* ── a single completed campaign run, in the activity log ── */
-const RunCard = ({
-    run, expanded, onToggleExpand, visibleCount, onLoadMore, customerLookup, onView,
-}: {
-    run: any; expanded: boolean; onToggleExpand: () => void
-    visibleCount: number; onLoadMore: () => void
-    customerLookup: (id: string) => any; onView: (c: any) => void
-}) => {
+const RunCard = ({ run, expanded, onToggleExpand, visibleCount, onLoadMore, customerLookup, onView }: { run: any; expanded: boolean; onToggleExpand: () => void; visibleCount: number; onLoadMore: () => void; customerLookup: (id: string) => any; onView: (c: any) => void }) => {
     const headerTone = run.sentCount > 0 ? { bg: '#f0fdf4', color: '#166534' } : { bg: '#fef2f2', color: '#b91c1c' }
     const results = run.results || []
     const slice = results.slice(0, visibleCount)
@@ -513,64 +916,35 @@ const RunCard = ({
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-[11.5px] font-semibold" style={{ color: '#0f172a' }}>
-                                {run.mode === 'ai' ? 'AI-generated campaign' : 'Manual template campaign'}
-                            </p>
-                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md" style={{ background: '#f1f5f9', color: '#64748b' }}>
-                                {run.language}
-                            </span>
-                            <span className="text-[9.5px]" style={{ color: '#cbd5e1' }}>
-                                {run.timestamp?.toLocaleString?.(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                            </span>
+                            <p className="text-[11.5px] font-semibold" style={{ color: '#0f172a' }}>{run.mode === 'ai' ? 'AI-generated campaign' : 'Manual template campaign'}</p>
+                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md" style={{ background: '#f1f5f9', color: '#64748b' }}>{run.language}</span>
+                            {run.templateName && (
+                                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md" style={{ background: '#f0fdfa', color: '#0f766e' }}>{run.templateName}</span>
+                            )}
+                            <span className="text-[9.5px]" style={{ color: '#cbd5e1' }}>{run.timestamp?.toLocaleString?.(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
-                        {run.promptEcho && (
-                            <p className="text-[11px] italic mt-1 line-clamp-2" style={{ color: '#64748b' }}>
-                                "{run.promptEcho}"
-                            </p>
-                        )}
+                        {run.promptEcho && <p className="text-[11px] italic mt-1 line-clamp-2" style={{ color: '#64748b' }}>"{run.promptEcho}"</p>}
                     </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 flex-wrap mt-3">
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border" style={{ background: '#f0fdf4', color: '#166534', borderColor: '#bbf7d0' }}>
-                        {run.sentCount} sent
-                    </span>
-                    {run.failedCount > 0 && (
-                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border" style={{ background: '#fef2f2', color: '#b91c1c', borderColor: '#fecaca' }}>
-                            {run.failedCount} failed
-                        </span>
-                    )}
-                    {run.skippedCount > 0 && (
-                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border" style={{ background: '#f8fafc', color: '#64748b', borderColor: '#e2e8f0' }}>
-                            {run.skippedCount} skipped
-                        </span>
-                    )}
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg" style={{ color: '#cbd5e1' }}>
-                        / {run.targetCount} targeted
-                    </span>
-
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border" style={{ background: '#f0fdf4', color: '#166534', borderColor: '#bbf7d0' }}>{run.sentCount} sent</span>
+                    {run.failedCount > 0 && <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border" style={{ background: '#fef2f2', color: '#b91c1c', borderColor: '#fecaca' }}>{run.failedCount} failed</span>}
+                    {run.skippedCount > 0 && <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border" style={{ background: '#f8fafc', color: '#64748b', borderColor: '#e2e8f0' }}>{run.skippedCount} skipped</span>}
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-lg" style={{ color: '#cbd5e1' }}>/ {run.targetCount} targeted</span>
                     {results.length > 0 && (
-                        <button onClick={onToggleExpand}
-                            className="ml-auto cursor-pointer flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-lg"
-                            style={{ color: '#4f46e5' }}>
-                            {expanded ? 'Hide details' : 'View details'}
-                            <ChevronIcon open={expanded} />
+                        <button onClick={onToggleExpand} className="ml-auto cursor-pointer flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-lg" style={{ color: '#4f46e5' }}>
+                            {expanded ? 'Hide details' : 'View details'} <ChevronIcon open={expanded} />
                         </button>
                     )}
                 </div>
             </div>
-
             {expanded && results.length > 0 && (
                 <div className="px-4 pb-4 flex flex-col gap-1.5 border-t pt-3" style={{ borderColor: '#f1f5f9' }}>
-                    {slice.map((r: any, i: number) => (
-                        <ResultRow key={r.id || r.email || i} r={r} customerLookup={customerLookup} onView={onView} />
-                    ))}
+                    {slice.map((r: any, i: number) => <ResultRow key={r.id || r.email || i} r={r} customerLookup={customerLookup} onView={onView} />)}
                     {hasMore && (
-                        <button onClick={onLoadMore}
-                            className="w-full py-2 cursor-pointer text-[11px] font-medium rounded-xl border border-dashed transition-colors"
-                            style={{ borderColor: '#e2e8f0', color: '#94a3b8', background: 'transparent' }}>
-                            Load {Math.min(RESULT_PAGE_SIZE, results.length - visibleCount)} more
-                            <span style={{ color: '#cbd5e1' }}> ({results.length - visibleCount} remaining)</span>
+                        <button onClick={onLoadMore} className="w-full py-2 cursor-pointer text-[11px] font-medium rounded-xl border border-dashed transition-colors" style={{ borderColor: '#e2e8f0', color: '#94a3b8', background: 'transparent' }}>
+                            Load {Math.min(RESULT_PAGE_SIZE, results.length - visibleCount)} more <span style={{ color: '#cbd5e1' }}> ({results.length - visibleCount} remaining)</span>
                         </button>
                     )}
                 </div>
@@ -579,58 +953,32 @@ const RunCard = ({
     )
 }
 
-/* ── confirm-before-send modal ── */
-const ConfirmSendModal = ({
-    open, targetCount, mode, language, promptEcho, subject, isSending, error, onCancel, onConfirm,
-}: {
-    open: boolean; targetCount: number; mode: 'ai' | 'manual'; language: string
-    promptEcho: string; subject: string; isSending: boolean; error: string | null
-    onCancel: () => void; onConfirm: () => void
-}) => {
+const ConfirmSendModal = ({ open, targetCount, mode, language, promptEcho, subject, templateName, isSending, error, onCancel, onConfirm }: { open: boolean; targetCount: number; mode: 'ai' | 'manual'; language: string; promptEcho: string; subject: string; templateName?: string | null; isSending: boolean; error: string | null; onCancel: () => void; onConfirm: () => void }) => {
     if (!open) return null
     return (
         <div className="absolute inset-0 z-40 flex items-center justify-center px-6" style={{ background: 'rgba(15,23,42,0.4)', backdropFilter: 'blur(2px)' }}>
             <div className="w-full max-w-[400px] rounded-2xl overflow-hidden relative" style={{ background: '#ffffff', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', animation: 'ec-modal-in 0.18s cubic-bezier(0.34,1.56,0.64,1)' }}>
                 <StampMark className="absolute -top-3 -right-3 w-20 h-20 opacity-[0.35] pointer-events-none" color="#fed7aa" />
                 <div className="px-5 pt-5 pb-4 relative">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: '#fff7ed', color: '#ea580c' }}>
-                        <AlertIcon />
-                    </div>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: '#fff7ed', color: '#ea580c' }}><AlertIcon /></div>
                     <p className="text-[14px] font-bold" style={{ color: '#0f172a' }}>Send this campaign?</p>
                     <p className="text-[11.5px] mt-1.5 leading-relaxed" style={{ color: '#64748b' }}>
                         This sends <b style={{ color: '#0f172a' }}>{targetCount}</b> email{targetCount !== 1 ? 's' : ''} right now — one to each targeted customer. This can't be undone.
                     </p>
 
                     <div className="mt-3 px-3 py-2.5 rounded-xl border" style={{ background: '#f8fafc', borderColor: '#e2e8f0' }}>
-                        <p className="text-[9.5px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>
-                            {mode === 'ai' ? `AI draft · ${language}` : 'Manual template'}
-                        </p>
-                        <p className="text-[11px] mt-1 leading-relaxed line-clamp-3" style={{ color: '#334155' }}>
-                            {mode === 'ai' ? `"${promptEcho}"` : subject}
-                        </p>
-                        {mode === 'ai' && (
-                            <p className="text-[10px] mt-1.5" style={{ color: '#94a3b8' }}>
-                                Each customer gets a uniquely written email based on this brief and their own data.
-                            </p>
-                        )}
+                        <p className="text-[9.5px] font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{mode === 'ai' ? `AI draft · ${language}` : 'Manual template'}</p>
+                        <p className="text-[11px] mt-1 leading-relaxed line-clamp-3" style={{ color: '#334155' }}>{mode === 'ai' ? `"${promptEcho}"` : subject}</p>
+                        {mode === 'ai' && <p className="text-[10px] mt-1.5" style={{ color: '#94a3b8' }}>Each customer gets a uniquely written email based on this brief and their own data.</p>}
+                        {templateName && <p className="text-[10px] mt-1.5 flex items-center gap-1" style={{ color: '#0f766e' }}><SparkleIcon /> Using "{templateName}" as the base layout</p>}
                     </div>
 
-                    {error && (
-                        <p className="text-[11px] mt-3 px-3 py-2 rounded-lg" style={{ background: '#fef2f2', color: '#b91c1c' }}>{error}</p>
-                    )}
+                    {error && <p className="text-[11px] mt-3 px-3 py-2 rounded-lg" style={{ background: '#fef2f2', color: '#b91c1c' }}>{error}</p>}
                 </div>
                 <div className="flex items-center gap-2 px-5 py-3.5 border-t" style={{ borderColor: '#f1f5f9', background: '#f8fafc' }}>
-                    <button onClick={onCancel} disabled={isSending}
-                        className="flex-1 cursor-pointer py-2.5 rounded-xl text-[12px] font-semibold transition-all disabled:opacity-50"
-                        style={{ background: '#ffffff', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                        Cancel
-                    </button>
-                    <button onClick={onConfirm} disabled={isSending}
-                        className="flex-1 cursor-pointer py-2.5 rounded-xl text-[12px] font-bold transition-all active:scale-95 disabled:opacity-70 flex items-center justify-center gap-1.5"
-                        style={{ background: '#ea580c', color: '#ffffff', boxShadow: '0 3px 10px rgba(234,88,12,0.35)' }}>
-                        {isSending ? (
-                            <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent" style={{ animation: 'ec-spin 0.8s linear infinite' }} />
-                        ) : <EnvelopeIcon className="w-3.5 h-3.5" />}
+                    <button onClick={onCancel} disabled={isSending} className="flex-1 cursor-pointer py-2.5 rounded-xl text-[12px] font-semibold transition-all disabled:opacity-50" style={{ background: '#ffffff', color: '#64748b', border: '1px solid #e2e8f0' }}>Cancel</button>
+                    <button onClick={onConfirm} disabled={isSending} className="flex-1 cursor-pointer py-2.5 rounded-xl text-[12px] font-bold transition-all active:scale-95 disabled:opacity-70 flex items-center justify-center gap-1.5" style={{ background: '#ea580c', color: '#ffffff', boxShadow: '0 3px 10px rgba(234,88,12,0.35)' }}>
+                        {isSending ? <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent" style={{ animation: 'ec-spin 0.8s linear infinite' }} /> : <EnvelopeIcon className="w-3.5 h-3.5" />}
                         {isSending ? 'Sending…' : 'Confirm & Send'}
                     </button>
                 </div>
@@ -656,6 +1004,11 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
     const [subject, setSubject] = useState('')
     const [body, setBody] = useState('')
 
+    // Template selection — shared across both AI and Manual composer modes.
+    const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
+    const [isPreviewMode, setIsPreviewMode] = useState(false)
+    const [isPickerOpen, setIsPickerOpen] = useState(false)
+
     const [isSending, setIsSending] = useState(false)
     const [sendError, setSendError] = useState<string | null>(null)
     const [showConfirm, setShowConfirm] = useState(false)
@@ -667,38 +1020,20 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
     const [viewingCustomer, setViewingCustomer] = useState<any | null>(null)
     const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
+    const selectedTemplate = useMemo(() => getEmailTemplateById(selectedTemplateId), [selectedTemplateId])
+    const [isGoalPickerOpen, setIsGoalPickerOpen] = useState(false)
+
     const mapCustomer = (item: any) => {
         const date = new Date(item.createdAt)
-        const formattedDate =
-            date.getDate().toString().padStart(2, '0') + '-' +
-            (date.getMonth() + 1).toString().padStart(2, '0') + '-' +
-            date.getFullYear()
+        const formattedDate = date.getDate().toString().padStart(2, '0') + '-' + (date.getMonth() + 1).toString().padStart(2, '0') + '-' + date.getFullYear()
         return {
-            _id: item._id,
-            Campaign: item.Campaign,
-            Type: item.CustomerType,
-            SubType: item.CustomerSubType,
-            Name: item.customerName,
-            Description: item.Description,
-            Email: item.Email,
-            City: item.City,
-            Location: item.Location,
-            Adderess: item.Adderess,
-            Area: item.Area,
-            SubLocation: item.SubLocation,
-            CustomerId: item.CustomerId,
-            ClientId: item.ClientId,
-            CustomerYear: item.CustomerYear,
-            Facillities: item.Facillities,
-            ContactNumber: item.ContactNumber?.slice(0, 10),
-            ReferenceId: item.ReferenceId,
-            AssignTo: item.AssignTo ?? [],
-            Date: item.CustomerDate === 'N/A' ? 'N/A' : item.CustomerDate ? formatDateDMY(item.CustomerDate) : formattedDate,
-            URL: item.URL || '',
-            Video: item.Video || '',
-            GoogleMap: item.GoogleMap || '',
-            Price: item.Price || '',
-            CustomerFields: item.CustomerFields || {},
+            _id: item._id, Campaign: item.Campaign, Type: item.CustomerType, SubType: item.CustomerSubType,
+            Name: item.customerName, Description: item.Description, Email: item.Email, City: item.City,
+            Location: item.Location, Adderess: item.Adderess, Area: item.Area, SubLocation: item.SubLocation,
+            CustomerId: item.CustomerId, ClientId: item.ClientId, CustomerYear: item.CustomerYear,
+            Facillities: item.Facillities, ContactNumber: item.ContactNumber?.slice(0, 10), ReferenceId: item.ReferenceId,
+            AssignTo: item.AssignTo ?? [], Date: item.CustomerDate === 'N/A' ? 'N/A' : item.CustomerDate ? formatDateDMY(item.CustomerDate) : formattedDate,
+            URL: item.URL || '', Video: item.Video || '', GoogleMap: item.GoogleMap || '', Price: item.Price || '', CustomerFields: item.CustomerFields || {},
         }
     }
 
@@ -707,11 +1042,7 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
         try {
             const res: any = await getCustomer()
             if (res) setCustomers(res.map(mapCustomer))
-        } catch (err) {
-            console.error(err)
-        } finally {
-            setIsCustomersLoading(false)
-        }
+        } catch (err) { console.error(err) } finally { setIsCustomersLoading(false) }
     }
 
     useEffect(() => { fetchCustomers() }, [])
@@ -724,12 +1055,24 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
             if (e.key !== 'Escape') return
-            if (viewingCustomer) setViewingCustomer(null)
+            if (isPickerOpen) setIsPickerOpen(false)
+            else if (viewingCustomer) setViewingCustomer(null)
             else if (showConfirm && !isSending) setShowConfirm(false)
         }
         window.addEventListener('keydown', onKey)
         return () => window.removeEventListener('keydown', onKey)
-    }, [viewingCustomer, showConfirm, isSending])
+    }, [viewingCustomer, showConfirm, isSending, isPickerOpen])
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key !== 'Escape') return
+            if (isPickerOpen) setIsPickerOpen(false)
+            else if (isGoalPickerOpen) setIsGoalPickerOpen(false)
+            else if (viewingCustomer) setViewingCustomer(null)
+            else if (showConfirm && !isSending) setShowConfirm(false)
+        }
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+    }, [viewingCustomer, showConfirm, isSending, isPickerOpen, isGoalPickerOpen])
 
     const SEARCH_FIELDS = ['All', 'Name', 'Email', 'Campaign', 'Type', 'Phone'] as const
 
@@ -738,13 +1081,7 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
         const q = searchQuery.toLowerCase()
         return customers.filter((c: any) => {
             if (searchField === 'All') {
-                return (
-                    c.Name?.toLowerCase().includes(q) ||
-                    c.Email?.toLowerCase().includes(q) ||
-                    c.Campaign?.toLowerCase().includes(q) ||
-                    c.Type?.toLowerCase().includes(q) ||
-                    c.ContactNumber?.includes(q)
-                )
+                return (c.Name?.toLowerCase().includes(q) || c.Email?.toLowerCase().includes(q) || c.Campaign?.toLowerCase().includes(q) || c.Type?.toLowerCase().includes(q) || c.ContactNumber?.includes(q))
             }
             const fieldMap: Record<string, string> = { Name: c.Name, Email: c.Email, Campaign: c.Campaign, Type: c.Type, Phone: c.ContactNumber }
             return fieldMap[searchField]?.toLowerCase().includes(q)
@@ -788,14 +1125,31 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
         else setBody(b => (b ? b + ' ' : '') + token)
     }
 
+    // Selecting a template from the picker: always records the selection so
+    // both composer tabs can reference it. Only the Manual tab's body/preview
+    // gets auto-filled, since the AI tab keeps writing its own copy — it just
+    // uses the template as a visual base.
+    const handleSelectTemplate = (id: string | null) => {
+        setSelectedTemplateId(id)
+        if (id && composerTab === 'manual') {
+            const t = getEmailTemplateById(id)
+            if (t) { setBody(t.html); setIsPreviewMode(true) }
+        }
+    }
+
     const handleSend = async () => {
         if (isSending) return
         setSendError(null)
         setIsSending(true)
         try {
             const payload: any = { customerIds: sendToAll ? [] : Array.from(selectedIds), sendToAll, mode: language }
-            if (composerTab === 'ai') payload.userPrompt = userPrompt.trim()
-            else { payload.Subject = subject.trim(); payload.Body = body.trim() }
+            if (composerTab === 'ai') {
+                payload.userPrompt = userPrompt.trim()
+                if (selectedTemplate) payload.templateHtml = selectedTemplate.html
+            } else {
+                payload.Subject = subject.trim()
+                payload.Body = body.trim()
+            }
 
             const res: any = await emailCustomerViaAi(payload)
             if (!res || res.success === false) {
@@ -811,14 +1165,11 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
 
             const runId = `run_${Date.now()}`
             const run = {
-                id: runId,
-                mode: composerTab,
-                language,
+                id: runId, mode: composerTab, language,
                 promptEcho: composerTab === 'ai' ? userPrompt.trim() : subject.trim(),
-                targetCount,
-                sentCount, failedCount, skippedCount: Math.max(0, skippedCount),
-                results,
-                timestamp: new Date(),
+                templateName: selectedTemplate?.name || null,
+                targetCount, sentCount, failedCount, skippedCount: Math.max(0, skippedCount),
+                results, timestamp: new Date(),
             }
             setRuns(prev => [run, ...prev])
             setRunExpandedMap(prev => ({ ...prev, [runId]: results.length > 0 && results.length <= 5 }))
@@ -828,8 +1179,7 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
             setUserPrompt('')
             setSubject('')
             setBody('')
-            setSelectedIds(new Set())
-            setSendToAll(false)
+            setSelectedTemplateId(null)
             setShowConfirm(false)
         } catch (err: any) {
             console.error(err)
@@ -857,8 +1207,7 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
                     <div className="relative mb-2">
                         <div className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: '#94a3b8' }}><SearchIcon /></div>
                         <input
-                            type="text" placeholder="Search customers…" value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
+                            type="text" placeholder="Search customers…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                             className="w-full pl-8 pr-7 py-2 rounded-xl text-[11.5px] outline-none border transition-all duration-150 bg-stone-50 border-slate-200 text-slate-700 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:bg-white"
                         />
                         {searchQuery && (
@@ -877,11 +1226,9 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
                         ))}
                     </div>
 
-                    {/* selection toolbar */}
                     <div className="flex items-center gap-2 py-1.5">
                         <SelectCheckbox checked={allFilteredSelected} indeterminate={someFilteredSelected} onChange={toggleSelectAllFiltered} disabled={sendToAll || filteredCustomers.length === 0} />
-                        <button onClick={toggleSelectAllFiltered} disabled={sendToAll || filteredCustomers.length === 0}
-                            className="text-[10.5px] cursor-pointer font-semibold" style={{ color: sendToAll ? '#cbd5e1' : '#475569' }}>
+                        <button onClick={toggleSelectAllFiltered} disabled={sendToAll || filteredCustomers.length === 0} className="text-[10.5px] cursor-pointer font-semibold" style={{ color: sendToAll ? '#cbd5e1' : '#475569' }}>
                             {allFilteredSelected ? 'Deselect all' : 'Select all'}
                         </button>
                         {selectedIds.size > 0 && !sendToAll && (
@@ -891,9 +1238,7 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
                         )}
                     </div>
 
-                    {/* send to all toggle */}
-                    <div className="flex items-center gap-2.5 mt-1.5 px-3 py-2.5 rounded-xl border"
-                        style={{ background: sendToAll ? '#fff7ed' : '#f8fafc', borderColor: sendToAll ? '#fed7aa' : '#e2e8f0' }}>
+                    <div className="flex items-center gap-2.5 mt-1.5 px-3 py-2.5 rounded-xl border" style={{ background: sendToAll ? '#fff7ed' : '#f8fafc', borderColor: sendToAll ? '#fed7aa' : '#e2e8f0' }}>
                         <div className="flex-1 min-w-0">
                             <p className="text-[11px] font-semibold" style={{ color: sendToAll ? '#c2410c' : '#334155' }}>Send to everyone</p>
                             <p className="text-[9.5px] mt-0.5" style={{ color: '#94a3b8' }}>Ignores selection, targets all {customers.length} customers</p>
@@ -917,9 +1262,7 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
                         </div>
                     ) : filteredCustomers.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                            <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-2" style={{ background: '#f1f5f9', color: '#cbd5e1' }}>
-                                <SearchIcon />
-                            </div>
+                            <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-2" style={{ background: '#f1f5f9', color: '#cbd5e1' }}><SearchIcon /></div>
                             <p className="text-[11px] font-medium" style={{ color: '#94a3b8' }}>No customers found</p>
                         </div>
                     ) : visibleCustomers.map((c: any) => (
@@ -927,11 +1270,8 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
                     ))}
 
                     {hasMore && (
-                        <button onClick={() => setVisibleCount(v => v + PAGE_SIZE)}
-                            className="w-full py-3 cursor-pointer text-[11.5px] font-medium border-t transition-colors"
-                            style={{ borderColor: '#f1f5f9', color: '#94a3b8', background: 'transparent' }}>
-                            Load {Math.min(PAGE_SIZE, remaining)} more
-                            <span style={{ color: '#cbd5e1' }}> ({remaining} remaining)</span>
+                        <button onClick={() => setVisibleCount(v => v + PAGE_SIZE)} className="w-full py-3 cursor-pointer text-[11.5px] font-medium border-t transition-colors" style={{ borderColor: '#f1f5f9', color: '#94a3b8', background: 'transparent' }}>
+                            Load {Math.min(PAGE_SIZE, remaining)} more <span style={{ color: '#cbd5e1' }}> ({remaining} remaining)</span>
                         </button>
                     )}
                 </div>
@@ -940,9 +1280,7 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
             {/* ══ RIGHT PANEL — compose + activity log ══ */}
             <div className="flex-1 flex flex-col min-w-0 relative">
                 <div className="flex-shrink-0 px-5 py-3 border-b flex items-center gap-3" style={{ background: '#ffffff', borderColor: '#e2e8f0' }}>
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(79,70,229,0.1)', color: '#4f46e5' }}>
-                        <EnvelopeIcon className="w-4 h-4" />
-                    </div>
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(79,70,229,0.1)', color: '#4f46e5' }}><EnvelopeIcon className="w-4 h-4" /></div>
                     <div className="min-w-0">
                         <p className="text-[13px] font-semibold" style={{ color: '#1e293b' }}>Email Campaign Agent</p>
                         <p className="text-[10.5px]" style={{ color: '#94a3b8' }}>Drafts and sends a personalized email to every targeted customer</p>
@@ -970,7 +1308,7 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
                                 <button onClick={() => setComposerTab('manual')}
                                     className="flex items-center cursor-pointer gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all"
                                     style={composerTab === 'manual' ? { background: '#4f46e5', color: '#ffffff', boxShadow: '0 2px 6px rgba(79,70,229,0.35)' } : { color: '#64748b' }}>
-                                    <EditIcon /> Manual Template
+                                    <EditIcon /> Manual
                                 </button>
                             </div>
                         </div>
@@ -979,38 +1317,49 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
                             <div className="px-4 pt-3 pb-4 relative">
                                 <p className="text-[10.5px] font-semibold mb-1.5" style={{ color: '#334155' }}>What's this campaign about?</p>
                                 <textarea
-                                    value={userPrompt}
-                                    onChange={e => setUserPrompt(e.target.value)}
-                                    disabled={isSending}
-                                    rows={4}
+                                    value={userPrompt} onChange={e => setUserPrompt(e.target.value)} disabled={isSending} rows={4}
                                     placeholder="e.g. Reach out about a limited-time price drop on properties they showed interest in…"
                                     className="w-full resize-none rounded-xl px-3 py-2.5 text-[12px] leading-relaxed outline-none border transition-all duration-150 bg-stone-50 border-slate-200 text-slate-700 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:bg-white disabled:opacity-50"
                                 />
-                                <div className="flex items-center gap-1.5 flex-wrap mt-2">
-                                    {AI_PROMPT_HINTS.map(h => (
-                                        <button key={h.label} onClick={() => setUserPrompt(h.prompt)}
-                                            className="text-[9.5px] cursor-pointer font-medium px-2 py-1 rounded-lg border transition-all"
-                                            style={{ background: '#f8fafc', borderColor: '#e2e8f0', color: '#64748b' }}>
-                                            {h.label}
+                                <p className="text-[10.5px] font-semibold mb-1.5 mt-3" style={{ color: '#334155' }}>Not sure what to write? Start from a goal:</p>
+                                <div className="grid grid-cols-2 gap-2 mb-2">
+                                    {QUICK_START_GOALS.map(g => (
+                                        <QuickGoalCard key={g.label} goal={g} onClick={() => setUserPrompt(g.prompt)} />
+                                    ))}
+                                </div>
+                                <BrowseAllGoalsButton onClick={() => setIsGoalPickerOpen(true)} />
+
+                                <p className="text-[10.5px] font-semibold mb-1.5 mt-3.5 flex items-center gap-1.5" style={{ color: '#334155' }}><GlobeIcon /> Tone &amp; language</p>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    {LANGUAGE_OPTIONS.map(l => (
+                                        <button key={l.value} onClick={() => setLanguage(l.value)} className="text-[10.5px] cursor-pointer font-semibold px-2.5 py-1 rounded-lg border transition-all" style={language === l.value ? { background: '#eef2ff', color: '#4338ca', borderColor: '#c7d2fe' } : { background: '#ffffff', color: '#94a3b8', borderColor: '#e2e8f0' }}>
+                                            {l.label}
                                         </button>
                                     ))}
                                 </div>
 
                                 <p className="text-[10.5px] font-semibold mb-1.5 mt-3.5 flex items-center gap-1.5" style={{ color: '#334155' }}>
-                                    <GlobeIcon /> Tone &amp; language
+                                    <EnvelopeIcon className="w-3 h-3" /> Starting template
+                                    <span className="text-[9px] font-normal" style={{ color: '#cbd5e1' }}>(optional — AI adapts the layout per customer)</span>
                                 </p>
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                    {LANGUAGE_OPTIONS.map(l => (
-                                        <button key={l.value} onClick={() => setLanguage(l.value)}
-                                            className="text-[10.5px] cursor-pointer font-semibold px-2.5 py-1 rounded-lg border transition-all"
-                                            style={language === l.value ? { background: '#eef2ff', color: '#4338ca', borderColor: '#c7d2fe' } : { background: '#ffffff', color: '#94a3b8', borderColor: '#e2e8f0' }}>
-                                            {l.label}
-                                        </button>
-                                    ))}
-                                </div>
+                                {selectedTemplate ? (
+                                    <SelectedTemplateChip template={selectedTemplate} onChange={() => setIsPickerOpen(true)} onClear={() => setSelectedTemplateId(null)} />
+                                ) : (
+                                    <ChooseTemplateButton label="Choose a template as a base" onClick={() => setIsPickerOpen(true)} />
+                                )}
                             </div>
                         ) : (
                             <div className="px-4 pt-3 pb-4 relative">
+
+                                <p className="text-[10.5px] font-semibold mb-1.5" style={{ color: '#334155' }}>Template</p>
+                                <div className="mb-3">
+                                    {selectedTemplate ? (
+                                        <SelectedTemplateChip template={selectedTemplate} onChange={() => setIsPickerOpen(true)} />
+                                    ) : (
+                                        <ChooseTemplateButton label="Choose a template" onClick={() => setIsPickerOpen(true)} />
+                                    )}
+                                </div>
+
                                 <p className="text-[10.5px] font-semibold mb-1.5" style={{ color: '#334155' }}>Subject</p>
                                 <input
                                     value={subject} onChange={e => setSubject(e.target.value)} disabled={isSending}
@@ -1019,123 +1368,122 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
                                 />
                                 <div className="flex items-center gap-1.5 flex-wrap mt-1.5 mb-3">
                                     {TOKEN_HINTS.map(t => (
-                                        <button key={t} onClick={() => insertToken('subject', t)}
-                                            className="text-[9px] cursor-pointer font-mono font-medium px-1.5 py-0.5 rounded-md border" style={{ background: '#f8fafc', borderColor: '#e2e8f0', color: '#94a3b8' }}>
+                                        <button key={t} onClick={() => insertToken('subject', t)} className="text-[9px] cursor-pointer font-mono font-medium px-1.5 py-0.5 rounded-md border" style={{ background: '#f8fafc', borderColor: '#e2e8f0', color: '#94a3b8' }}>
                                             {t}
                                         </button>
                                     ))}
                                 </div>
 
-                                <p className="text-[10.5px] font-semibold mb-1.5" style={{ color: '#334155' }}>Body</p>
-                                <textarea
-                                    value={body} onChange={e => setBody(e.target.value)} disabled={isSending}
-                                    rows={6}
-                                    placeholder="<p>Hi {{Name}},</p><p>Wanted to flag…</p>"
-                                    className="w-full resize-none rounded-xl px-3 py-2.5 text-[11.5px] font-mono leading-relaxed outline-none border transition-all duration-150 bg-stone-50 border-slate-200 text-slate-700 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:bg-white disabled:opacity-50"
-                                />
-                                <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-                                    {TOKEN_HINTS.map(t => (
-                                        <button key={t} onClick={() => insertToken('body', t)}
-                                            className="text-[9px] cursor-pointer font-mono font-medium px-1.5 py-0.5 rounded-md border" style={{ background: '#f8fafc', borderColor: '#e2e8f0', color: '#94a3b8' }}>
-                                            {t}
-                                        </button>
-                                    ))}
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <p className="text-[10.5px] font-semibold" style={{ color: '#334155' }}>Body</p>
+                                    <button
+                                        onClick={() => setIsPreviewMode(!isPreviewMode)}
+                                        className="flex items-center cursor-pointer gap-1.5 text-[9.5px] font-semibold px-2 py-1 rounded-lg transition-all"
+                                        style={{
+                                            background: isPreviewMode ? '#4f46e5' : '#f1f5f9',
+                                            color: isPreviewMode ? '#ffffff' : '#64748b'
+                                        }}
+                                    >
+                                        <EyeIcon /> {isPreviewMode ? 'Edit HTML' : 'Live Preview'}
+                                    </button>
                                 </div>
-                                <p className="text-[9.5px] mt-2" style={{ color: '#cbd5e1' }}>
-                                    Supports basic HTML (&lt;p&gt;, &lt;b&gt;, &lt;a&gt;…). Tokens are swapped for each customer's real details before sending.
-                                </p>
+
+                                {isPreviewMode ? (
+                                    <div className="w-full h-[340px] rounded-xl border overflow-hidden bg-white mb-2 shadow-inner" style={{ borderColor: '#e2e8f0' }}>
+                                        <iframe
+                                            srcDoc={body || '<div style="font-family:sans-serif;padding:20px;color:#94a3b8;text-align:center;">Select a template or edit HTML to see preview</div>'}
+                                            className="w-full h-full border-none"
+                                            title="Email Preview"
+                                        />
+                                    </div>
+                                ) : (
+                                    <textarea
+                                        value={body}
+                                        onChange={e => {
+                                            setBody(e.target.value);
+                                            setSelectedTemplateId(null); // manual edits detach from the picked template
+                                        }}
+                                        disabled={isSending} rows={10}
+                                        placeholder="<p>Hi {{Name}},</p><p>Wanted to flag…</p>"
+                                        className="w-full resize-y rounded-xl px-3 py-2.5 text-[11.5px] font-mono leading-relaxed outline-none border transition-all duration-150 bg-stone-50 border-slate-200 text-slate-700 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:bg-white disabled:opacity-50"
+                                    />
+                                )}
+
+                                {!isPreviewMode && (
+                                    <>
+                                        <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                                            {TOKEN_HINTS.map(t => (
+                                                <button key={t} onClick={() => insertToken('body', t)} className="text-[9px] cursor-pointer font-mono font-medium px-1.5 py-0.5 rounded-md border" style={{ background: '#f8fafc', borderColor: '#e2e8f0', color: '#94a3b8' }}>
+                                                    {t}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <p className="text-[9.5px] mt-2" style={{ color: '#cbd5e1' }}>
+                                            Supports full HTML (&lt;table&gt;, &lt;b&gt;, &lt;a&gt;…). Tokens are swapped for each customer's real details before sending.
+                                        </p>
+                                    </>
+                                )}
                             </div>
                         )}
 
                         {sendError && (
-                            <div className="mx-4 mb-3 px-3 py-2 rounded-lg text-[11px]" style={{ background: '#fef2f2', color: '#b91c1c' }}>
-                                {sendError}
-                            </div>
+                            <div className="mx-4 mb-3 px-3 py-2 rounded-lg text-[11px]" style={{ background: '#fef2f2', color: '#b91c1c' }}>{sendError}</div>
                         )}
 
                         <div className="flex items-center justify-between gap-3 px-4 py-3 border-t" style={{ borderColor: '#f1f5f9', background: '#f8fafc' }}>
                             <p className="text-[11px] font-medium truncate" style={{ color: hasTargets ? '#334155' : '#94a3b8' }}>
-                                {sendToAll
-                                    ? `Targeting all ${customers.length} customers`
-                                    : selectedIds.size > 0
-                                        ? `${selectedIds.size} customer${selectedIds.size !== 1 ? 's' : ''} selected`
-                                        : 'Select customers from the list, or send to everyone'}
+                                {sendToAll ? `Targeting all ${customers.length} customers` : selectedIds.size > 0 ? `${selectedIds.size} customer${selectedIds.size !== 1 ? 's' : ''} selected` : 'Select customers from the list, or send to everyone'}
                             </p>
-                            <button
-                                onClick={() => canSend && setShowConfirm(true)}
-                                disabled={!canSend}
-                                className="flex-shrink-0 cursor-pointer flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[11px] font-bold transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-                                style={{ background: '#ea580c', color: '#ffffff', boxShadow: canSend ? '0 3px 10px rgba(234,88,12,0.35)' : 'none' }}>
+                            <button onClick={() => canSend && setShowConfirm(true)} disabled={!canSend} className="flex-shrink-0 cursor-pointer flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[11px] font-bold transition-all duration-150 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed" style={{ background: '#ea580c', color: '#ffffff', boxShadow: canSend ? '0 3px 10px rgba(234,88,12,0.35)' : 'none' }}>
                                 <EnvelopeIcon className="w-3.5 h-3.5" /> Review &amp; Send
                             </button>
                         </div>
                     </div>
 
                     {/* activity log */}
-                    {runs.length > 0 && (
-                        <p className="text-[9.5px] font-bold uppercase tracking-widest flex-shrink-0" style={{ color: '#cbd5e1' }}>Campaign Activity</p>
-                    )}
+                    {runs.length > 0 && <p className="text-[9.5px] font-bold uppercase tracking-widest flex-shrink-0" style={{ color: '#cbd5e1' }}>Campaign Activity</p>}
 
                     {runs.length === 0 ? (
                         <div className="flex-1 flex flex-col items-center justify-center py-10 text-center">
-                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(79,70,229,0.08)', color: '#4f46e5' }}>
-                                <UsersIcon />
-                            </div>
+                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(79,70,229,0.08)', color: '#4f46e5' }}><UsersIcon /></div>
                             <p className="text-[12px] font-semibold mb-1" style={{ color: '#334155' }}>No campaigns sent yet</p>
                             <p className="text-[11px] max-w-[260px]" style={{ color: '#94a3b8' }}>Pick your customers, write the brief above, and hit send — every campaign shows up here.</p>
                         </div>
                     ) : (
                         <div className="flex flex-col gap-3">
                             {runs.map(run => (
-                                <RunCard
-                                    key={run.id}
-                                    run={run}
-                                    expanded={!!runExpandedMap[run.id]}
-                                    onToggleExpand={() => setRunExpandedMap(prev => ({ ...prev, [run.id]: !prev[run.id] }))}
-                                    visibleCount={runVisibleMap[run.id] ?? RESULT_PAGE_SIZE}
-                                    onLoadMore={() => setRunVisibleMap(prev => ({ ...prev, [run.id]: (prev[run.id] ?? RESULT_PAGE_SIZE) + RESULT_PAGE_SIZE }))}
-                                    customerLookup={customerLookup}
-                                    onView={setViewingCustomer}
-                                />
+                                <RunCard key={run.id} run={run} expanded={!!runExpandedMap[run.id]} onToggleExpand={() => setRunExpandedMap(prev => ({ ...prev, [run.id]: !prev[run.id] }))} visibleCount={runVisibleMap[run.id] ?? RESULT_PAGE_SIZE} onLoadMore={() => setRunVisibleMap(prev => ({ ...prev, [run.id]: (prev[run.id] ?? RESULT_PAGE_SIZE) + RESULT_PAGE_SIZE }))} customerLookup={customerLookup} onView={setViewingCustomer} />
                             ))}
                         </div>
                     )}
                 </div>
 
-                {/* toast */}
                 {toast && (
-                    <div className="absolute top-16 right-5 z-30 flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-[11.5px] font-medium"
-                        style={{
-                            background: toast.type === 'success' ? '#f0fdf4' : '#fef2f2',
-                            color: toast.type === 'success' ? '#166534' : '#b91c1c',
-                            borderColor: toast.type === 'success' ? '#bbf7d0' : '#fecaca',
-                            boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
-                            animation: 'ec-toast-in 0.2s ease',
-                        }}>
-                        <EnvelopeIcon className="w-3.5 h-3.5" />
-                        {toast.text}
+                    <div className="absolute top-16 right-5 z-30 flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-[11.5px] font-medium" style={{ background: toast.type === 'success' ? '#f0fdf4' : '#fef2f2', color: toast.type === 'success' ? '#166534' : '#b91c1c', borderColor: toast.type === 'success' ? '#bbf7d0' : '#fecaca', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', animation: 'ec-toast-in 0.2s ease' }}>
+                        <EnvelopeIcon className="w-3.5 h-3.5" /> {toast.text}
                     </div>
                 )}
 
-                {/* confirm modal */}
                 <ConfirmSendModal
-                    open={showConfirm}
-                    targetCount={targetCount}
-                    mode={composerTab}
-                    language={language}
-                    promptEcho={userPrompt.trim()}
-                    subject={subject.trim()}
-                    isSending={isSending}
-                    error={sendError}
-                    onCancel={() => !isSending && setShowConfirm(false)}
-                    onConfirm={handleSend}
+                    open={showConfirm} targetCount={targetCount} mode={composerTab} language={language} promptEcho={userPrompt.trim()} subject={subject.trim()} templateName={selectedTemplate?.name || null} isSending={isSending} error={sendError} onCancel={() => !isSending && setShowConfirm(false)} onConfirm={handleSend}
                 />
             </div>
 
-            {/* ══ CUSTOMER DETAIL DRAWER ══ */}
-            {viewingCustomer && (
-                <CustomerDetailDrawer customer={viewingCustomer} onClose={() => setViewingCustomer(null)} />
-            )}
+            {viewingCustomer && <CustomerDetailDrawer customer={viewingCustomer} onClose={() => setViewingCustomer(null)} />}
+
+            <TemplatePickerModal
+                open={isPickerOpen}
+                templates={emailTemplates}
+                selectedId={selectedTemplateId}
+                onSelect={handleSelectTemplate}
+                onClose={() => setIsPickerOpen(false)}
+            />
+            <GoalPickerModal
+                open={isGoalPickerOpen}
+                categories={CAMPAIGN_GOAL_CATEGORIES}
+                onSelect={(prompt) => { setUserPrompt(prompt); setIsGoalPickerOpen(false) }}
+                onClose={() => setIsGoalPickerOpen(false)}
+            />
 
             <style>{`
         @keyframes ec-spin { to { transform: rotate(360deg); } }

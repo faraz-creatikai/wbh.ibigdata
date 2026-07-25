@@ -207,3 +207,47 @@ export const countryCodes = [
     "+996",  // Kyrgyzstan
     "+998",  // Uzbekistan
 ];
+
+
+
+// app/utils/countryCodes.ts
+export interface CountryCodeOption {
+  code: string;   // dial code, no '+'
+  iso2: string;   // for flag emoji
+  name: string;
+  minLen: number;
+  maxLen: number;
+}
+
+export const COUNTRY_CODES: CountryCodeOption[] = [
+  { code: "91",  iso2: "IN", name: "India",         minLen: 10, maxLen: 10 },
+  { code: "971", iso2: "AE", name: "UAE",            minLen: 9,  maxLen: 9 },
+  { code: "966", iso2: "SA", name: "Saudi Arabia",   minLen: 9,  maxLen: 9 },
+  { code: "974", iso2: "QA", name: "Qatar",          minLen: 8,  maxLen: 8 },
+  { code: "973", iso2: "BH", name: "Bahrain",        minLen: 8,  maxLen: 8 },
+  { code: "968", iso2: "OM", name: "Oman",           minLen: 8,  maxLen: 8 },
+  { code: "965", iso2: "KW", name: "Kuwait",         minLen: 7,  maxLen: 8 },
+  { code: "977", iso2: "NP", name: "Nepal",          minLen: 10, maxLen: 10 },
+  { code: "880", iso2: "BD", name: "Bangladesh",     minLen: 10, maxLen: 10 },
+  { code: "92",  iso2: "PK", name: "Pakistan",       minLen: 10, maxLen: 10 },
+  { code: "94",  iso2: "LK", name: "Sri Lanka",      minLen: 9,  maxLen: 9 },
+  { code: "65",  iso2: "SG", name: "Singapore",      minLen: 8,  maxLen: 8 },
+  { code: "60",  iso2: "MY", name: "Malaysia",       minLen: 9,  maxLen: 10 },
+  { code: "44",  iso2: "GB", name: "United Kingdom", minLen: 10, maxLen: 10 },
+  { code: "1",   iso2: "US", name: "US / Canada",    minLen: 10, maxLen: 10 },
+  { code: "61",  iso2: "AU", name: "Australia",      minLen: 9,  maxLen: 9 },
+];
+
+export const DEFAULT_COUNTRY_CODE = "91";
+
+export const getCountryLenRule = (code: string) =>
+  COUNTRY_CODES.find((c) => c.code === code) ??
+  { code, iso2: "", name: code, minLen: 6, maxLen: 11 };
+
+// Converts "IN" -> 🇮🇳 using regional indicator symbols
+export const isoToFlagEmoji = (iso2: string): string => {
+  if (!iso2 || iso2.length !== 2) return "🏳️";
+  return String.fromCodePoint(
+    ...[...iso2.toUpperCase()].map((c) => 127397 + c.charCodeAt(0))
+  );
+};

@@ -22,6 +22,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="icon" href="/icons/favicon-16x16.png" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" />
+        <link
+  href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap"
+  rel="stylesheet"
+/>
         <title>Prime Consultancy Leads</title>
       </head>
 

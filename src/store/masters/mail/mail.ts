@@ -168,6 +168,7 @@ export const emailCustomerViaAi = async (data: any) => {
     }
 
     const result = await response.json();
+    console.log(" result is zoro",result)
     return result;
   } catch (error) {
     console.error("SERVER ERROR: ", error);

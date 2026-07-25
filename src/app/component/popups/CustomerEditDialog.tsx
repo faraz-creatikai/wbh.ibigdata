@@ -29,6 +29,8 @@ import DateSelector from "../DateSelector";
 import ObjectSelect from "../ObjectSelect";
 import PopupMenu from "./PopupMenu";
 import { getLeadType } from "@/store/masters/leadtype/leadtype";
+import { DEFAULT_COUNTRY_CODE, getCountryLenRule } from "@/app/utils/countryCodes";
+import PhoneInputField from "../datafields/PhoneInputField";
 
 interface Props {
   isOpen: boolean;
@@ -92,6 +94,7 @@ export default function CustomerEditDialog({
   const [customFields, setCustomFields] = useState<CustomFieldsType>({});
   const [removedCustomerImages, setRemovedCustomerImages] = useState<string[]>([]);
   const [removedSitePlans, setRemovedSitePlans] = useState<string[]>([]);
+  const [countryCode, setCountryCode] = useState<string>(DEFAULT_COUNTRY_CODE);
 
   /* ================= FETCH CUSTOMER ================= */
 
@@ -138,6 +141,9 @@ export default function CustomerEditDialog({
           CustomerImage: [],
           SitePlan: {} as File,
         });
+
+        // ✅ Seed country code from existing customer, fallback to default (old rows won't have it)
+        setCountryCode(data.CountryCode || DEFAULT_COUNTRY_CODE);
 
         const customerFieldsBase = await getCustomerFields();
         const activeFields = customerFieldsBase.filter((e: any) => e.Status === "Active");
@@ -239,6 +245,7 @@ export default function CustomerEditDialog({
     if (customerData.customerName) formData.append("customerName", customerData.customerName);
     if (customerData.CustomerSubtype) formData.append("CustomerSubType", customerData.CustomerSubtype?.name);
     if (customerData.ContactNumber) formData.append("ContactNumber", trimCountryCodeHelper(customerData.ContactNumber));
+    formData.append("CountryCode", countryCode);
     if (customerData.City) formData.append("City", customerData.City?.name);
     if (customerData.Location) formData.append("Location", customerData.Location?.name);
     if (customerData.SubLocation) formData.append("SubLocation", customerData.SubLocation?.name);
@@ -409,8 +416,6 @@ export default function CustomerEditDialog({
 
 
             <div className="grid grid-cols-3 gap-6 max-xl:grid-cols-2 max-lg:grid-cols-1">
-              {/*  <SingleSelect options={Array.isArray(fieldOptions?.Campaign)?fieldOptions.Campaign:[]} label="Campaign" value={customerData.Campaign} onChange={(v) => handleSelectChange("Campaign", v)} />
-              <SingleSelect options={Array.isArray(fieldOptions?.CustomerType)?fieldOptions.CustomerType:[]} label="Customer Type" value={customerData.CustomerType} onChange={(v) => handleSelectChange("CustomerType", v)} /> */}
               <ObjectSelect
                 options={Array.isArray(fieldOptions?.Campaign) ? fieldOptions.Campaign : []}
                 label={getLabel("Campaign", "Campaign")}
@@ -468,7 +473,22 @@ export default function CustomerEditDialog({
               />
 
               <InputField label={getLabel("customerName", "Customer Name")} name="customerName" value={customerData.customerName} onChange={handleInputChange} error={errors.CustomerName} />
-              <InputField label={getLabel("ContactNumber", "Contact No")} name="ContactNumber" value={customerData.ContactNumber} onChange={handleInputChange} error={errors.ContactNumber} />
+
+              <PhoneInputField
+                label={getLabel("ContactNumber", "Contact No")}
+                numberValue={customerData.ContactNumber}
+                countryCode={countryCode}
+                onNumberChange={(val) => {
+                  setCustomerData((prev) => ({ ...prev, ContactNumber: val }));
+                  setErrors((prev) => ({ ...prev, ContactNumber: "" }));
+                }}
+                onCountryChange={(code) => {
+                  setCountryCode(code);
+                  setErrors((prev) => ({ ...prev, ContactNumber: "" }));
+                }}
+                error={errors.ContactNumber}
+              />
+
               <ObjectSelect
                 options={Array.isArray(fieldOptions?.City) ? fieldOptions.City : []}
                 label={getLabel("City", "City")}
@@ -530,14 +550,12 @@ export default function CustomerEditDialog({
               <InputField className=" max-sm:hidden" label={getLabel("Email", "Email")} name="Email" value={customerData.Email} onChange={handleInputChange} error={errors.Email} />
               <SingleSelect className=" max-sm:hidden" options={Array.isArray(fieldOptions?.Facilities) ? fieldOptions.Facilities : []} label={getLabel("Facillities", "Facilites")} value={customerData.Facilities} onChange={(v) => handleSelectChange("Facilities", v)} />
               <SingleSelect className=" max-sm:hidden" options={Array.isArray(fieldOptions?.ReferenceId) ? fieldOptions.ReferenceId : []} label={getLabel("ReferenceId", "Reference Id")} value={customerData.ReferenceId} onChange={(v) => handleSelectChange("ReferenceId", v)} />
-              {/* <InputField className=" max-sm:hidden" label="Reference ID" name="ReferenceId" value={customerData.ReferenceId} onChange={handleInputChange} /> */}
               <InputField className=" max-sm:hidden" label={getLabel("CustomerId", "Customer ID")} name="CustomerId" value={customerData.CustomerId} onChange={handleInputChange} />
               <InputField className=" max-sm:hidden" label={getLabel("ClientId", "Client ID")} name="ClientId" value={customerData.ClientId ?? ""} onChange={handleInputChange} />
               <div className=" max-sm:hidden">
                 <DateSelector label={getLabel("CustomerDate", "Customer Date")} value={customerData.CustomerDate} onChange={(val) => handleSelectChange("CustomerDate", val)} />
               </div>
               <InputField className=" max-sm:hidden" label={getLabel("CustomerYear", "Customer Year")} name="CustomerYear" value={customerData.CustomerYear} onChange={handleInputChange} />
-              {/*  <SingleSelect className=" max-sm:hidden" options={Array.isArray(fieldOptions?.Price) ? fieldOptions.Price : []} label={getLabel("Price", "Price")} value={customerData.Price} onChange={(v) => handleSelectChange("Price", v)} /> */}
               <InputField className=" max-sm:hidden" label={getLabel("Price", "Price")} name="Price" value={customerData.Price ?? ""} onChange={handleInputChange} />
               <SingleSelect className=" max-sm:hidden" options={Array.isArray(fieldOptions?.LeadType) ? fieldOptions.LeadType : []} label={getLabel("LeadType", "LeadType")} value={customerData.LeadType} onChange={(v: any) => handleSelectChange("LeadType", v)} />
               <InputField className=" max-sm:hidden" label={getLabel("URL", "URL")} name="URL" value={customerData.URL ?? ""} onChange={handleInputChange} />

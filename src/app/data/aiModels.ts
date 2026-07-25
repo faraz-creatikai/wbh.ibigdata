@@ -16,7 +16,8 @@ export const AI_PROVIDERS_CONFIG = [
     icon: "/icons/google.svg",
     models: [
       { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", description: "Advanced reasoning and massive context." },
-      { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", description: "High-speed and lightweight." }
+      { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", description: "High-speed and lightweight." },
+      { id: "gemini-2.5-flash-lite", name: "Gemini 2.5 Flash Lite", description:" High speed lite version"}
     ]
   },
   {
