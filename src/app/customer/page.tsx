@@ -10,7 +10,7 @@ import Link from "next/link";
 import { ArrowDown, ArrowUp, ArrowUpRight, Bot, ChevronsLeft, ChevronsRight, PlusSquare, Sparkles, UserPlus, Zap } from "lucide-react";
 import ProtectedRoute from "../component/ProtectedRoutes";
 import toast, { Toaster } from "react-hot-toast";
-import { getCustomer, deleteCustomer, getFilteredCustomer, updateCustomer, assignCustomer, deleteAllCustomer, getDuplicateContacts, getTodayCustomer, startCallByAIAgent, getCallLogs, getCallReport, closeCustomerDeal, getCustomerCount, getCustomFieldValues } from "@/store/customer";
+import { getCustomer, deleteCustomer, getFilteredCustomer, updateCustomer, assignCustomer, deleteAllCustomer, getDuplicateContacts, getTodayCustomer, startCallByAIAgent, getCallLogs, getCallReport, closeCustomerDeal, getCustomerCount, getCustomFieldValues, archieveCustomer } from "@/store/customer";
 import { CheckDialogDataInterface, CustomerAdvInterface, customerAssignInterface, customerGetDataInterface, DeleteDialogDataInterface } from "@/store/customer.interface";
 import DeleteDialog from "../component/popups/DeleteDialog";
 import { getCampaign } from "@/store/masters/campaign/campaign";
@@ -180,6 +180,8 @@ export default function Customer() {
   const [isFollowupOpen, setIsFollowupOpen] = useState(false);
   const [isDealCloseOpen, setIsDealCloseOpen] = useState(false);
   const [dealCloseData, setDealCloseData] = useState<any>(null);
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [archiveData, setArchiveData] = useState<any>(null);
   const [selectedCustomerFollowupId, setSelectedCustomerFollowupId] = useState<string | null>(null);
   const [followupDialogData, setFollowupDialogData] = useState<customerFollowupAllDataInterface[] | null>([]);
   const [isfollowupDialogOpen, setIsFollowupDialogOpen] = useState(false);
@@ -1997,6 +1999,21 @@ export default function Customer() {
     toast.error("Failed to close deal");
   };
 
+  const archiveCustomerHandler = async (id: string) => {
+    const response = await archieveCustomer(id);
+    if (response?.success) {
+      setIsArchiveOpen(false);
+      setArchiveData(null);
+      toast.success("Customer archived");
+
+      setCustomerData((prevData) =>
+        prevData.filter((customer) => customer?._id !== id)
+      );
+      return;
+    }
+    toast.error("Failed to archive customer");
+  };
+
 
   return (
     <ProtectedRoute>
@@ -2415,6 +2432,46 @@ export default function Customer() {
       }
 
       {
+        isArchiveOpen && (
+          <PopupMenu onClose={() => { setIsArchiveOpen(false); setArchiveData(null); }}>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 w-full max-w-md mx-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--color-primary-lighter)] flex items-center justify-center">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900">Archive Customer</h3>
+                    <p className="text-xs text-gray-500">This will remove it from your list only</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 mb-5">
+                  Are you sure you want to archive{" "}
+                  <span className="font-semibold text-gray-900">{archiveData?.name}</span>?
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => { setArchiveData(null); setIsArchiveOpen(false); }}
+                    className="px-4 py-2 cursor-pointer text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => archiveCustomerHandler(archiveData?.id)}
+                    className="px-4 py-2 cursor-pointer text-sm font-semibold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    Yes, Archive
+                  </button>
+                </div>
+              </div>
+            </div>
+          </PopupMenu>
+        )
+      }
+
+      {
         isTemperatureDialogOpen && temperatureDialogData && (
           <PopupMenu
             onClose={() => {
@@ -2543,9 +2600,20 @@ export default function Customer() {
       {/* Mobile Customer Page */}
       <div className=" sm:hidden min-h-[calc(100vh-56px)] overflow-auto max-sm:py-2">
 
-        <div className=" flex justify-between items-center px-0">
-          <h1 className=" text-[var(--color-primary)] font-extrabold text-2xl ">Leads</h1>
+        <div className="flex justify-between items-center px-0">
+          <h1 className="text-[var(--color-primary)] font-extrabold text-2xl">Leads</h1>
 
+          <button
+            onClick={() => router.push("/customer/archieved")}
+            aria-label="View archived customers"
+            className="relative w-9 h-9 flex items-center justify-center rounded-full border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/8 dark:bg-[var(--color-primary)]/12 text-[var(--color-primary)] active:scale-[0.92] transition-all duration-150"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4" />
+            </svg>
+
+
+          </button>
         </div>
         <div className=" w-full">
           <DynamicAdvance>
@@ -2916,43 +2984,73 @@ export default function Customer() {
             handleTableDialogData(contactNumber);
           }}
           renderActions={(item) => (
-            <div className=" flex justify-between w-full">
+            <>
+              <div className=" flex justify-between w-full">
 
-              <Button
-                className=" bg-gray-500"
-                sx={{ backgroundColor: item.isChecked ? "#E8F5E9" : "#FFF0F5", color: item.isChecked ? "var(--color-primary)" : "#E91E63", minWidth: "32px", minHeight: "35px", borderRadius: "100%" }}
-                onClick={() =>
-                  handleChecked({ id: item._id, isChecked: item.isChecked })
-                }
-              >
-                {item.isChecked ? <IoCheckmarkDoneOutline size={20} /> : <IoCheckmark size={20} />}
-              </Button>
-
-              <Button
-                sx={{
-                  backgroundColor: temperatureConfig[item.LeadTemperature || "cold"]?.bg,
-                  color: temperatureConfig[item.LeadTemperature || "cold"]?.color,
-                  minWidth: "32px",
-                  height: "35px",
-                  borderRadius: "100%",
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    filter: "brightness(0.95)",
-                    transform: "scale(1.05)"
+                <Button
+                  className=" bg-gray-500"
+                  sx={{ backgroundColor: item.isChecked ? "#E8F5E9" : "#FFF0F5", color: item.isChecked ? "var(--color-primary)" : "#E91E63", minWidth: "32px", minHeight: "35px", borderRadius: "100%" }}
+                  onClick={() =>
+                    handleChecked({ id: item._id, isChecked: item.isChecked })
                   }
-                }}
-                onClick={() => {
-                  setTemperatureDialogData({
-                    id: item._id,
-                    name: item.CustomerName,
-                    current: item.LeadTemperature || "cold"
-                  });
-                  setIsTemperatureDialogOpen(true);
-                }}
-              >
-                {temperatureConfig[item.LeadTemperature || "cold"]?.icon}
-              </Button>
-            </div>
+                >
+                  {item.isChecked ? <IoCheckmarkDoneOutline size={20} /> : <IoCheckmark size={20} />}
+                </Button>
+
+                <Button
+                  sx={{
+                    backgroundColor: temperatureConfig[item.LeadTemperature || "cold"]?.bg,
+                    color: temperatureConfig[item.LeadTemperature || "cold"]?.color,
+                    minWidth: "32px",
+                    height: "35px",
+                    borderRadius: "100%",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      filter: "brightness(0.95)",
+                      transform: "scale(1.05)"
+                    }
+                  }}
+                  onClick={() => {
+                    setTemperatureDialogData({
+                      id: item._id,
+                      name: item.CustomerName,
+                      current: item.LeadTemperature || "cold"
+                    });
+                    setIsTemperatureDialogOpen(true);
+                  }}
+                >
+                  {temperatureConfig[item.LeadTemperature || "cold"]?.icon}
+                </Button>
+              </div>
+              <div className=" flex justify-between w-full mt-2">
+                <div />
+                <Button
+                  onClick={() => {
+                    setArchiveData({
+                      id: item._id,
+                      name: item.Name,
+                    });
+                    setIsArchiveOpen(true);
+                  }}
+                  sx={{
+                    backgroundColor: "#E8F5E9",
+                    color: "var(--color-primary)",
+                    minWidth: "32px",
+                    height: "32px",
+                    borderRadius: "8px",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      filter: "brightness(0.95)",
+                      transform: "scale(1.05)"
+                    }
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4" />
+                  </svg>
+                </Button>
+              </div>
+            </>
           )}
         />
 
@@ -3131,6 +3229,15 @@ export default function Customer() {
                     {todaycustomerData.length}
                   </span>
                 )}
+              </button>
+               <button
+                onClick={() => router.push("/customer/archieved")}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/8 dark:bg-[var(--color-primary)]/12 text-[var(--color-primary)] text-[13px] font-semibold transition-all duration-150 hover:bg-[var(--color-primary)]/15 hover:border-[var(--color-primary)]/40 active:scale-[0.97] cursor-pointer"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+                Archived
               </button>
               <button
                 onClick={() => router.push("/customer/closed-deals")}
@@ -3943,82 +4050,80 @@ export default function Customer() {
               >
                 <table className="table-auto min-w-full border-separate border-spacing-0 text-sm">
                   <thead className="bg-[var(--color-primary)] text-white sticky top-0 " style={{ zIndex: 1 }}>
-  <tr>
-    {/* SELECT ALL CHECKBOX COLUMN — pinned left with z-40 */}
-    <th className="px-3 py-3.5 sticky left-0 z-40 bg-[var(--color-primary)] text-left align-middle w-12 min-w-[3rem] border-b border-r border-white/15">
-      <div className="flex items-center justify-center">
-        <input
-          id="selectall"
-          type="checkbox"
-          className="w-4 h-4 rounded cursor-pointer accent-white"
-          checked={
-            currentRows.length > 0 &&
-            currentRows.every((r) => selectedCustomers.includes(r._id))
-          }
-          onChange={handleSelectAll}
-        />
-      </div>
-    </th>
+                    <tr>
+                      {/* SELECT ALL CHECKBOX COLUMN — pinned left with z-40 */}
+                      <th className="px-3 py-3.5 sticky left-0 z-40 bg-[var(--color-primary)] text-left align-middle w-12 min-w-[3rem] border-b border-r border-white/15">
+                        <div className="flex items-center justify-center">
+                          <input
+                            id="selectall"
+                            type="checkbox"
+                            className="w-4 h-4 rounded cursor-pointer accent-white"
+                            checked={
+                              currentRows.length > 0 &&
+                              currentRows.every((r) => selectedCustomers.includes(r._id))
+                            }
+                            onChange={handleSelectAll}
+                          />
+                        </div>
+                      </th>
 
-    {/* DYNAMIC COLUMNS — restored z-40 on sno header */}
-    {columns
-      .filter((col) => col.visible && col.key !== "actions")
-      .map((header) => (
-        <th
-          key={header.key}
-          className={`px-4 py-3.5 text-left align-middle font-semibold text-xs uppercase tracking-wide whitespace-nowrap border-b border-r border-white/15
-            ${
-              header.key === "sno"
-                ? "sticky left-12 z-40 bg-[var(--color-primary)] shadow-[6px_0_6px_-6px_rgba(0,0,0,0.25)]"
-                : ""
-            }
-            ${
-              {
-                sno: "w-16 text-center",
-                campaign: "min-w-[150px] max-w-[210px] whitespace-normal",
-                type: "min-w-[110px]",
-                subtype: "min-w-[120px]",
-                leadtype: "min-w-[120px]",
-                City: "min-w-[110px]",
-                Area: "min-w-[130px] whitespace-normal",
-                Email: "min-w-[200px]",
-                Facillities: "min-w-[200px] max-w-[300px] whitespace-normal",
-                CustomerId: "min-w-[120px]",
-                ClientId: "min-w-[120px]",
-                Adderess: "min-w-[230px] max-w-[330px] whitespace-normal",
-                CustomerYear: "min-w-[100px] text-center",
-                Other: "min-w-[200px] max-w-[300px] whitespace-normal",
-                name: "min-w-[170px] max-w-[240px] whitespace-normal",
-                description: "min-w-[240px] max-w-[380px] whitespace-normal",
-                location: "min-w-[150px] whitespace-normal",
-                sublocation: "min-w-[150px] whitespace-normal",
-                contact: "min-w-[190px]",
-                assign: "min-w-[180px] whitespace-normal",
-                reference: "min-w-[100px] text-center",
-                url: "min-w-[180px]",
-                video: "min-w-[180px]",
-                googlemap: "min-w-[180px]",
-                price: "min-w-[110px]",
-                date: "min-w-[120px]",
-              }[header.key] ||
-              (header.key.startsWith("cf_")
-                ? "min-w-[160px] whitespace-normal"
-                : "min-w-[140px] whitespace-normal")
-            }
+                      {/* DYNAMIC COLUMNS — restored z-40 on sno header */}
+                      {columns
+                        .filter((col) => col.visible && col.key !== "actions")
+                        .map((header) => (
+                          <th
+                            key={header.key}
+                            className={`px-4 py-3.5 text-left align-middle font-semibold text-xs uppercase tracking-wide whitespace-nowrap border-b border-r border-white/15
+            ${header.key === "sno"
+                                ? "sticky left-12 z-40 bg-[var(--color-primary)] shadow-[6px_0_6px_-6px_rgba(0,0,0,0.25)]"
+                                : ""
+                              }
+            ${{
+                                sno: "w-16 text-center",
+                                campaign: "min-w-[150px] max-w-[210px] whitespace-normal",
+                                type: "min-w-[110px]",
+                                subtype: "min-w-[120px]",
+                                leadtype: "min-w-[120px]",
+                                City: "min-w-[110px]",
+                                Area: "min-w-[130px] whitespace-normal",
+                                Email: "min-w-[200px]",
+                                Facillities: "min-w-[200px] max-w-[300px] whitespace-normal",
+                                CustomerId: "min-w-[120px]",
+                                ClientId: "min-w-[120px]",
+                                Adderess: "min-w-[230px] max-w-[330px] whitespace-normal",
+                                CustomerYear: "min-w-[100px] text-center",
+                                Other: "min-w-[200px] max-w-[300px] whitespace-normal",
+                                name: "min-w-[170px] max-w-[240px] whitespace-normal",
+                                description: "min-w-[240px] max-w-[380px] whitespace-normal",
+                                location: "min-w-[150px] whitespace-normal",
+                                sublocation: "min-w-[150px] whitespace-normal",
+                                contact: "min-w-[190px]",
+                                assign: "min-w-[180px] whitespace-normal",
+                                reference: "min-w-[100px] text-center",
+                                url: "min-w-[180px]",
+                                video: "min-w-[180px]",
+                                googlemap: "min-w-[180px]",
+                                price: "min-w-[110px]",
+                                date: "min-w-[120px]",
+                              }[header.key] ||
+                              (header.key.startsWith("cf_")
+                                ? "min-w-[160px] whitespace-normal"
+                                : "min-w-[140px] whitespace-normal")
+                              }
           `}
-        >
-          {header.label}
-        </th>
-      ))}
+                          >
+                            {header.label}
+                          </th>
+                        ))}
 
-    {/* ACTIONS COLUMN — pinned right with z-40 */}
-    {columns.find((col) => col.key === "actions")?.visible !== false && (
-      <th className="px-3 py-3.5 sticky right-0 z-40 bg-[var(--color-primary)] text-left align-middle font-semibold text-xs uppercase tracking-wide min-w-[130px] border-b border-white/15 shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.25)]">
-        Actions
-      </th>
-    )}
-  </tr>
-</thead>
+                      {/* ACTIONS COLUMN — pinned right with z-40 */}
+                      {columns.find((col) => col.key === "actions")?.visible !== false && (
+                        <th className="px-3 py-3.5 sticky right-0 z-40 bg-[var(--color-primary)] text-left align-middle font-semibold text-xs uppercase tracking-wide min-w-[130px] border-b border-white/15 shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.25)]">
+                          Actions
+                        </th>
+                      )}
+                    </tr>
+                  </thead>
                   <tbody>
                     {customerTableLoader ?
                       <tr>
@@ -4457,6 +4562,31 @@ export default function Customer() {
                                       }}
                                     >
                                       <FaHandshakeSimple size={20} />
+                                    </Button>
+                                    <Button
+                                      onClick={() => {
+                                        setArchiveData({
+                                          id: item._id,
+                                          name: item.Name,
+                                        });
+                                        setIsArchiveOpen(true);
+                                      }}
+                                      sx={{
+                                        backgroundColor: "#E8F5E9",
+                                        color: "var(--color-primary)",
+                                        minWidth: "32px",
+                                        height: "32px",
+                                        borderRadius: "8px",
+                                        transition: "all 0.2s ease",
+                                        "&:hover": {
+                                          filter: "brightness(0.95)",
+                                          transform: "scale(1.05)"
+                                        }
+                                      }}
+                                    >
+                                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4" />
+                                      </svg>
                                     </Button>
                                   </div>
                                 </td>
