@@ -60,7 +60,6 @@ const Login = () => {
             {/* 👇 DYNAMIC BRAND LOGO (DESKTOP) */}
             <BrandLogo
               variant="text"
-              defaultSrc={sidebarLogoPath || "/applogo.jpeg"}
               className="h-10 w-auto object-contain"
             />
           </div>
@@ -90,7 +89,6 @@ const Login = () => {
               {/* 👇 DYNAMIC BRAND LOGO (MOBILE) */}
               <BrandLogo
                 variant="text"
-                defaultSrc={sidebarLogoPath || "/applogo.jpeg"}
                 className="h-9 w-auto object-contain"
               />
             </div>
