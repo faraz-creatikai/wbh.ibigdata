@@ -1,3 +1,3 @@
 
 
-export const sidebarLogoPath="/edu.ibigdata.png"
+export const sidebarLogoPath="/domain-logo.png"

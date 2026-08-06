@@ -73,7 +73,6 @@ export interface customerGetDataInterface {
   isChecked?: boolean;
   LeadTemperature?: string;
   ContactNumber: string;
-  CountryCode?: string;
   AssignTo: string[];
   Date: string;
   CustomerType: string;
@@ -152,9 +151,10 @@ export interface CustomerAdvInterface {
 export interface customerAssignInterface {
   assignToId: string | string[];
   customerIds?: string[];
+  campaign?: string | string[];
+  assignMode?: "selected" | "campaign" | "all";
   action?: "assign" | "remove";
 }
-
 
 export interface contactAssignInterface {
   contactIds: string[];

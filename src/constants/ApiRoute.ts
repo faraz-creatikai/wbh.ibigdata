@@ -22,17 +22,17 @@ export const API_ROUTES = {
     ASSIGNCONTACT: `${BASE_URL}/contact/assign`
   },
   CUSTOMER: {
-    DASHBOARD_STATS_COUNT: `${BASE_URL}/customer/dashboard/stats-count`,
+    DASHBOARD_STATS_COUNT:`${BASE_URL}/customer/dashboard/stats-count`,
     LEADSOURCE_STATS: `${BASE_URL}/customer/dashboard/lead-source-stats`,
-    LEADTEMPERATURE_STATS: `${BASE_URL}/customer/dashboard/lead-temperature-stats`,
-    VISITER_CHART_STATS: `${BASE_URL}/customer/dashboard/visiter-chart-stats`,
-    FOLLOWUP_CHART_STATS: `${BASE_URL}/customer/dashboard/followup-chart-stats`,
-    LOCATION_STATS: `${BASE_URL}/customer/dashboard/customer-location-stats`,
-    RADAR_CHART_STATS: `${BASE_URL}/customer/dashboard/radar-chart-stats`,
+    LEADTEMPERATURE_STATS:`${BASE_URL}/customer/dashboard/lead-temperature-stats`,
+    VISITER_CHART_STATS:`${BASE_URL}/customer/dashboard/visiter-chart-stats`,
+    FOLLOWUP_CHART_STATS:`${BASE_URL}/customer/dashboard/followup-chart-stats`,
+    LOCATION_STATS:`${BASE_URL}/customer/dashboard/customer-location-stats`,
+    RADAR_CHART_STATS:`${BASE_URL}/customer/dashboard/radar-chart-stats`,
     GET_ALL: `${BASE_URL}/customer`,
-    GET_CUSTOMER_FIELDS_VALUES: `${BASE_URL}/customer/get-customer-fields-values`,
+    GET_CUSTOMER_FIELDS_VALUES:`${BASE_URL}/customer/get-customer-fields-values`,
     GET_ALL_TOTAL: `${BASE_URL}/customer/all`,
-    GET_CUSTOMER_COUNT: `${BASE_URL}/customer/count`,
+    GET_CUSTOMER_COUNT:`${BASE_URL}/customer/count`,
     GET_FAVOURITES_CUSTOMER: `${BASE_URL}/customer/favouriteS/all`,
     GET_TODAY_ALL: `${BASE_URL}/customer/today`,
     GET_BY_ID: (id: string) => `${BASE_URL}/customer/${id}`,
@@ -58,14 +58,9 @@ export const API_ROUTES = {
     CLOSEDEAL: (id: string) => `${BASE_URL}/customer/close-deal/${id}`,
     REOPENDEAL: (id: string) => `${BASE_URL}/customer/reopen-deal/${id}`,
 
-    GETARCHIEVEDCUSTOMER: `${BASE_URL}/customer/archived`,
-    GET_ARCHIEVEDCUSTOMER_BY_PARAMS: (params: string) => `${BASE_URL}/customer/archived?${params}`,
-    ARCHIEVECUSTOMER: (id: string) => `${BASE_URL}/customer/archive/${id}`,
-    UNARCHIEVECUSTOMER: (id: string) => `${BASE_URL}/customer/unarchive/${id}`,
-
     ADDSHORTLIST: `${BASE_URL}/customer/shortlist`,
     GETSHORTLIST: (id: string) => `${BASE_URL}/customer/shortlist/${id}`,
-    REMOVESHORTLIST: `${BASE_URL}/customer/shortlist`,
+    REMOVESHORTLIST:`${BASE_URL}/customer/shortlist`,
     UPDATESHORTLIST: `${BASE_URL}/customer/shortlist`,
   },
   COMPANYPROJECTS: {
@@ -129,8 +124,8 @@ export const API_ROUTES = {
     UPDATE: (id: string) => `${BASE_URL}/aiagent/${id}`,
     DELETE: (id: string) => `${BASE_URL}/aiagent/${id}`,
     ASSIGNAIAGENT: `${BASE_URL}/aiagent/assign`,
-    RUNWEBHOOKAGENT: `${BASE_URL}/aiagent/run-webhook-agent`,
-    COMPARE_PRODUCT_PRICE: `${BASE_URL}/aiagent/compare-product-price`,
+    RUNWEBHOOKAGENT:`${BASE_URL}/aiagent/run-webhook-agent`,
+    COMPARE_PRODUCT_PRICE:`${BASE_URL}/aiagent/compare-product-price`,
   },
   TABBLY: {
     GETCURRENTAGENT: `${BASE_URL}/tabbly/current-agent`,
@@ -399,8 +394,8 @@ export const API_ROUTES = {
       UPDATE: (id: string) => `${BASE_URL}/v1/templates/${id}`,
       DELETE: (id: string) => `${BASE_URL}/v1/templates/${id}`,
       MAILALL: `${BASE_URL}/v1/messages/email`,
-      FILEUPLOAD: `${BASE_URL}/v1/messages/uploads/file`,
-      SEND_EMAIL_VIA_AI: `${BASE_URL}/v1/messages/send-email-via-ai`
+      FILEUPLOAD:`${BASE_URL}/v1/messages/uploads/file`,
+      SEND_EMAIL_VIA_AI:`${BASE_URL}/v1/messages/send-email-via-ai`
     },
     WHATSAPP: {
       GET_ALL: `${BASE_URL}/v1/templates?type=whatsapp`,
@@ -412,10 +407,10 @@ export const API_ROUTES = {
       WHATSAPPALL: `${BASE_URL}/v1/messages/whatsapp`,
       WHATSAPP_CONNECTION_STATUS: `${BASE_URL}/v1/messages/whatsapp-connection-status`,
       WHATSAPP_CONNECTION_LOGOUT: `${BASE_URL}/v1/messages/whatsapp-connection-logout`,
-      WHATSAPP_STOP_IDLE: `${BASE_URL}/v1/messages/whatsapp-stop-idle`,
+      WHATSAPP_STOP_IDLE:`${BASE_URL}/v1/messages/whatsapp-stop-idle`,
       WHATSAPP_CONNECTION_PAIRING_CODE: `${BASE_URL}/v1/messages/whatsapp-connection-pairing-code`,
-      WHATSAPP_PROPERTIES: `${BASE_URL}/v1/messages/whatsapp/send-properties`,
-      WHATSAPP_DIRECT_MESSAGE: `${BASE_URL}/v1/messages/whatsapp/direct-message`,
+      WHATSAPP_PROPERTIES:`${BASE_URL}/v1/messages/whatsapp/send-properties`,
+      WHATSAPP_DIRECT_MESSAGE:`${BASE_URL}/v1/messages/whatsapp/direct-message`,
     },
     CALL: {
       CALLCUSTOMER: `${BASE_URL}/v1/messages/call`
@@ -453,6 +448,16 @@ export const API_ROUTES = {
     UPDATE: (id: string) => `${BASE_URL}/favourites/${id}`,
     DELETE: (id: string) => `${BASE_URL}/favourites/${id}`,
   },
+  VIDEOPROJECT: {
+
+    ADDPHOTOS: `${BASE_URL}/video-project/photos`,
+    GENERATESCRIPT: `${BASE_URL}/video-project/script`,
+    RENDER: `${BASE_URL}/video-project/render`,
+  },
+  BRAND: {
+    GET: `${BASE_URL}/brand/get`,
+    UPDATE: `${BASE_URL}/brand/update`,
+  },
 
 
   ADMIN: {
@@ -460,11 +465,11 @@ export const API_ROUTES = {
     SIGNUP: `${BASE_URL}/admin/signup`,
     LOGIN: `${BASE_URL}/admin/login`,
     LOGOUT: `${BASE_URL}/admin/logout`,
-    AI: {
-      SAVE_API_KEY: `${BASE_URL}/admin/ai/save-api-key`,
-      GET_ALL: `${BASE_URL}/admin/ai/get-all`,
-      UPDATE_API_KEY: (id: string) => `${BASE_URL}/admin/ai/update-api-key/${id}`,
-      DELETE_API_KEY: (id: string) => `${BASE_URL}/admin/ai/delete-api-key/${id}`
+    AI:{
+      SAVE_API_KEY:`${BASE_URL}/admin/ai/save-api-key`,
+      GET_ALL:`${BASE_URL}/admin/ai/get-all`,
+      UPDATE_API_KEY:(id:string)=>`${BASE_URL}/admin/ai/update-api-key/${id}`,
+      DELETE_API_KEY:(id:string)=>`${BASE_URL}/admin/ai/delete-api-key/${id}`
     },
 
     // 🔐 Protected Routes
@@ -480,8 +485,8 @@ export const API_ROUTES = {
     DELETE: (id: String) => `${BASE_URL}/admin/${id}`,
     MY_ACTIVE_AGENTS: `${BASE_URL}/admin/my-active-agents`,
 
-    GENERATE_CRM_API_KEY: `${BASE_URL}/admin/generate-crm-api-key`,
-    DELETE_CRM_API_KEY: (keyId: string) => `${BASE_URL}/admin/crm-api-key/${keyId}`,
+    GENERATE_CRM_API_KEY:`${BASE_URL}/admin/generate-crm-api-key`,
+    DELETE_CRM_API_KEY:(keyId:string)=>`${BASE_URL}/admin/crm-api-key/${keyId}`,
     GET_CRM_API_KEYS: `${BASE_URL}/admin/crm-api-keys`
   },
 

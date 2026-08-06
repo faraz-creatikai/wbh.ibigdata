@@ -18,7 +18,6 @@ import { GoArrowLeft } from "react-icons/go";
 import CustomerImageSlider from "@/app/component/slides/CustomerImageSlider";
 import { UserPlus } from "lucide-react";
 import { customerGetDataInterface } from "@/store/customer.interface";
-import { COUNTRY_CODES, DEFAULT_COUNTRY_CODE, isoToFlagEmoji } from "@/app/utils/countryCodes";
 export interface LabelConfig {
     key: string;
     label: string;
@@ -43,30 +42,6 @@ interface LeadsSectionProps<T extends Record<string, any>> {
     onViewDuplicate?: (contactNumber: string) => void;
     renderActions?: (item: T) => React.ReactNode;
 }
-
-// Builds a dialable E.164-style number from stored CountryCode + ContactNumber
-const FLAG_FONT_STACK =
-    "'Noto Color Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif";
-
-const buildTelHref = (lead: Record<string, any>): string => {
-    const code = lead?.CountryCode || DEFAULT_COUNTRY_CODE;
-    const number = lead?.ContactNumber || lead?.ContactNo || "";
-    if (!number) return "#";
-    return `tel:+${code}${number}`;
-};
-
-// Small reusable bit: "🇮🇳 +91" prefix
-const CountryPrefix = ({ lead }: { lead: Record<string, any> }) => {
-    const code = lead?.CountryCode || DEFAULT_COUNTRY_CODE;
-    const country = COUNTRY_CODES.find((c) => c.code === code);
-    if (!country) return null;
-    return (
-        <span className="inline-flex items-center gap-1 mr-1">
-            <span style={{ fontFamily: FLAG_FONT_STACK }}>{isoToFlagEmoji(country.iso2)}</span>
-            <span className="text-gray-500">+{country.code}</span>
-        </span>
-    );
-};
 
 export default function CustomerTable<T extends Record<string, any>>({
     leads,
@@ -170,10 +145,9 @@ export default function CustomerTable<T extends Record<string, any>>({
                                     </span>
                                     {item.label === "Contact No" ? (
                                         <a
-                                            href={buildTelHref(viewLeadData || {})}
-                                            className="text-[var(--color-primary)] font-medium hover:underline text-sm inline-flex items-center"
+                                            href={`tel:+91${viewLeadData?.[item.key] ?? ""}`}
+                                            className="text-[var(--color-primary)] font-medium hover:underline text-sm"
                                         >
-                                            <CountryPrefix lead={viewLeadData || {}} />
                                             {viewLeadData?.[item.key] ?? ""}
                                         </a>
                                     ) : item.label === "Address" ? (
@@ -269,27 +243,25 @@ export default function CustomerTable<T extends Record<string, any>>({
                             {/* LEFT: label data */}
                             <div className="flex-1 min-w-0">
                                 {labelLeads.map((item, j) => (
-  <div key={j} className="grid grid-cols-[max-content_8px_1fr] items-start gap-x-2 gap-y-0.5 mb-1.5">
-    <span className="text-xs font-semibold text-gray-500 dark:text-[var(--color-primary-light)] whitespace-nowrap leading-5">
-      {item.label}
-    </span>
-    <span className="text-xs text-gray-300 dark:text-white/20 leading-5">—</span>
-    <span className="text-xs text-gray-800 dark:text-[var(--color-primary-lighter)] font-medium leading-5 break-words line-clamp-2">
-      {item.label === "Contact No" || item.key === "ContactNumber" ? (
-        <span className="inline-flex items-center gap-1">
-          <CountryPrefix lead={lead} />
-          {lead[item.key] ?? "N/A"}
-        </span>
-      ) : Array.isArray(lead[item.key])
-        ? lead[item.key].length > 0
-          ? lead[item.key].map((e: any) => typeof e === "object" ? e.name || JSON.stringify(e) : e).join(", ")
-          : "N/A"
-        : typeof lead[item.key] === "object" && lead[item.key] !== null
-          ? JSON.stringify(lead[item.key])
-          : lead[item.key] ?? "N/A"}
-    </span>
-  </div>
-))}
+                                    <div
+                                        key={j}
+                                        className="grid grid-cols-[max-content_8px_1fr] items-start gap-x-2 gap-y-0.5 mb-1.5"
+                                    >
+                                        <span className="text-xs font-semibold text-gray-500 dark:text-[var(--color-primary-light)] whitespace-nowrap leading-5">
+                                            {item.label}
+                                        </span>
+                                        <span className="text-xs text-gray-300 dark:text-white/20 leading-5">—</span>
+                                        <span className="text-xs text-gray-800 dark:text-[var(--color-primary-lighter)] font-medium leading-5 break-words line-clamp-2">
+                                            {Array.isArray(lead[item.key])
+                                                ? lead[item.key].length > 0
+                                                    ? lead[item.key].map((e: any) => typeof e === "object" ? e.name || JSON.stringify(e) : e).join(", ")
+                                                    : "N/A"
+                                                : typeof lead[item.key] === "object" && lead[item.key] !== null
+                                                    ? JSON.stringify(lead[item.key])
+                                                    : lead[item.key] ?? "N/A"}
+                                        </span>
+                                    </div>
+                                ))}
                             </div>
 
                             {/* RIGHT: image + all action buttons in one unified column */}
@@ -370,7 +342,7 @@ export default function CustomerTable<T extends Record<string, any>>({
 
                             <div className="flex items-center gap-5">
                                 <a
-                                    href={buildTelHref(lead)}
+                                    href={`tel:+91${String(lead["ContactNumber"]) ?? String(lead["ContactNo"]) ?? ""}`}
                                     onClick={() => onAdd?.(lead._id)}
                                     className="text-white/90 hover:text-white transition-colors"
                                 >

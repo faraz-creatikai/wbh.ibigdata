@@ -13,8 +13,7 @@ import RegisterPopup from "../component/popups/RegisterPopup";
 import { passwordRules, ValidatePassword } from "../utils/ValidatePassword";
 import { IoMdMail } from "react-icons/io";
 import { sidebarLogoPath } from "../data/PlatformData";
-
-
+import BrandLogo from "../component/labels/BrandLogo";
 
 type PasswordValidationResult = {
   messages: JSX.Element[]; // for inline display
@@ -33,32 +32,22 @@ const Register = () => {
   const [phoneError, setPhoneError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
-  const togglePassword = () => {
-    setShowPassword(!showPassword)
-  };
   const [currentYear, setCurrentYear] = useState<number | null>(null);
 
+  const togglePassword = () => {
+    setShowPassword(!showPassword);
+  };
 
   useEffect(() => {
     const date = new Date();
     setCurrentYear(date.getFullYear());
-  }, [])
-
-  /*   if (isLoading || loading) {
-      return (
-        <div className="grid place-items-center min-h-screen w-full text-lg text-gray-600">
-          Loading...
-        </div>
-      );
-    } */
-
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const PhoneValidationError = validatePhone(phone);
     const PasswordValidationError = ValidatePassword(password);
-    // const PasswordValidationError = validatePassword(password)
 
     if (PasswordValidationError) {
       setPasswordError(PasswordValidationError);
@@ -70,26 +59,20 @@ const Register = () => {
       toast.error(PhoneValidationError);
       return;
     }
-    // if (PasswordValidationError) {
-    //   // setPasswordError(PasswordValidationError)
-    //   toast.error(PasswordValidationError);
-    //   return;
-    // }
+
     setLoading(true);
 
     const res = await registerRequestUser({ name, email, password, phone });
     if (res) {
-      //router.push("/dashboard")
       setIsPopupOpen(true);
       setLoading(false);
       return;
-    };
+    }
     setLoading(false);
     setIsPopupOpen(false);
-    toast.error("Failed To Register")
+    toast.error("Failed To Register");
   };
 
-  //for phone number validation
   const validatePhone = (phone: string) => {
     if (!phone) return "Phone number is required";
     if (!/^(?:\+91|0)?[6-9]\d{9}$/.test(phone)) {
@@ -97,356 +80,219 @@ const Register = () => {
     }
     return "";
   };
-  // const validatePassword = (password: string) => {
-  //   // Define rules
-  //   const rules = [
-  //     {
-  //       test: /.{6,}/,
-  //       message: "Password must be at least 6 characters long",
-  //     },
-  //     {
-  //       test: /[A-Z]/,
-  //       message: "Password must include at least one uppercase letter",
-  //     },
-  //     {
-  //       test: /\d/,
-  //       message: "Password must include at least one number",
-  //     },
-  //     {
-  //       test: /[!@#$%^&*]/,
-  //       message: "Password must include at least one special character",
-  //     },
-  //   ];
-
-  //   // Map over rules and return <p> with conditional class
-  //   return rules.map((rule, idx) => {
-  //     const passed = rule.test.test(password);
-  //     return (
-  //       <p key={idx} className={passed ? "text-green-600" : "text-red-600"}>
-  //         {rule.message}
-  //       </p>
-  //     );
-  //   });
-  // };
-
-
-
-
 
   return (
     <>
-      {isPopupOpen && <RegisterPopup onClose={() => {
-        setIsPopupOpen(false)
-        setEmail("")
-        setPassword("")
-        setName("")
-        setPhone("")
-        setPasswordError("")
-      }} />
-      }
-      <div
-        className="min-h-screen w-full flex flex-col lg:flex-row overflow-hidden"
-        style={{ backgroundColor: "var(--color-bg, #f0f4ff)" }}
-      >
+      {isPopupOpen && (
+        <RegisterPopup
+          onClose={() => {
+            setIsPopupOpen(false);
+            setEmail("");
+            setPassword("");
+            setName("");
+            setPhone("");
+            setPasswordError("");
+          }}
+        />
+      )}
+      <div className="min-h-screen w-full flex justify-center bg-center bg-cover">
         <Toaster position="top-right" />
 
-        {/* ─── HERO PANEL ────────────────────────────────────────────────────── */}
-        {/* Mobile: top strip  |  Desktop: left 45% full-height panel           */}
-        <div
-          className="relative flex-shrink-0 lg:w-[45%] lg:min-h-screen"
-          style={{ height: "40vh" }}
-        >
-          {/* Background image */}
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{
-              backgroundImage:
-                "url('authbg.jpeg')",
-            }}
-          />
-
-          {/* Primary colour overlay */}
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundColor:
-                "color-mix(in srgb, var(--color-primary, #1e88e5) 88%, transparent)",
-            }}
-          />
-
-          {/* ── Decorative dot grids ── */}
-          <div className="absolute top-8 left-6 grid grid-cols-4 gap-[5px]">
-            {Array.from({ length: 16 }).map((_, i) => (
-              <div key={i} className="w-[3px] h-[3px] rounded-full bg-white/60" />
-            ))}
-          </div>
-          <div className="absolute bottom-14 right-6 grid grid-cols-3 gap-[5px] lg:bottom-10">
-            {Array.from({ length: 9 }).map((_, i) => (
-              <div key={i} className="w-[3px] h-[3px] rounded-full bg-white/40" />
-            ))}
-          </div>
-
-          {/* ── Floating blob accents ── */}
-          <div className="absolute -left-4 top-[45%] w-10 h-10 rounded-full bg-white/20" />
-          <div className="absolute -right-3 top-[38%] w-7 h-7 rounded-full bg-white/20" />
-          <div className="absolute top-6 right-10 w-2.5 h-2.5 rounded-full bg-white/50" />
-          <div className="absolute top-10 right-1/3 w-1.5 h-1.5 rounded-full bg-white/40" />
-
-          {/* ── Brand / logo content ── */}
-          <div className="relative z-10 flex flex-col items-center justify-center h-full px-6 pb-10 lg:pb-0 gap-3">
-            <Link href="https://estateai.in">
-               <img
-              src="/edu.ibigdataicon.png"
-              alt="EstateAI"
-              className="w-20 rounded-full sm:w-22 lg:w-26 h-auto"
-            />
-            </Link>
-
-            <div className=" text-white text-center">
-            <h1 className=" font-extrabold text-3xl">Edu.<span className=" text-[#F5A623]">ibigdata</span></h1>
-            <p className=" text-[#F5A623]">Work Hard Be Smart</p>
-          </div>
-
-            <p className="text-white/75 text-sm text-center max-w-xs leading-relaxed">
-               Find remote work. Work from home your way. Enjoy flexibility, stay in control, and get paid.
-            </p>
-
-            {/* Robot visible only on desktop */}
-            <div className="hidden lg:block mt-0">
-              <img
-                src="/logo-register.png"
-                className="w-80 h-80 object-contain drop-shadow-xl"
-                alt="AI Robot"
+        {/* LEFT PANEL (DESKTOP ONLY) */}
+        <div className="relative w-full flex flex-col items-center justify-between bg-[var(--color-primary-lighter)] dark:bg-[var(--color-secondary-darker)] p-10 max-lg:hidden">
+          <div className="self-start">
+            <div className="relative">
+              {/* 👇 DYNAMIC BRAND LOGO (DESKTOP) */}
+              <BrandLogo
+                variant="text"
+                className="h-10 w-auto object-contain"
               />
             </div>
+            <p className="text-gray-400 text-sm font-light mt-1">
+              Domain Insights, Made Easy
+            </p>
           </div>
 
-          {/* ── Curved bottom edge (mobile only) ── */}
-          <div
-            className="absolute bottom-0 left-0 right-0 overflow-hidden lg:hidden"
-            style={{ height: 52 }}
-          >
-            <svg
-              viewBox="0 0 375 60"
-              preserveAspectRatio="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-full h-full"
-            >
-              <path
-                d="M0,60 L0,30 Q187.5,-20 375,30 L375,60 Z"
-                fill="var(--color-bg, #f0f4ff)"
-              />
-            </svg>
+          <div className="text-center max-w-[350px]">
+            <img src="logo-register.png" className="w-full h-full" alt="Register Illustration" />
           </div>
 
-          {/* ── Curved right edge (desktop only) ── */}
-          <div
-            className="hidden lg:block absolute top-0 right-0 bottom-0 overflow-hidden"
-            style={{ width: 56 }}
-          >
-            <svg
-              viewBox="0 0 60 900"
-              preserveAspectRatio="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-full h-full"
-            >
-              <path
-                d="M60,0 L28,0 Q-18,450 28,900 L60,900 Z"
-                fill="var(--color-bg, #f0f4ff)"
-              />
-            </svg>
+          <div className="self-start text-gray-500">
+            <h2 className="text-[var(--color-secondary)] text-2xl font-bold mb-1">
+              Create Account
+            </h2>
+            <p>Register to manage everything efficiently.</p>
           </div>
         </div>
 
-        {/* ─── FORM SECTION ──────────────────────────────────────────────────── */}
-        <div
-          className="flex-1 flex flex-col items-center lg:justify-center px-6 py-0 lg:py-8"
-          style={{ backgroundColor: "var(--color-bg, #f0f4ff)" }}
-        >
-          <div className="w-full max-w-sm">
-            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 text-center mb-7">
-              Create Account
-            </h2>
-
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-
-              {/* Full Name */}
-              <div
-                className="flex items-center gap-3 bg-white border-2 rounded-full px-4 py-3 shadow-sm"
-                style={{ borderColor: "var(--color-primary, #1e88e5)" }}
-              >
-                <FaUserAlt
-                  className="text-sm flex-shrink-0"
-                  style={{ color: "var(--color-primary, #1e88e5)" }}
+        {/* RIGHT PANEL */}
+        <div className="flex flex-col justify-between items-center w-full max-lg:bg-[url('/loginbg.png')] max-lg:bg-cover max-lg:bg-center max-lg:bg-no-repeat min-h-full bg-white max-lg:text-white dark:bg-linear-to-b dark:from-[var(--color-primary)] dark:to-[var(--color-secondary)] px-1">
+          {/* MOBILE HEADER */}
+          <div className="self-start w-full px-5 py-5">
+            <div className="lg:hidden">
+              <div className="relative">
+                {/* 👇 DYNAMIC BRAND LOGO (MOBILE) */}
+                <BrandLogo
+                  variant="text"
+                  className="h-9 w-auto object-contain"
                 />
+              </div>
+              <p className="text-[var(--color-primary-light)] text-sm font-light mt-1">
+                Domain Insights, Made Easy
+              </p>
+            </div>
+          </div>
+
+          {/* FORM CARD */}
+          <div className="w-full max-w-[500px] flex flex-col justify-center items-center p-4 lg:p-8 py-8 rounded-lg bg-white">
+            <h3 className="text-2xl font-semibold text-[var(--color-primary)] text-center">
+              Register Account
+            </h3>
+
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full">
+              {/* FULL NAME */}
+              <div className="relative mt-2">
+                <FaUserAlt className="absolute left-3 top-3 text-gray-800" />
                 <input
-                  type="text"
-                  placeholder="Full Name"
-                  value={name}
                   onChange={(e) => setName(e.target.value)}
+                  value={name}
+                  type="text"
+                  id="name"
                   required
-                  className="flex-1 bg-transparent outline-none text-gray-700 text-base placeholder-gray-400"
+                  className="peer w-full pl-10 pt-4 pb-2 border-b border-gray-300 text-gray-800 focus:border-purple-300 focus:outline-none bg-transparent"
                 />
+                <label
+                  htmlFor="name"
+                  className={`absolute left-10 transition-all duration-200 ${
+                    name
+                      ? "-top-1.5 text-[var(--color-primary)] text-sm"
+                      : "top-3 text-gray-800 text-base"
+                  } peer-focus:-top-1.5 peer-focus:text-[var(--color-primary)] peer-focus:text-sm`}
+                >
+                  Full Name
+                </label>
               </div>
 
-              {/* Email */}
-              <div
-                className="flex items-center gap-3 bg-white border-2 rounded-full px-4 py-3 shadow-sm"
-                style={{ borderColor: "var(--color-primary, #1e88e5)" }}
-              >
-                <IoMdMail
-                  className="text-base flex-shrink-0"
-                  style={{ color: "var(--color-primary, #1e88e5)" }}
-                />
+              {/* EMAIL */}
+              <div className="relative mt-2">
+                <FaUserAlt className="absolute left-3 top-3 text-gray-800" />
                 <input
-                  type="email"
-                  placeholder="Email"
-                  value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  value={email}
+                  type="email"
+                  id="email"
                   required
-                  className="flex-1 bg-transparent outline-none text-gray-700 text-base placeholder-gray-400"
+                  className="peer w-full pl-10 pt-4 pb-2 border-b border-gray-300 text-gray-800 focus:border-purple-300 focus:outline-none bg-transparent"
                 />
+                <label
+                  htmlFor="email"
+                  className={`absolute left-10 transition-all duration-200 ${
+                    email
+                      ? "-top-1.5 text-[var(--color-primary)] text-sm"
+                      : "top-3 text-gray-800 text-base"
+                  } peer-focus:-top-1.5 peer-focus:text-[var(--color-primary)] peer-focus:text-sm`}
+                >
+                  Email Address
+                </label>
               </div>
 
-              {/* Password */}
-              <div
-                className="relative flex items-center gap-3 bg-white border-2 rounded-full px-4 py-3 shadow-sm"
-                style={{ borderColor: "var(--color-primary, #1e88e5)" }}
-              >
-                <FaLock
-                  className="text-sm flex-shrink-0"
-                  style={{ color: "var(--color-primary, #1e88e5)" }}
-                />
+              {/* PASSWORD */}
+              <div className="relative mt-4">
+                <FaLock className="absolute left-3 top-3 text-gray-800" />
                 <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Password"
-                  value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  value={password}
+                  type={showPassword ? "text" : "password"}
+                  id="password"
                   required
-                  className="flex-1 bg-transparent outline-none text-gray-700 text-base placeholder-gray-400 pr-8"
+                  className="peer w-full pl-10 pt-4 pb-2 border-b border-gray-300 text-gray-800 focus:border-purple-300 focus:outline-none bg-transparent"
                 />
+                <label
+                  htmlFor="password"
+                  className={`absolute left-10 transition-all duration-200 ${
+                    password
+                      ? "-top-1.5 text-[var(--color-primary)] text-sm"
+                      : "top-3 text-gray-800 text-base"
+                  } peer-focus:-top-1.5 peer-focus:text-[var(--color-primary)] peer-focus:text-sm`}
+                >
+                  Password
+                </label>
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 transition"
-                  style={{ color: "var(--color-primary, #1e88e5)" }}
+                  onClick={togglePassword}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
 
-              {/* Password validation hints */}
-              {password.length > 0 && (
-                <div className="flex flex-col gap-1 px-2">
-                  {passwordRules.map((rule, idx) => {
-                    const passed = rule.test.test(password);
-                    return (
-                      <p
-                        key={idx}
-                        className={`text-xs font-light transition-colors ${
-                          passed ? "text-green-500" : "text-red-400"
-                        }`}
-                      >
+              {/* PASSWORD RULES */}
+              <div className="flex flex-col gap-1 text-sm font-extralight">
+                {passwordRules.map((rule, idx) => {
+                  const passed = rule.test.test(password);
+                  return (
+                    passwordError === rule.message && (
+                      <p key={idx} className={passed ? "text-green-500" : "text-red-500"}>
                         {rule.message}
                       </p>
-                    );
-                  })}
-                </div>
-              )}
+                    )
+                  );
+                })}
+              </div>
 
-              {/* Phone */}
-              <div
-                className="flex items-center gap-3 bg-white border-2 rounded-full px-4 py-3 shadow-sm"
-                style={{
-                  borderColor: phoneError
-                    ? "#ef4444"
-                    : "var(--color-primary, #1e88e5)",
-                }}
-              >
-                <FaPhone
-                  className="text-sm flex-shrink-0"
-                  style={{ color: phoneError ? "#ef4444" : "var(--color-primary, #1e88e5)" }}
-                />
+              {/* PHONE */}
+              <div className="relative">
+                <FaPhone className="absolute left-3 top-3 text-gray-800 rotate-[100deg]" />
                 <input
-                  type="text"
-                  placeholder="Mobile Number"
-                  value={phone}
                   onChange={(e) => {
                     const value = e.target.value.trim();
                     setPhone(value);
                     setPhoneError(validatePhone(value));
                   }}
-                  className="flex-1 bg-transparent outline-none text-gray-700 text-base placeholder-gray-400"
+                  value={phone}
+                  type="text"
+                  id="phone"
+                  className="peer w-full pl-10 pt-4 pb-2 border-b border-gray-300 text-gray-800 focus:border-purple-300 focus:outline-none bg-transparent"
                 />
+                <label
+                  htmlFor="phone"
+                  className={`absolute left-10 transition-all duration-200 ${
+                    phone
+                      ? "-top-1.5 text-[var(--color-primary)] text-sm"
+                      : "top-3 text-gray-800 text-base"
+                  } peer-focus:-top-1.5 peer-focus:text-[var(--color-primary)] peer-focus:text-sm`}
+                >
+                  Phone Number
+                </label>
+                {phoneError && (
+                  <p className="text-red-500 text-sm mt-1">{phoneError}</p>
+                )}
               </div>
-              {phoneError && (
-                <p className="text-red-400 text-xs px-2 -mt-1">{phoneError}</p>
-              )}
 
-              {/* Submit */}
+              {/* SUBMIT */}
               <button
                 type={loading ? "button" : "submit"}
                 disabled={loading}
-                className="mt-1 flex items-center justify-between rounded-xl px-5 py-3.5 text-white font-semibold text-base tracking-widest uppercase disabled:opacity-60 hover:opacity-90 active:scale-[0.98] transition-all"
-                style={{ backgroundColor: "#F5A623" }}
+                className="w-full py-3 mt-2 text-white text-lg font-medium rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-darker)] hover:from-[var(--color-primary-dark)] hover:to-[var(--color-secondary-darker)] transition disabled:opacity-60"
               >
-                <span className="flex-1 text-center">
-                  {loading ? "Registering…" : "REGISTER"}
-                </span>
-                <span className="ml-2 w-7 h-7 rounded-full border-2 border-white flex items-center justify-center flex-shrink-0">
-                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                    <path
-                      d="M2 7h10M8 3l4 4-4 4"
-                      stroke="white"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
+                {loading ? "Registering..." : "Register"}
               </button>
             </form>
 
-            {/* Social */}
-           {/*  <div className="text-center mt-6 text-gray-400 text-sm">
-              Or sign up with
-            </div>
-            <div className="flex justify-center gap-4 mt-3">
-              {[
-                { icon: <FaGoogle className="text-xl" style={{ color: "#4285F4" }} /> },
-                { icon: <FaGithub className="text-xl text-gray-800" /> },
-                {
-                  icon: (
-                    <FaCog
-                      className="text-xl"
-                      style={{ color: "var(--color-primary, #1e88e5)" }}
-                    />
-                  ),
-                },
-              ].map((btn, i) => (
-                <button
-                  key={i}
-                  className="w-11 h-11 rounded-full bg-white flex items-center justify-center hover:scale-110 transition shadow-sm border border-gray-100"
-                >
-                  {btn.icon}
-                </button>
-              ))}
-            </div> */}
-
-            <p className="text-center mt-6 text-sm text-gray-600">
-              Already have an account?{" "}
-              <Link
-                href="/admin"
-                className="font-bold hover:underline"
-                style={{ color: "var(--color-primary)" }}
-              >
+            {/* FOOTER LINK */}
+            <div className="mt-6 flex justify-center gap-1 text-sm text-gray-800">
+              <p>Already have an account?</p>
+              <Link href="/admin" className="text-[var(--color-primary)] hover:underline">
                 Login
               </Link>
-            </p>
+            </div>
+          </div>
+
+          <div className="text-[var(--color-primary-light)] text-sm my-5">
+            &copy;{currentYear} all rights reserved
           </div>
         </div>
       </div>
-
     </>
   );
 };
