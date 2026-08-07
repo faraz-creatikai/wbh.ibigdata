@@ -1560,7 +1560,7 @@ export default function Customer() {
             ? "Customers unassigned successfully"
             : "Customers assigned successfully"
         );
-        await getCustomers();
+       // await getCustomers();
         setIsAssignOpen(false);
         return response;
       }
