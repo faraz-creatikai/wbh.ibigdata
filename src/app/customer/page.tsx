@@ -1560,7 +1560,7 @@ export default function Customer() {
             ? "Customers unassigned successfully"
             : "Customers assigned successfully"
         );
-       // await getCustomers();
+        // await getCustomers();
         setIsAssignOpen(false);
         return response;
       }
@@ -2237,8 +2237,13 @@ export default function Customer() {
         isOpen={isFollowupOpen}
         customerId={selectedCustomerFollowupId}
         onClose={() => {
-          setIsFollowupOpen(false)
-          setSelectedCustomerFollowupId(null)
+          setIsFollowupOpen(false);
+          setSelectedCustomerFollowupId(null);
+        }}
+        onArchived={(id) => {
+          setCustomerData((prevData) =>
+            prevData.filter((customer) => customer?._id !== id)
+          );
         }}
       />
       {
@@ -3230,7 +3235,7 @@ export default function Customer() {
                   </span>
                 )}
               </button>
-               <button
+              <button
                 onClick={() => router.push("/customer/archieved")}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/8 dark:bg-[var(--color-primary)]/12 text-[var(--color-primary)] text-[13px] font-semibold transition-all duration-150 hover:bg-[var(--color-primary)]/15 hover:border-[var(--color-primary)]/40 active:scale-[0.97] cursor-pointer"
               >
