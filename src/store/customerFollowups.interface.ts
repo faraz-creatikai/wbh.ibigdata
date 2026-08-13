@@ -8,6 +8,7 @@ export interface customerFollowupAllDataInterface {
     FollowupNextDate:string;
     Description:string;
     Name?:string;
+    CreatedBy?:string;
 }
 
 export interface customerFollowupGetDataInterface {
@@ -17,6 +18,7 @@ export interface customerFollowupGetDataInterface {
     StatusType?:string;
     Name: string;
     ContactNumber: string;
+    Email?:string;
     User:string;
     Date:string;
 }
