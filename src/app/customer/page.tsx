@@ -1560,7 +1560,7 @@ export default function Customer() {
             ? "Customers unassigned successfully"
             : "Customers assigned successfully"
         );
-        // await getCustomers();
+        //  await getCustomers();
         setIsAssignOpen(false);
         return response;
       }
@@ -2246,6 +2246,7 @@ export default function Customer() {
           );
         }}
       />
+      
       {
         isfollowupDialogOpen && Array.isArray(followupDialogData) && followupDialogData.length > 0 && (
           <PopupMenu onClose={() => { setIsFollowupDialogOpen(false); setFollowupDialogData([]); }}>
@@ -4629,7 +4630,7 @@ export default function Customer() {
                   onClick={() =>
                     setCurrentTablePage((prev) => Math.max(prev - 1, 1))
                   }
-                  disabled={currentTablePage === 1}
+                  disabled={currentTablePage === 1 || isFetchingMore}
                   className="px-3 py-1 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
                 >
                   Prev
@@ -4648,7 +4649,10 @@ export default function Customer() {
                       setCurrentTablePage(prev => prev + 1);
                     }
                   }}
-                  disabled={!hasMoreCustomers && currentTablePage === totalTablePages}
+                  disabled={
+                    isFetchingMore ||
+                    (!hasMoreCustomers && currentTablePage === totalTablePages)
+                  }
                   className="px-3 py-1 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
                 >
                   Next

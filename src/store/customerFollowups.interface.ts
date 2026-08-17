@@ -47,7 +47,17 @@ export interface FollowupDeleteDialogDataInterface {
     Name:string;
   }
 
-  export interface customerAiFollowupPayloadInterface {
-    customerIds: string[];
-    userPrompt: string
-  }
+export interface customerAiFollowupPayloadInterface {
+  customerIds: string[];
+  userPrompt: string;
+  language?: string;
+  sendWhatsapp?: boolean;
+  sendEmail?: boolean;
+  confirm?: boolean;
+  drafts?: Array<{
+    customerId: string;
+    data: any;
+    whatsapp: string | null;
+    emailContent: { subject: string; body: string } | null;
+  }>;
+}
