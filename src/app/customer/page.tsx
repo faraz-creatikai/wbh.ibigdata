@@ -4695,7 +4695,7 @@ export default function Customer() {
                 <button
                   onClick={() => setCurrentTablePage(1)}
                   disabled={currentTablePage === 1}
-                  className="p-2 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
+                  className="p-2 cursor-pointer bg-gray-200 hover:bg-gray-300 border border-gray-300 rounded disabled:opacity-50"
                   title="First page"
                 >
                   <ChevronsLeft size={16} />
@@ -4705,7 +4705,7 @@ export default function Customer() {
                     setCurrentTablePage((prev) => Math.max(prev - 1, 1))
                   }
                   disabled={currentTablePage === 1 || isFetchingMore}
-                  className="px-3 py-1 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
+                  className="px-3 py-1 cursor-pointer bg-gray-200 hover:bg-gray-300 border border-gray-300 rounded disabled:opacity-50"
                 >
                   Prev
                 </button>
@@ -4727,14 +4727,14 @@ export default function Customer() {
                     isFetchingMore ||
                     (!hasMoreCustomers && currentTablePage === totalTablePages)
                   }
-                  className="px-3 py-1 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
+                  className="px-3 py-1 cursor-pointer bg-gray-200 hover:bg-gray-300 border border-gray-300 rounded disabled:opacity-50"
                 >
                   Next
                 </button>
                 <button
                   onClick={handleLastPage}
                   disabled={currentTablePage === totalTablePages && !hasMoreCustomers}
-                  className="p-2 bg-gray-200 border border-gray-300 rounded disabled:opacity-50"
+                  className="p-2 cursor-pointer bg-gray-200 hover:bg-gray-300 border border-gray-300 rounded disabled:opacity-50"
                   title="Last page"
                 >
                   <ChevronsRight size={16} />
