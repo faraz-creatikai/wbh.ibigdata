@@ -154,13 +154,13 @@ useEffect(() => {
 
       {/* Dropdown */}
       <ul
-  className={`absolute left-0 w-full bg-white max-sm:dark:bg-[var(--color-childbgdark)] max-sm:dark:text-white shadow-lg border border-gray-300 max-sm:dark:border-gray-800 rounded-md max-h-56 overflow-auto
+  className={`absolute left-0 w-full bg-white max-sm:dark:bg-[var(--color-childbgdark)] max-sm:dark:text-white shadow-lg border border-gray-300 max-sm:dark:border-gray-800 rounded-md
   ${dropUp ? "bottom-full mb-1 origin-bottom" : "top-full mt-1 origin-top"}
   transition-all duration-200 transform z-50
   ${
     open
-      ? "opacity-100 scale-100 pointer-events-auto"
-      : "opacity-0 scale-95 pointer-events-none"
+      ? "opacity-100 scale-100 pointer-events-auto max-h-56 overflow-auto"
+      : "opacity-0 scale-95 pointer-events-none max-h-0 overflow-hidden"
   }`}
 >
         {/* Search */}
