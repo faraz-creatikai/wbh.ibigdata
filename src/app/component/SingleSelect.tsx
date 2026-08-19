@@ -22,6 +22,7 @@ export default function SingleSelect({
 }: OptionProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [dropUp, setDropUp] = useState(false); 
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,6 +52,33 @@ export default function SingleSelect({
       setTimeout(() => searchInputRef.current?.focus(), 0);
     }
   }, [open, isSearchable]);
+
+  // Flip dropdown above the field when there isn't room below
+useEffect(() => {
+  if (!open) return;
+
+  const updatePosition = () => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+    const DROPDOWN_MAX_HEIGHT = 224; // matches max-h-56 (14rem)
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    setDropUp(spaceBelow < DROPDOWN_MAX_HEIGHT && spaceAbove > spaceBelow);
+  };
+
+  updatePosition();
+  // `true` = capture phase, so it also fires for scrollable parent containers
+  window.addEventListener("scroll", updatePosition, true);
+  window.addEventListener("resize", updatePosition);
+
+  return () => {
+    window.removeEventListener("scroll", updatePosition, true);
+    window.removeEventListener("resize", updatePosition);
+  };
+}, [open]);
 
   const handleSelect = (option: string) => {
     onChange?.(option);
@@ -126,14 +154,15 @@ export default function SingleSelect({
 
       {/* Dropdown */}
       <ul
-        className={`absolute left-0 top-full w-full bg-white max-sm:dark:bg-[var(--color-childbgdark)] max-sm:dark:text-white shadow-lg border border-gray-300 max-sm:dark:border-gray-800 rounded-md max-h-56 overflow-auto mt-1
-        transition-all duration-200 transform origin-top z-50
-        ${
-          open
-            ? "opacity-100 scale-100 pointer-events-auto"
-            : "opacity-0 scale-95 pointer-events-none"
-        }`}
-      >
+  className={`absolute left-0 w-full bg-white max-sm:dark:bg-[var(--color-childbgdark)] max-sm:dark:text-white shadow-lg border border-gray-300 max-sm:dark:border-gray-800 rounded-md max-h-56 overflow-auto
+  ${dropUp ? "bottom-full mb-1 origin-bottom" : "top-full mt-1 origin-top"}
+  transition-all duration-200 transform z-50
+  ${
+    open
+      ? "opacity-100 scale-100 pointer-events-auto"
+      : "opacity-0 scale-95 pointer-events-none"
+  }`}
+>
         {/* Search */}
         {isSearchable && (
           <li className="sticky top-0 bg-white max-sm:dark:bg-[var(--color-childbgdark)] p-2 border-b z-10">

@@ -904,6 +904,58 @@ export default function Customer() {
     setCustomerTableLoader(false);
   };
 
+  const handleGoToPage = async (page: number) => {
+    const safePage = Math.min(Math.max(page, 1), totalCustomerPage || 1);
+    const requiredRows = safePage * rowsPerTablePage;
+
+    // enough rows already in memory (or nothing left on the server)
+    if (customerData.length >= requiredRows || !hasMoreCustomers) {
+      setCurrentTablePage(Math.min(safePage, totalTablePages));
+      return;
+    }
+
+    if (isFetchingMore) return;
+
+    setIsFetchingMore(true);
+    setCustomerTableLoader(true);
+
+    try {
+      const skip = customerData.length;
+      const needed = requiredRows - skip;
+      // round up to whole chunks so skip/limit stays aligned with FETCH_CHUNK
+      const limit = Math.ceil(needed / FETCH_CHUNK) * FETCH_CHUNK;
+
+      const queryParams = new URLSearchParams();
+      queryParams.append("Limit", limit.toString());
+      queryParams.append("Skip", skip.toString());
+
+      Object.entries(filters).forEach(([key, value]) => {
+        if (key === "Limit") return;
+        if (Array.isArray(value)) value.forEach(v => queryParams.append(key, v));
+        if (typeof value === "string" && value) queryParams.append(key, value);
+      });
+
+      const data = await getFilteredCustomer(queryParams.toString());
+
+      if (data) {
+        const mapped = data.map(mapCustomer);
+        const newLength = skip + mapped.length;
+
+        setCustomerData(prev => [...prev, ...mapped]);
+        setFetchedCount(prev => prev + mapped.length);
+        setHasMoreCustomers(newLength < totalCustomers);
+
+        // clamp in case the server returned fewer rows than expected
+        setCurrentTablePage(
+          Math.min(safePage, Math.ceil(newLength / rowsPerTablePage) || 1)
+        );
+      }
+    } finally {
+      setCustomerTableLoader(false);
+      setIsFetchingMore(false);
+    }
+  };
+
 
   const handleCustomerUpdated = (updatedCustomer: any) => {
     const mappedCustomer = mapCustomer(updatedCustomer);
@@ -1249,6 +1301,15 @@ export default function Customer() {
   const totalTablePages = useMemo(() => {
     return Math.ceil(customerData.length / rowsPerTablePage) || 1;
   }, [customerData, rowsPerTablePage]);
+
+  const pageOptions = useMemo(
+    () =>
+      Array.from(
+        { length: Math.max(totalCustomerPage || 1, 1) },
+        (_, i) => String(i + 1)
+      ),
+    [totalCustomerPage]
+  );
 
   const startIndex = (currentTablePage - 1) * rowsPerTablePage;
   const currentRows = customerData.slice(startIndex, startIndex + rowsPerTablePage);
@@ -2246,7 +2307,7 @@ export default function Customer() {
           );
         }}
       />
-      
+
       {
         isfollowupDialogOpen && Array.isArray(followupDialogData) && followupDialogData.length > 0 && (
           <PopupMenu onClose={() => { setIsFollowupDialogOpen(false); setFollowupDialogData([]); }}>
@@ -4617,7 +4678,20 @@ export default function Customer() {
               <p className="text-sm">
                 Page {currentTablePage} of {totalCustomerPage}
               </p>
-              <div className="flex gap-3">
+              
+              <div className="flex gap-3 w-full max-w-[400px] items-center justify-end">
+                <div
+                className={`w-[170px] ${isFetchingMore ? "opacity-50 pointer-events-none" : ""
+                  }`}
+              >
+                <SingleSelect
+                  label="Go to page"
+                  options={pageOptions}
+                  value={String(currentTablePage)}
+                  isSearchable
+                  onChange={(selected) => handleGoToPage(Number(selected))}
+                />
+              </div>
                 <button
                   onClick={() => setCurrentTablePage(1)}
                   disabled={currentTablePage === 1}
