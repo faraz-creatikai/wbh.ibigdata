@@ -3261,7 +3261,7 @@ export default function Customer() {
             <PageHeader title="Dashboard" subtitles={["Customer"]} />
             <div className=" flex items-center gap-4">
               {
-                admin?.role === "administrator" && <button className=" flex justify-center items-center gap-1 hover:bg-[var(--color-primary-light)] cursor-pointer text-[var(--color-primary)] text-sm bg-[var(--color-primary-lighter)] px-2 py-1 rounded-sm " onClick={() => {
+                (admin?.role === "administrator" && admin?.isSuperAdmin) && <button className=" flex justify-center items-center gap-1 hover:bg-[var(--color-primary-light)] cursor-pointer text-[var(--color-primary)] text-sm bg-[var(--color-primary-lighter)] px-2 py-1 rounded-sm " onClick={() => {
                   if (selectedCustomers.length === 0) {
                     toast.error("Please select at least one customer to export")
                     return

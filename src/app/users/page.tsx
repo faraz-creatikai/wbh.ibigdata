@@ -347,7 +347,16 @@ export default function UsersPage() {
                                             >
                                                 <td className="px-4 border border-gray-200 py-3">{startIndex + index + 1}</td>
                                                 <td className="px-4 py-3 border border-gray-200 capitalize">{item.role}</td>
-                                                <td className="px-4 py-3 border border-gray-200">{item.name}</td>
+                                                <td className="px-4 py-3 border border-gray-200">
+    <div className="flex items-center gap-2">
+        <span>{item.name}</span>
+        {item.isSuperAdmin && item.role === "administrator" && (
+            <span className="bg-[var(--color-primary)] text-white text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">
+                Owner
+            </span>
+        )}
+    </div>
+</td>
                                                 <td className="px-4 py-3 border border-gray-200">{item.email}</td>
                                                 <td className="px-4 py-3 border border-gray-200">{item.city || "-"}</td>
                                                 <td className="px-4 py-3 border border-gray-200 capitalize">

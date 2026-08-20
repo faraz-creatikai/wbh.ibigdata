@@ -181,13 +181,19 @@ export const updateAdminDetails = async (id: string, updatedData: Partial<Admin>
       credentials: "include",
       body: JSON.stringify(payload),
     });
-
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+// Parse the response first, whether it's a 200 OK or a 403 Error
     const data: AuthApiResponse = await res.json();
+    
+    // If it's a backend error (like 403), return the backend's exact JSON response
+    if (!res.ok) {
+      return data; 
+    }
+    
     return data;
-  } catch (error) {
+  } catch (error: any) {
     console.error("SERVER ERROR (Update Details): ", error);
-    return { success: false, message: "Failed to update details" };
+    // This catch block will now only trigger for network crashes or invalid JSON
+    return { success: false, message: error.message || "Failed to update details" };
   }
 };
 
@@ -221,8 +227,11 @@ export const deleteAdmin = async (id: string): Promise<AuthApiResponse> => {
       credentials: "include",
     });
 
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+   
     const data: AuthApiResponse = await res.json();
+     if (!res.ok) {
+      return data; 
+    }
     return data;
   } catch (error) {
     console.error("SERVER ERROR (Delete Admin): ", error);

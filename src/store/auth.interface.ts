@@ -11,6 +11,7 @@ export interface Admin {
   AddressLine1?: string;
   AddressLine2?: string;
   createdBy?: string; // ObjectId reference to another Admin
+  isSuperAdmin?: boolean; // true for super admins, false for regular admins
   createdAt?: string;
   updatedAt?: string;
   [key: string]: any;

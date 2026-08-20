@@ -33,6 +33,9 @@ export default function AdminEditPage() {
     AddressLine2: "",
   });
 
+  // ✅ Store isSuperAdmin separately so it doesn't go in the payload
+  const [isSuperAdminFlag, setIsSuperAdminFlag] = useState(false);
+  
   const [loading, setLoading] = useState(false);
   const [fieldOptions, setFieldOptions] = useState<Record<string, any[]>>({});
   const [errors, setErrors] = useState<ErrorInterface>({});
@@ -52,6 +55,9 @@ export default function AdminEditPage() {
     }
 
     const data: Admin = res.adminData;
+
+    // ✅ Set Super Admin flag
+    setIsSuperAdminFlag(data.isSuperAdmin || false);
 
     // ✅ Map backend fields → frontend fields of Add Page
     setUserData({
@@ -107,8 +113,6 @@ export default function AdminEditPage() {
 
     setLoading(true);
 
-
-
     const res = await updateAdminDetails(String(id), userData);
 
     if (res.success) {
@@ -124,7 +128,6 @@ export default function AdminEditPage() {
   const fetchFields = async () => {
     await handleFieldOptions(
       [
-
         { key: "City", fetchFn: getCity },
         { key: "Status", staticData: ["active", "inactive"] }
       ],
@@ -134,7 +137,6 @@ export default function AdminEditPage() {
 
   // ✅ Dropdown values
   const roles = admin?.role === "administrator" ? ["administrator", "city_admin", "user", "agent"] : ["city_admin", "user"];
-  const cities = ["Jaipur", "Ajmer", "Udaipur"];
 
   return (
     <div className=" min-h-screen flex justify-center">
@@ -150,10 +152,16 @@ export default function AdminEditPage() {
 
         <div className="bg-white/90 max-sm:dark:bg-[var(--color-childbgdark)] backdrop-blur-lg p-10 rounded-3xl shadow-2xl h-auto">
           <form onSubmit={(e) => e.preventDefault()}>
-            <div className="mb-8 text-left border-b pb-4 border-gray-200 max-sm:dark:border-gray-700">
+            {/* HEADER MODIFIED TO INCLUDE OWNER BADGE */}
+            <div className="mb-8 flex items-center border-b pb-4 border-gray-200 max-sm:dark:border-gray-700">
               <h1 className="text-3xl font-extrabold text-[var(--color-secondary-darker)] max-sm:dark:text-[var(--color-primary)] leading-tight tracking-tight">
                 Edit <span className="text-[var(--color-primary)]">Admin</span>
               </h1>
+              {isSuperAdminFlag && userData.Role === "administrator" && (
+                <span className="ml-4 bg-[var(--color-primary)] text-white text-[12px] font-semibold px-3 py-1 rounded-full whitespace-nowrap uppercase tracking-wider">
+                  Owner
+                </span>
+              )}
             </div>
 
             <div className="flex flex-col space-y-10">
@@ -256,7 +264,7 @@ export default function AdminEditPage() {
                 <button
                   onClick={handleSubmit}
                   disabled={loading}
-                  className={`bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-darker)] hover:from-[var(--color-primary-dark)] hover:to-[var(--color-secondary-darker)] cursor-pointer text-white p-2 w-32 rounded-md font-semibold  transition-all ${loading ? "opacity-70 cursor-not-allowed" : ""
+                  className={`bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-darker)] hover:from-[var(--color-primary-dark)] hover:to-[var(--color-secondary-darker)] cursor-pointer text-white p-2 w-32 rounded-md font-semibold transition-all ${loading ? "opacity-70 cursor-not-allowed" : ""
                     }`}
                 >
                   {loading ? "Updating..." : "Update"}

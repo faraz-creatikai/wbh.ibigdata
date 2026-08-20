@@ -133,6 +133,7 @@ export default function CustomerFollowups() {
                     ContactNumber: item.customer.ContactNumber,
                     Email: item.customer.Email || "N/A",
                     User: item.User || "N/A", // ⚠️ FIXED: NOW READS COMMA SEPARATED USERS
+                    LatestFollowupTaken: item.StartDate || "N/A",
                     Date: formattedDate,
                 }
             }));
@@ -914,6 +915,7 @@ export default function CustomerFollowups() {
                                         <th className="px-4 py-3 border border-[var(--color-secondary-dark)]  text-left">Email</th>
                                         <th className="px-4 py-3 border border-[var(--color-secondary-dark)]  text-left">User</th>
                                         <th className="px-4 py-3 border border-[var(--color-secondary-dark)]  text-left">Date</th>
+                                        <th className="px-4 py-3 border border-[var(--color-secondary-dark)]  text-left">Latest Taken Date</th>
                                         <th className="px-4 py-3 border border-[var(--color-secondary-dark)]  text-left">Actions</th>
                                     </tr>
                                 </thead>
@@ -948,6 +950,7 @@ export default function CustomerFollowups() {
                                                 <td className="px-4 py-3  border border-gray-200">{item.Email}</td>
                                                 <td className="px-4 py-3  border border-gray-200">{item.User}</td>
                                                 <td className="px-4 py-3  border border-gray-200">{item.Date}</td>
+                                                <td className="px-4 py-3  border border-gray-200">{item.LatestFollowupTaken}</td>
                                                 <td className="px-4 py-2  flex gap-2 items-center">
                                                     <Button
                                                         sx={{

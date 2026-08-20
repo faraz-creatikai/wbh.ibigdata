@@ -247,6 +247,10 @@ const data = {
         {
           title: "Calling Report",
           url: "/reports/call-report",
+        },
+        {
+          title: "User Activity",
+          url: "/reports/activity",
         }
       ]
     },

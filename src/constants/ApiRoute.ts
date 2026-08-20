@@ -1,4 +1,4 @@
-export const BASE_URL = "https://apiwbh.ibigdata.in/api";
+export const BASE_URL = "https://apiedu.ibigdata.in/api";
 //https://live-project-backend-1.onrender.com
 //https://propertyapi.aileadgenie.cloud/api
 //https://apidomain.ibigdata.in
@@ -465,6 +465,18 @@ export const API_ROUTES = {
   },
 
 
+
+  ACTIVITY:{
+    GETFEED: `${BASE_URL}/activity/feed`,
+    GETSUMMARY: `${BASE_URL}/activity/summary`,
+    GETUSERS: `${BASE_URL}/activity/users`,
+    GETTIMELINE: (adminId: string) => `${BASE_URL}/activity/timeline/${adminId}`,
+     GETCUSTOMERS: `${BASE_URL}/activity/customers`,
+        GETFOLLOWUPS: `${BASE_URL}/activity/followups`,
+        GETRECORD: (entity: string, id: string) => `${BASE_URL}/activity/record/${entity}/${id}`,
+  },
+
+
   ADMIN: {
     // 🔓 Public Routes
     SIGNUP: `${BASE_URL}/admin/signup`,
@@ -503,4 +515,4 @@ export const API_ROUTES = {
   }
 };
 
-export const API_URL = "https://apiwbh.ibigdata.in";
+export const API_URL = "https://apiedu.ibigdata.in";

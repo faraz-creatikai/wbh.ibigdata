@@ -21,6 +21,7 @@ export interface customerFollowupGetDataInterface {
     Email?:string;
     User:string;
     Date:string;
+    LatestFollowupTaken?:string;
 }
 
 export interface CustomerFollowupAdvInterface {
