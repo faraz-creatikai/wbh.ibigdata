@@ -1,5 +1,3 @@
-import { consultPageContent as activeContent } from "@/app/data/Loginpagedata";
-
 import {
   FaUsers,
   FaBriefcase,
@@ -229,6 +227,10 @@ export const consultPageContent: LoginPageContent = {
  * Nothing else needs to be touched — the login page and the register page
  * both read from here.
  */
+
+
+const activeContent = consultPageContent;
+
 
 export const loginLeftPanel = {
   heading: activeContent.heading,
