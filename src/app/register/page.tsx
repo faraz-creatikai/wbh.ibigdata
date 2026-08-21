@@ -1,19 +1,27 @@
 "use client";
 
 import React, { useState, useEffect, JSX } from "react";
-import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
-import { FaUserAlt, FaLock, FaPhone, FaCog, FaGithub, FaGoogle } from "react-icons/fa";
-import { useAuth } from "@/context/AuthContext";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Link from "next/link";
+import {
+  FaUserAlt,
+  FaEnvelope,
+  FaLock,
+  FaPhone,
+  FaEye,
+  FaEyeSlash,
+  FaSignInAlt,
+  FaShieldAlt,
+  FaUserPlus,
+} from "react-icons/fa";
 import { registerRequestUser } from "@/store/requestusers/requestusers";
-import PopupMenu from "../component/popups/PopupMenu";
 import RegisterPopup from "../component/popups/RegisterPopup";
 import { passwordRules, ValidatePassword } from "../utils/ValidatePassword";
-import { IoMdMail } from "react-icons/io";
-import { sidebarLogoPath } from "../data/PlatformData";
 import BrandLogo from "../component/labels/BrandLogo";
+import {
+  registerLeftPanel,
+  registerFormContent,
+} from "@/app/data/Registerpagedata";
 
 type PasswordValidationResult = {
   messages: JSX.Element[]; // for inline display
@@ -21,8 +29,6 @@ type PasswordValidationResult = {
 };
 
 const Register = () => {
-  const router = useRouter();
-  const { admin, isLoading, login } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,6 +40,10 @@ const Register = () => {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [currentYear, setCurrentYear] = useState<number | null>(null);
 
+  const { heading, description, features, highlightCard, illustration } =
+    registerLeftPanel;
+  const form = registerFormContent;
+
   const togglePassword = () => {
     setShowPassword(!showPassword);
   };
@@ -42,6 +52,14 @@ const Register = () => {
     const date = new Date();
     setCurrentYear(date.getFullYear());
   }, []);
+
+  const validatePhone = (phone: string) => {
+    if (!phone) return "Phone number is required";
+    if (!/^(?:\+91|0)?[6-9]\d{9}$/.test(phone)) {
+      return "Enter a valid Indian phone number";
+    }
+    return "";
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -73,14 +91,6 @@ const Register = () => {
     toast.error("Failed To Register");
   };
 
-  const validatePhone = (phone: string) => {
-    if (!phone) return "Phone number is required";
-    if (!/^(?:\+91|0)?[6-9]\d{9}$/.test(phone)) {
-      return "Enter a valid Indian phone number";
-    }
-    return "";
-  };
-
   return (
     <>
       {isPopupOpen && (
@@ -95,172 +105,278 @@ const Register = () => {
           }}
         />
       )}
-      <div className="min-h-screen w-full flex justify-center bg-center bg-cover">
+
+      <div className="min-h-screen lg:h-screen lg:overflow-hidden w-full grid lg:grid-cols-[1.15fr_1fr] bg-white dark:bg-[var(--color-secondary-darker)]">
         <Toaster position="top-right" />
 
-        {/* LEFT PANEL (DESKTOP ONLY) */}
-        <div className="relative w-full flex flex-col items-center justify-between bg-[var(--color-primary-lighter)] dark:bg-[var(--color-secondary-darker)] p-10 max-lg:hidden">
-          <div className="self-start">
-            <div className="relative">
-              {/* 👇 DYNAMIC BRAND LOGO (DESKTOP) */}
-              <BrandLogo
-                variant="text"
-                className="h-16 w-auto object-contain"
+        {/* ─────────────── LEFT PANEL ─────────────── */}
+        <div className="relative hidden lg:flex h-screen min-h-0 flex-col justify-between overflow-hidden px-8 xl:px-12 py-[clamp(1rem,2.5vh,2rem)] bg-gradient-to-br from-[var(--color-primary-lighter)] via-[#eef3fd] to-white dark:from-[var(--color-secondary-darker)] dark:via-[var(--color-secondary-dark)] dark:to-[var(--color-secondary-darker)]">
+          {/* decorative dotted grid */}
+          <div
+            className="pointer-events-none absolute top-8 right-8 h-20 w-20 opacity-40"
+            style={{
+              backgroundImage:
+                "radial-gradient(var(--color-primary-light) 1.5px, transparent 1.5px)",
+              backgroundSize: "12px 12px",
+            }}
+          />
+
+          {/* logo */}
+          <div className="relative z-10 shrink-0">
+            <BrandLogo
+              variant="text"
+              className="h-[clamp(3.2rem,5vh,4.5rem)] w-auto object-contain"
+            />
+          </div>
+
+          {/* main content + illustration */}
+          <div className="relative z-10 min-h-0 flex-1 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-6 items-center py-[clamp(0.5rem,2vh,1.5rem)]">
+            <div className="min-h-0">
+              <h1 className="text-[clamp(2.6rem,4.4vh,3.4rem)] leading-[1.15] font-extrabold text-[var(--color-secondary-darker)] dark:text-white">
+                {heading.lineOne}
+                <br />
+                {heading.lineTwo}
+                <span className="text-[var(--color-primary)]">
+                  {heading.highlight}
+                </span>
+              </h1>
+
+              <div className="mt-[clamp(0.5rem,1.2vh,1rem)] h-1.5 w-14 rounded-full bg-[var(--color-primary)]" />
+
+              <p className="mt-[clamp(0.75rem,2vh,1.5rem)] text-[clamp(0.8rem,1.7vh,0.95rem)] leading-relaxed text-gray-600 dark:text-gray-300 max-w-[420px]">
+                {description}
+              </p>
+
+              {/* features */}
+              <ul className="mt-[clamp(1rem,2.5vh,2rem)] space-y-[clamp(0.6rem,1.8vh,1.25rem)]">
+                {features.map((feature) => {
+                  const Icon = feature.icon;
+                  return (
+                    <li key={feature.title} className="flex gap-3.5">
+                      <span className="grid place-items-center shrink-0 h-[clamp(2.75rem,4.6vh,3.25rem)] w-[clamp(2.75rem,4.6vh,3.25rem)] rounded-full bg-white shadow-sm text-[var(--color-primary)]">
+                        <Icon className="text-[clamp(1.8rem,2.8vh,1.9rem)]" />
+                      </span>
+                      <div>
+                        <h3 className="text-[clamp(0.85rem,1.8vh,1rem)] font-semibold text-[var(--color-secondary-darker)] dark:text-white">
+                          {feature.title}
+                        </h3>
+                        <p className="text-[clamp(0.72rem,1.5vh,0.85rem)] text-gray-500 dark:text-gray-400 max-w-[300px] leading-snug">
+                          {feature.description}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            {/* illustration */}
+            <div className="hidden xl:flex h-full min-h-0 items-center justify-center">
+              <img
+                src={illustration}
+                alt="Register illustration"
+                className="max-h-full w-full object-contain"
               />
             </div>
           </div>
 
-          <div className="text-center max-w-[350px]">
-            <img src="logo-register.png" className="w-full h-full" alt="Register Illustration" />
-          </div>
+          {/* highlight card */}
+          <div className="relative z-10 shrink-0 rounded-2xl bg-white/80 dark:bg-white/5 backdrop-blur shadow-sm px-5 py-[clamp(0.75rem,2vh,1.25rem)] flex items-center gap-6">
+            <div className="flex items-start gap-3.5 max-w-[340px]">
+              <span className="grid place-items-center shrink-0 h-[clamp(2.75rem,4.6vh,3.25rem)] w-[clamp(2.75rem,4.6vh,3.25rem)] rounded-full bg-[var(--color-primary-lighter)] text-[var(--color-primary)]">
+                <highlightCard.icon className="text-[clamp(1.8rem,2.8vh,1.9rem)]" />
+              </span>
+              <div>
+                <h3 className="text-[clamp(0.85rem,1.8vh,1rem)] font-semibold text-[var(--color-primary)]">
+                  {highlightCard.title}
+                </h3>
+                <p className="text-[clamp(0.72rem,1.5vh,0.85rem)] text-gray-500 dark:text-gray-400 leading-snug">
+                  {highlightCard.description}
+                </p>
+              </div>
+            </div>
 
-          <div className="self-start text-gray-500">
-            <h2 className="text-[var(--color-secondary)] text-2xl font-bold mb-1">
-              Create Account
-            </h2>
-            <p>Register to manage everything efficiently.</p>
+            <div className="flex flex-1 divide-x divide-gray-200 dark:divide-white/10">
+              {highlightCard.stats.map((stat) => {
+                const Icon = stat.icon;
+                return (
+                  <div key={stat.label} className="flex-1 text-center px-2">
+                    <Icon className="mx-auto text-[var(--color-primary)] mb-0.5 text-[clamp(1.8rem,2.8vh,1.95rem)]" />
+                    <p className="text-[clamp(0.9rem,2vh,1.15rem)] font-bold leading-tight text-[var(--color-secondary-darker)] dark:text-white">
+                      {stat.value}
+                    </p>
+                    <p className="text-[clamp(0.65rem,1.4vh,0.75rem)] text-gray-500 dark:text-gray-400">
+                      {stat.label}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* RIGHT PANEL */}
-        <div className="flex flex-col lg:justify-between items-center w-full  max-lg:bg-cover max-lg:bg-center max-lg:bg-no-repeat min-h-full bg-white max-lg:text-white dark:bg-linear-to-b dark:from-[var(--color-primary)] dark:to-[var(--color-secondary)] px-1">
-          {/* MOBILE HEADER */}
-          <div className="self-start w-full px-5 py-5">
-            <div className="lg:hidden">
-              <div className="relative">
-                {/* 👇 DYNAMIC BRAND LOGO (MOBILE) */}
-                <BrandLogo
-                  variant="text"
-                  className="h-14 w-auto object-contain"
-                />
-              </div>
-             
-            </div>
+        {/* ─────────────── RIGHT PANEL ─────────────── */}
+        <div className="relative flex flex-col items-center justify-center lg:h-screen lg:overflow-y-auto px-5 py-8 bg-white dark:bg-[var(--color-secondary-darker)]">
+          {/* mobile logo */}
+          <div className="lg:hidden w-full max-w-[420px] mb-6">
+            <BrandLogo variant="text" className="h-12 w-auto object-contain" />
           </div>
 
-          {/* FORM CARD */}
-          <div className="w-full max-w-[500px] max-lg:mt-20 flex flex-col justify-center items-center p-4 lg:p-8 py-8 rounded-lg bg-white">
-            <h3 className="text-2xl font-semibold text-[var(--color-primary)] text-center">
-              Register Account
-            </h3>
+          <div className="w-full max-w-[420px] rounded-3xl bg-white dark:bg-white/5 lg:shadow-[0_10px_40px_rgba(15,23,42,0.08)] px-6 sm:px-8 py-[clamp(1.25rem,3.5vh,2rem)]">
+            {/* badge */}
+            <div className="flex itemcs-center justify-center gap-2.5">
+              <span className="grid place-items-center mt-5 h-[clamp(2.6rem,5.6vh,3.6rem)] w-[clamp(2.6rem,5.6vh,3.6rem)] rounded-full bg-[var(--color-primary-lighter)] text-[var(--color-primary)]">
+                <FaUserPlus className="text-[clamp(1.3rem,2.7vh,1.55rem)]" />
+              </span>
+              <span className="flex flex-col bor">
+               <h2 className="mt-[clamp(0.5rem,1.5vh,1rem)]  text-[clamp(1.35rem,3vh,1.8rem)] font-bold text-[var(--color-secondary-darker)] dark:text-white">
+              {form.title}
+            </h2>
+            <p className="mt-1 text-center text-[clamp(0.75rem,1.6vh,0.875rem)] text-gray-500 dark:text-gray-400">
+              {form.subtitle}
+            </p>
+            </span>
+            </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full">
+           
+            
+
+            <form
+              onSubmit={handleSubmit}
+              className="mt-[clamp(0.9rem,2.2vh,1.5rem)] flex flex-col gap-[clamp(0.6rem,1.6vh,1rem)]"
+            >
               {/* FULL NAME */}
-              <div className="relative mt-2">
-                <FaUserAlt className="absolute left-3 top-3 text-gray-800" />
-                <input
-                  onChange={(e) => setName(e.target.value)}
-                  value={name}
-                  type="text"
-                  id="name"
-                  required
-                  className="peer w-full pl-10 pt-4 pb-2 border-b border-gray-300 text-gray-800 focus:border-purple-300 focus:outline-none bg-transparent"
-                />
+              <div>
                 <label
                   htmlFor="name"
-                  className={`absolute left-10 transition-all duration-200 ${
-                    name
-                      ? "-top-1.5 text-[var(--color-primary)] text-sm"
-                      : "top-3 text-gray-800 text-base"
-                  } peer-focus:-top-1.5 peer-focus:text-[var(--color-primary)] peer-focus:text-sm`}
+                  className="block mb-1.5 text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold text-[var(--color-secondary-darker)] dark:text-gray-200"
                 >
-                  Full Name
+                  {form.nameLabel}
                 </label>
+                <div className="flex items-center gap-3 rounded-xl border border-[var(--color-primary-light)] focus-within:border-[var(--color-primary)] focus-within:ring-2 focus-within:ring-[var(--color-primary-lighter)] transition px-3 py-[clamp(0.45rem,1.2vh,0.7rem)]">
+                  <span className="grid place-items-center h-8 w-8 shrink-0 rounded-lg bg-[var(--color-primary-lighter)] text-[var(--color-primary)]">
+                    <FaUserAlt className="text-sm" />
+                  </span>
+                  <input
+                    id="name"
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={form.namePlaceholder}
+                    className="w-full bg-transparent outline-none text-[var(--color-secondary-darker)] dark:text-white placeholder:text-gray-400"
+                  />
+                </div>
               </div>
 
               {/* EMAIL */}
-              <div className="relative mt-2">
-                <FaUserAlt className="absolute left-3 top-3 text-gray-800" />
-                <input
-                  onChange={(e) => setEmail(e.target.value)}
-                  value={email}
-                  type="email"
-                  id="email"
-                  required
-                  className="peer w-full pl-10 pt-4 pb-2 border-b border-gray-300 text-gray-800 focus:border-purple-300 focus:outline-none bg-transparent"
-                />
+              <div>
                 <label
                   htmlFor="email"
-                  className={`absolute left-10 transition-all duration-200 ${
-                    email
-                      ? "-top-1.5 text-[var(--color-primary)] text-sm"
-                      : "top-3 text-gray-800 text-base"
-                  } peer-focus:-top-1.5 peer-focus:text-[var(--color-primary)] peer-focus:text-sm`}
+                  className="block mb-1.5 text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold text-[var(--color-secondary-darker)] dark:text-gray-200"
                 >
-                  Email Address
+                  {form.emailLabel}
                 </label>
+                <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 dark:bg-white/5 focus-within:border-[var(--color-primary)] focus-within:ring-2 focus-within:ring-[var(--color-primary-lighter)] transition px-3 py-[clamp(0.45rem,1.2vh,0.7rem)]">
+                  <span className="grid place-items-center h-8 w-8 shrink-0 rounded-lg bg-gray-200 dark:bg-white/10 text-gray-500">
+                    <FaEnvelope className="text-sm" />
+                  </span>
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={form.emailPlaceholder}
+                    className="w-full bg-transparent outline-none text-[var(--color-secondary-darker)] dark:text-white placeholder:text-gray-400"
+                  />
+                </div>
               </div>
 
               {/* PASSWORD */}
-              <div className="relative mt-4">
-                <FaLock className="absolute left-3 top-3 text-gray-800" />
-                <input
-                  onChange={(e) => setPassword(e.target.value)}
-                  value={password}
-                  type={showPassword ? "text" : "password"}
-                  id="password"
-                  required
-                  className="peer w-full pl-10 pt-4 pb-2 border-b border-gray-300 text-gray-800 focus:border-purple-300 focus:outline-none bg-transparent"
-                />
+              <div>
                 <label
                   htmlFor="password"
-                  className={`absolute left-10 transition-all duration-200 ${
-                    password
-                      ? "-top-1.5 text-[var(--color-primary)] text-sm"
-                      : "top-3 text-gray-800 text-base"
-                  } peer-focus:-top-1.5 peer-focus:text-[var(--color-primary)] peer-focus:text-sm`}
+                  className="block mb-1.5 text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold text-[var(--color-secondary-darker)] dark:text-gray-200"
                 >
-                  Password
+                  {form.passwordLabel}
                 </label>
-                <button
-                  type="button"
-                  onClick={togglePassword}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-                >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
-                </button>
-              </div>
+                <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 dark:bg-white/5 focus-within:border-[var(--color-primary)] focus-within:ring-2 focus-within:ring-[var(--color-primary-lighter)] transition px-3 py-[clamp(0.45rem,1.2vh,0.7rem)]">
+                  <span className="grid place-items-center h-8 w-8 shrink-0 rounded-lg bg-gray-200 dark:bg-white/10 text-gray-500">
+                    <FaLock className="text-sm" />
+                  </span>
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={form.passwordPlaceholder}
+                    className="w-full bg-transparent outline-none text-[var(--color-secondary-darker)] dark:text-white placeholder:text-gray-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePassword}
+                    className="text-gray-400 hover:text-[var(--color-primary)] cursor-pointer transition"
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
 
-              {/* PASSWORD RULES */}
-              <div className="flex flex-col gap-1 text-sm font-extralight">
-                {passwordRules.map((rule, idx) => {
-                  const passed = rule.test.test(password);
-                  return (
-                    passwordError === rule.message && (
-                      <p key={idx} className={passed ? "text-green-500" : "text-red-500"}>
-                        {rule.message}
-                      </p>
-                    )
-                  );
-                })}
+                {/* PASSWORD RULES */}
+                <div className="flex flex-col gap-1 mt-1.5 text-xs font-extralight">
+                  {passwordRules.map((rule, idx) => {
+                    const passed = rule.test.test(password);
+                    return (
+                      passwordError === rule.message && (
+                        <p
+                          key={idx}
+                          className={passed ? "text-green-500" : "text-red-500"}
+                        >
+                          {rule.message}
+                        </p>
+                      )
+                    );
+                  })}
+                </div>
               </div>
 
               {/* PHONE */}
-              <div className="relative">
-                <FaPhone className="absolute left-3 top-3 text-gray-800 rotate-[100deg]" />
-                <input
-                  onChange={(e) => {
-                    const value = e.target.value.trim();
-                    setPhone(value);
-                    setPhoneError(validatePhone(value));
-                  }}
-                  value={phone}
-                  type="text"
-                  id="phone"
-                  className="peer w-full pl-10 pt-4 pb-2 border-b border-gray-300 text-gray-800 focus:border-purple-300 focus:outline-none bg-transparent"
-                />
+              <div>
                 <label
                   htmlFor="phone"
-                  className={`absolute left-10 transition-all duration-200 ${
-                    phone
-                      ? "-top-1.5 text-[var(--color-primary)] text-sm"
-                      : "top-3 text-gray-800 text-base"
-                  } peer-focus:-top-1.5 peer-focus:text-[var(--color-primary)] peer-focus:text-sm`}
+                  className="block mb-1.5 text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold text-[var(--color-secondary-darker)] dark:text-gray-200"
                 >
-                  Phone Number
+                  {form.phoneLabel}
                 </label>
+                <div
+                  className={`flex items-center gap-3 rounded-xl border bg-gray-50 dark:bg-white/5 focus-within:ring-2 focus-within:ring-[var(--color-primary-lighter)] transition px-3 py-[clamp(0.45rem,1.2vh,0.7rem)] ${
+                    phoneError
+                      ? "border-red-400 focus-within:border-red-500"
+                      : "border-gray-200 focus-within:border-[var(--color-primary)]"
+                  }`}
+                >
+                  <span className="grid place-items-center h-8 w-8 shrink-0 rounded-lg bg-gray-200 dark:bg-white/10 text-gray-500">
+                    <FaPhone className="text-sm rotate-[100deg]" />
+                  </span>
+                  <input
+                    id="phone"
+                    type="text"
+                    value={phone}
+                    onChange={(e) => {
+                      const value = e.target.value.trim();
+                      setPhone(value);
+                      setPhoneError(validatePhone(value));
+                    }}
+                    placeholder={form.phonePlaceholder}
+                    className="w-full bg-transparent outline-none text-[var(--color-secondary-darker)] dark:text-white placeholder:text-gray-400"
+                  />
+                </div>
                 {phoneError && (
-                  <p className="text-red-500 text-sm mt-1">{phoneError}</p>
+                  <p className="text-red-500 text-xs mt-1">{phoneError}</p>
                 )}
               </div>
 
@@ -268,23 +384,48 @@ const Register = () => {
               <button
                 type={loading ? "button" : "submit"}
                 disabled={loading}
-                className="w-full py-3 mt-2 text-white text-lg font-medium rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-darker)] hover:from-[var(--color-primary-dark)] hover:to-[var(--color-secondary-darker)] transition disabled:opacity-60"
+                className="w-full cursor-pointer flex items-center justify-center gap-2 py-[clamp(0.55rem,1.6vh,0.85rem)] rounded-xl text-white font-semibold bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-dark)] hover:from-[var(--color-primary-dark)] hover:to-[var(--color-primary-darker)] shadow-lg shadow-[var(--color-primary-lighter)] transition disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {loading ? "Registering..." : "Register"}
+                <FaUserPlus className="text-sm" />
+                {loading ? form.submitLoadingLabel : form.submitLabel}
               </button>
             </form>
 
-            {/* FOOTER LINK */}
-            <div className="mt-6 flex justify-center gap-1 text-sm text-gray-800">
-              <p>Already have an account?</p>
-              <Link href="/admin" className="text-[var(--color-primary)] hover:underline">
-                Login
-              </Link>
+            {/* divider */}
+            <div className="my-[clamp(0.65rem,1.8vh,1.25rem)] flex items-center gap-4">
+              <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
+              <span className="text-sm text-gray-400">{form.dividerLabel}</span>
+              <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
             </div>
+
+            {/* login link */}
+            <Link
+              href={form.loginHref}
+              className="flex items-center justify-center gap-2 w-full py-[clamp(0.55rem,1.6vh,0.85rem)] rounded-xl border border-gray-200 dark:border-white/10 text-[clamp(0.75rem,1.6vh,0.875rem)] text-gray-600 dark:text-gray-300 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition"
+            >
+              <FaSignInAlt className="text-gray-400" />
+              <span>
+                {form.loginPrompt}{" "}
+                <span className="text-[var(--color-primary)] font-semibold">
+                  {form.loginLabel}
+                </span>
+              </span>
+            </Link>
           </div>
 
-          <div className="text-[var(--color-primary-light)] text-sm my-5 max-lg:absolute max-lg:bottom-0 max-lg:left-1/2 max-lg:-translate-x-1/2">
-            &copy;{currentYear} all rights reserved
+          {/* footer */}
+          <div className="mt-[clamp(0.75rem,2vh,1.5rem)] text-center space-y-1">
+            <p className="flex items-center justify-center gap-2 text-xs text-gray-400">
+              <FaShieldAlt className="text-[var(--color-primary-light)]" />
+              {form.securityNote}
+            </p>
+            <p className="text-xs text-gray-400">
+              &copy; {currentYear}{" "}
+              <span className="text-[var(--color-primary)] font-medium">
+                {form.brandName}
+              </span>
+              . {form.copyrightSuffix}
+            </p>
           </div>
         </div>
       </div>
