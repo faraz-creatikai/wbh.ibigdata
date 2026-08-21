@@ -34,7 +34,9 @@ export const AI_PROVIDERS_CONFIG = [
     displayName: "Groq",
     icon: "/icons/groq.svg", // Make sure to add a Groq logo to your public folder!
     models: [
-      { id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B", description: "Extremely fast and versatile open-source model." },
+      { id: "openai/gpt-oss-120b", name: "GPT OSS 120B", description: "OpenAI's flagship 120B open-weight model for complex reasoning and tasks." },
+      { id: "qwen/qwen3.6-27b", name: "Qwen 3.6 27B", description: "Excellent balance of speed, reasoning, and multimodal vision support." },
+      { id: "openai/gpt-oss-20b", name: "GPT OSS 20B", description: "Ultra-fast and lightweight model for simple or repetitive tasks." },
       { id: "mixtral-8x7b-32768", name: "Mixtral 8x7B", description: "High-speed mixture of experts model." }
     ]
   }

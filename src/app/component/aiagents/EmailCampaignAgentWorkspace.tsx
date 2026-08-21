@@ -338,13 +338,290 @@ const LANGUAGE_OPTIONS = [
     { value: 'hinglish', label: 'Hinglish' },
 ]
 
-const AI_PROMPT_HINTS = [
-    { label: 'Audit pitch', prompt: 'Reach out with a friendly audit of their property/listing — point out one specific thing we noticed and offer a quick call to walk through improvements.' },
-    { label: 'Price drop', prompt: "Let them know there's a price drop on something they showed interest in, and invite them to lock it in before it's gone." },
-    { label: 'Re-engagement', prompt: "It's been a while since we last spoke — check in warmly, remind them why they were interested, and invite them to pick up where we left off." },
+/* ─────────────────────────────────────────────────────────────
+   Campaign goal ideas — generic, business-agnostic marketing
+   intents. Not tied to any one niche (real estate, SaaS, etc.) —
+   the AI fills in specifics from each customer's real data via
+   buildCustomerContext; this just points it at the right *kind*
+   of message so users who don't know what to write aren't stuck
+   staring at a blank box.
+   ───────────────────────────────────────────────────────────── */
+
+type PromptIdea = { label: string; prompt: string }
+type PromptCategory = {
+    id: string
+    label: string
+    icon: () => React.JSX.Element
+    accent: string
+    accentBg: string
+    ideas: PromptIdea[]
+}
+
+const CAMPAIGN_GOAL_CATEGORIES: PromptCategory[] = [
+
+    {
+        id: 'intro', label: 'Introduce us', icon: SparkleIcon, accent: '#4338ca', accentBg: '#eef2ff',
+        ideas: [
+            {
+                label: 'Website & AI services pitch',
+                prompt: "Reach out about improving their website and online presence. Reference their current domain/website status if we know it, point out one specific gap or opportunity, and introduce how we can help — an AI chatbot to capture leads 24/7, SEO optimization to help them rank higher, AI agents to automate bookings and support, and a design refresh for better conversions. Invite them to a quick call to walk through it.",
+            },
+            { label: 'Cold introduction', prompt: 'Introduce ourselves for the first time — briefly explain who we are and how we could help based on what we know about them, and invite a short call.' },
+            { label: 'Free audit / review', prompt: 'Offer a free audit or quick review of their situation, point out one specific thing we noticed, and invite them to a call to walk through it.' },
+            { label: 'Referral follow-up', prompt: 'Reach out mentioning we came across them / were connected to them, briefly explain what we do, and suggest a quick intro call.' },
+        ],
+    },
+    {
+        id: 'promo', label: 'Promote an offer', icon: TagIcon, accent: '#c2410c', accentBg: '#fff7ed',
+        ideas: [
+            { label: 'Limited-time discount', prompt: "Let them know about a limited-time discount or special pricing relevant to them, and invite them to lock it in before it expires." },
+            { label: 'New plan or package', prompt: 'Introduce a new plan, package, or bundle that fits their profile, and invite them to learn more.' },
+            { label: 'Seasonal promotion', prompt: 'Share a seasonal or festive promotion relevant to them, with a light sense of urgency.' },
+        ],
+    },
+    {
+        id: 're-engage', label: 'Re-engage', icon: UsersIcon, accent: '#059669', accentBg: '#f0fdf4',
+        ideas: [
+            { label: 'Long time no talk', prompt: "It's been a while since we last spoke — check in warmly, remind them why they were interested, and invite them to pick up where we left off." },
+            { label: 'Still interested?', prompt: 'Ask if they are still interested in what we discussed before, and offer to answer any new questions.' },
+            { label: 'Win-back', prompt: 'Win back a lapsed lead or customer — acknowledge the gap, share what has improved, and invite them back with no pressure.' },
+        ],
+    },
+    {
+        id: 'update', label: 'Share an update', icon: GlobeIcon, accent: '#0369a1', accentBg: '#f0f9ff',
+        ideas: [
+            { label: 'New feature or service', prompt: "Announce something new we now offer that's specifically relevant to their situation, and explain why it matters for them." },
+            { label: 'Status update', prompt: 'Give them a friendly status update related to their inquiry or account, and let them know the next step.' },
+            { label: 'Company news', prompt: 'Share noteworthy company news or a milestone in a way that builds trust and credibility.' },
+        ],
+    },
+    {
+        id: 'follow-up', label: 'Follow up', icon: MailIcon, accent: '#7c3aed', accentBg: '#faf5ff',
+        ideas: [
+            { label: 'After a call or meeting', prompt: 'Follow up after our last conversation, recap briefly, and suggest a clear next step.' },
+            { label: "Haven't heard back", prompt: "Politely follow up since we haven't heard back, restate the value briefly, and make it easy to reply." },
+            { label: 'Nudge toward a decision', prompt: 'Gently nudge them toward a decision, address a likely hesitation, and offer to help if they have questions.' },
+        ],
+    },
+    {
+        id: 'feedback', label: 'Ask for feedback', icon: EditIcon, accent: '#be185d', accentBg: '#fdf2f8',
+        ideas: [
+            { label: 'Request a review', prompt: 'Ask them for a quick review or testimonial about their experience with us.' },
+            { label: 'Quick feedback', prompt: 'Ask for two minutes of feedback on their experience so far, framed as genuinely wanting to improve.' },
+        ],
+    },
+    {
+        id: 'reminder', label: 'Reminder', icon: CalendarIcon, accent: '#b91c1c', accentBg: '#fef2f2',
+        ideas: [
+            { label: 'Renewal or expiry', prompt: 'Remind them that something is coming up for renewal or expiring soon, and what to do next.' },
+            { label: 'Upcoming appointment', prompt: 'Remind them of an upcoming appointment or event, with the key details and what to expect.' },
+        ],
+    },
+    {
+        id: 'thanks', label: 'Thank you', icon: CheckIcon, accent: '#0f766e', accentBg: '#f0fdfa',
+        ideas: [
+            { label: 'Post-purchase thanks', prompt: 'Thank them for choosing us, confirm what happens next, and let them know we are here if they need anything.' },
+            { label: 'Welcome / onboarding', prompt: 'Welcome them warmly, set expectations for what comes next, and offer a point of contact.' },
+        ],
+    },
 ]
 
+// 6 most common intents, derived from the categories above — one place to
+// edit colors/icons/copy, used both in the always-visible quick grid and
+// (via full category) in the "browse all" modal.
+const QUICK_START_IDS = ['intro', 'promo', 're-engage', 'follow-up', 'update', 'reminder']
+const QUICK_START_GOALS = QUICK_START_IDS.map(id => {
+    const cat = CAMPAIGN_GOAL_CATEGORIES.find(c => c.id === id)!
+    return { ...cat.ideas[0], icon: cat.icon, accent: cat.accent, accentBg: cat.accentBg }
+})
+
+// Fast path — 3 most common intents, always visible, one tap away
+const QUICK_PROMPT_HINTS: PromptIdea[] = [
+    CAMPAIGN_GOAL_CATEGORIES[0].ideas[0], // Cold introduction
+    CAMPAIGN_GOAL_CATEGORIES[2].ideas[0], // Long time no talk
+    CAMPAIGN_GOAL_CATEGORIES[1].ideas[0], // Limited-time discount
+]
+
+const ArrowRightIcon = () => (
+    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+)
+
+// Always-visible quick pick — colorful, icon-led, self-explanatory at a glance
+const QuickGoalCard = ({ goal, onClick }: { goal: typeof QUICK_START_GOALS[number]; onClick: () => void }) => (
+    <button
+        onClick={onClick}
+        className="flex items-start gap-2.5 text-left cursor-pointer px-3 py-2.5 rounded-xl border transition-all hover:shadow-sm hover:-translate-y-0.5"
+        style={{ borderColor: '#e2e8f0', background: '#ffffff' }}
+    >
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: goal.accentBg, color: goal.accent }}>
+            <goal.icon />
+        </div>
+        <div className="min-w-0">
+            <p className="text-[10.5px] font-bold" style={{ color: '#1e293b' }}>{goal.label}</p>
+            <p className="text-[9px] mt-0.5 line-clamp-2 leading-relaxed" style={{ color: '#94a3b8' }}>{goal.prompt}</p>
+        </div>
+    </button>
+)
+
+// Big, hard-to-miss entry point into the full gallery — same visual weight
+// as "Choose a template", not a corner link
+const BrowseAllGoalsButton = ({ onClick }: { onClick: () => void }) => (
+    <button
+        onClick={onClick}
+        className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl border cursor-pointer transition-all hover:border-indigo-300"
+        style={{ borderColor: '#c7d2fe', background: '#eef2ff' }}
+    >
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#4f46e5', color: '#ffffff' }}>
+            <SparkleIcon />
+        </div>
+        <div className="flex-1 min-w-0 text-left">
+            <p className="text-[11px] font-bold" style={{ color: '#4338ca' }}>Browse all campaign goals</p>
+            <p className="text-[9px] mt-0.5" style={{ color: '#6366f1' }}>20+ ready-made ideas across every use case</p>
+        </div>
+        <ArrowRightIcon />
+    </button>
+)
+
+const GoalCard = ({ idea, icon: Icon, accent, accentBg, onClick }: { idea: PromptIdea; icon: () => React.JSX.Element; accent: string; accentBg: string; onClick: () => void }) => (
+    <button
+        onClick={onClick}
+        className="flex flex-col rounded-2xl border text-left p-4 transition-all hover:shadow-md hover:-translate-y-0.5"
+        style={{ borderColor: '#e7e2da', background: '#ffffff' }}
+    >
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-2.5" style={{ background: accentBg, color: accent }}>
+            <Icon />
+        </div>
+        <p className="text-[11.5px] font-bold mb-1" style={{ color: '#1c1917' }}>{idea.label}</p>
+        <p className="text-[10px] leading-relaxed line-clamp-3" style={{ color: '#94a3b8' }}>{idea.prompt}</p>
+    </button>
+)
+
+const GoalPickerModal = ({
+    open, categories, onSelect, onClose,
+}: {
+    open: boolean
+    categories: PromptCategory[]
+    onSelect: (prompt: string) => void
+    onClose: () => void
+}) => {
+    const [activeCat, setActiveCat] = useState(categories[0].id)
+
+    useEffect(() => {
+        if (!open) return
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+    }, [open, onClose])
+
+    useEffect(() => { if (open) setActiveCat(categories[0].id) }, [open])
+
+    if (!open) return null
+    const category = categories.find(c => c.id === activeCat)!
+
+    return (
+        <div className="absolute inset-0 z-50 flex flex-col" style={{ background: '#fbfaf8', animation: 'ec-modal-in 0.16s cubic-bezier(0.34,1.56,0.64,1)' }}>
+            <div className="flex-shrink-0 px-6 py-4 border-b flex items-center gap-4" style={{ borderColor: '#e7e2da', background: '#ffffff' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(79,70,229,0.1)' }}>
+                    <SparkleIcon />
+                </div>
+                <div className="min-w-0">
+                    <p className="text-[14px] font-bold" style={{ color: '#1c1917' }}>What's this campaign about?</p>
+                    <p className="text-[10.5px]" style={{ color: '#94a3b8' }}>Pick the closest goal — you can still edit the message before sending</p>
+                </div>
+                <button onClick={onClose} className="ml-auto cursor-pointer w-8 h-8 rounded-lg flex items-center justify-center transition-all flex-shrink-0" style={{ background: '#f1f5f9', color: '#64748b' }}>
+                    <CloseIcon />
+                </button>
+            </div>
+
+            <div className="flex-shrink-0 px-6 py-3 border-b flex items-center gap-1.5 flex-wrap" style={{ borderColor: '#e7e2da', background: '#ffffff' }}>
+                {categories.map(c => (
+                    <button
+                        key={c.id} onClick={() => setActiveCat(c.id)}
+                        className="flex items-center cursor-pointer gap-1.5 text-[10.5px] font-semibold px-3 py-1.5 rounded-full transition-all"
+                        style={activeCat === c.id ? { background: c.accent, color: '#ffffff' } : { background: '#f1f5f9', color: '#64748b' }}
+                    >
+                        <c.icon /> {c.label}
+                    </button>
+                ))}
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-5" style={{ scrollbarWidth: 'thin', scrollbarColor: '#e7e2da transparent' }}>
+                <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+                    {category.ideas.map(idea => (
+                        <GoalCard key={idea.label} idea={idea} icon={category.icon} accent={category.accent} accentBg={category.accentBg} onClick={() => onSelect(idea.prompt)} />
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+}
+
 const TOKEN_HINTS = ['{{Name}}', '{{City}}', '{{Campaign}}', '{{ContactNumber}}', '{{Email}}']
+
+const CampaignGoalPicker = ({ onPick }: { onPick: (prompt: string) => void }) => {
+    const [open, setOpen] = useState(false)
+    const [activeCat, setActiveCat] = useState(CAMPAIGN_GOAL_CATEGORIES[0].id)
+    const ref = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (!open) return
+        const onDocClick = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+        }
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+        document.addEventListener('mousedown', onDocClick)
+        window.addEventListener('keydown', onKey)
+        return () => { document.removeEventListener('mousedown', onDocClick); window.removeEventListener('keydown', onKey) }
+    }, [open])
+
+    const category = CAMPAIGN_GOAL_CATEGORIES.find(c => c.id === activeCat)!
+
+    return (
+        <div className="relative" ref={ref}>
+            <button
+                onClick={() => setOpen(v => !v)}
+                className="flex items-center cursor-pointer gap-1.5 text-[9.5px] font-semibold px-2.5 py-1 rounded-lg border transition-all"
+                style={open ? { background: '#eef2ff', borderColor: '#c7d2fe', color: '#4338ca' } : { background: '#f8fafc', borderColor: '#e2e8f0', color: '#64748b' }}
+            >
+                <SparkleIcon /> Not sure? Browse goals <ChevronIcon open={open} />
+            </button>
+
+            {open && (
+                <div
+                    className="absolute z-20 top-full left-0 mt-2 rounded-2xl border overflow-hidden"
+                    style={{ width: 360, background: '#ffffff', borderColor: '#e2e8f0', boxShadow: '0 12px 32px rgba(0,0,0,0.12)' }}
+                >
+                    <div className="flex items-center gap-1 flex-wrap px-3 pt-3 pb-2 border-b" style={{ borderColor: '#f1f5f9' }}>
+                        {CAMPAIGN_GOAL_CATEGORIES.map(c => (
+                            <button
+                                key={c.id} onClick={() => setActiveCat(c.id)}
+                                className="flex items-center cursor-pointer gap-1 text-[9.5px] font-semibold px-2 py-1 rounded-full transition-all"
+                                style={activeCat === c.id ? { background: '#4f46e5', color: '#ffffff' } : { background: '#f1f5f9', color: '#64748b' }}
+                            >
+                                <c.icon /> {c.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex flex-col gap-1.5 p-3 max-h-[220px] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                        {category.ideas.map(idea => (
+                            <button
+                                key={idea.label}
+                                onClick={() => { onPick(idea.prompt); setOpen(false) }}
+                                className="text-left cursor-pointer px-3 py-2 rounded-xl border transition-all hover:border-indigo-300 hover:bg-indigo-50/40"
+                                style={{ borderColor: '#e2e8f0', background: '#f8fafc' }}
+                            >
+                                <p className="text-[10.5px] font-semibold" style={{ color: '#1e293b' }}>{idea.label}</p>
+                                <p className="text-[9.5px] mt-0.5 line-clamp-2 leading-relaxed" style={{ color: '#94a3b8' }}>{idea.prompt}</p>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
 
 const Avatar = ({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' }) => {
     const initials = (name || '?').split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()
@@ -744,6 +1021,7 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
     const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
     const selectedTemplate = useMemo(() => getEmailTemplateById(selectedTemplateId), [selectedTemplateId])
+    const [isGoalPickerOpen, setIsGoalPickerOpen] = useState(false)
 
     const mapCustomer = (item: any) => {
         const date = new Date(item.createdAt)
@@ -784,6 +1062,17 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
         window.addEventListener('keydown', onKey)
         return () => window.removeEventListener('keydown', onKey)
     }, [viewingCustomer, showConfirm, isSending, isPickerOpen])
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key !== 'Escape') return
+            if (isPickerOpen) setIsPickerOpen(false)
+            else if (isGoalPickerOpen) setIsGoalPickerOpen(false)
+            else if (viewingCustomer) setViewingCustomer(null)
+            else if (showConfirm && !isSending) setShowConfirm(false)
+        }
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+    }, [viewingCustomer, showConfirm, isSending, isPickerOpen, isGoalPickerOpen])
 
     const SEARCH_FIELDS = ['All', 'Name', 'Email', 'Campaign', 'Type', 'Phone'] as const
 
@@ -1032,13 +1321,13 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
                                     placeholder="e.g. Reach out about a limited-time price drop on properties they showed interest in…"
                                     className="w-full resize-none rounded-xl px-3 py-2.5 text-[12px] leading-relaxed outline-none border transition-all duration-150 bg-stone-50 border-slate-200 text-slate-700 focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 focus:bg-white disabled:opacity-50"
                                 />
-                                <div className="flex items-center gap-1.5 flex-wrap mt-2">
-                                    {AI_PROMPT_HINTS.map(h => (
-                                        <button key={h.label} onClick={() => setUserPrompt(h.prompt)} className="text-[9.5px] cursor-pointer font-medium px-2 py-1 rounded-lg border transition-all" style={{ background: '#f8fafc', borderColor: '#e2e8f0', color: '#64748b' }}>
-                                            {h.label}
-                                        </button>
+                                <p className="text-[10.5px] font-semibold mb-1.5 mt-3" style={{ color: '#334155' }}>Not sure what to write? Start from a goal:</p>
+                                <div className="grid grid-cols-2 gap-2 mb-2">
+                                    {QUICK_START_GOALS.map(g => (
+                                        <QuickGoalCard key={g.label} goal={g} onClick={() => setUserPrompt(g.prompt)} />
                                     ))}
                                 </div>
+                                <BrowseAllGoalsButton onClick={() => setIsGoalPickerOpen(true)} />
 
                                 <p className="text-[10.5px] font-semibold mb-1.5 mt-3.5 flex items-center gap-1.5" style={{ color: '#334155' }}><GlobeIcon /> Tone &amp; language</p>
                                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -1188,6 +1477,12 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
                 selectedId={selectedTemplateId}
                 onSelect={handleSelectTemplate}
                 onClose={() => setIsPickerOpen(false)}
+            />
+            <GoalPickerModal
+                open={isGoalPickerOpen}
+                categories={CAMPAIGN_GOAL_CATEGORIES}
+                onSelect={(prompt) => { setUserPrompt(prompt); setIsGoalPickerOpen(false) }}
+                onClose={() => setIsGoalPickerOpen(false)}
             />
 
             <style>{`

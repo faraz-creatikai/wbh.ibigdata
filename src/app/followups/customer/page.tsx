@@ -219,6 +219,7 @@ export default function CustomerFollowups() {
                     Name: item.customer.customerName,
                     ContactNumber: item.customer.ContactNumber,
                     User: item.User || "N/A", // ⚠️ FIXED: NOW READS COMMA SEPARATED USERS
+                    LatestFollowupTaken: item.StartDate || "N/A",
                     Date: formattedDate,
                 }
             }));
