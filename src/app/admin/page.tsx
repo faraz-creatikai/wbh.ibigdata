@@ -14,7 +14,7 @@ import {
 } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
 import BrandLogo from "../component/labels/BrandLogo";
-import { loginLeftPanel, loginFormContent  } from "@/app/data/Loginpagedata";
+import { loginLeftPanel, loginFormContent } from "@/app/data/Loginpagedata";
 
 const Login = () => {
   const router = useRouter();
@@ -27,8 +27,8 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [currentYear, setCurrentYear] = useState<number | null>(null);
 
-    const { heading, description, features, highlightCard, illustration } = loginLeftPanel;
-const form = loginFormContent;
+  const { heading, description, features, highlightCard, illustration } = loginLeftPanel;
+  const form = loginFormContent;
 
   useEffect(() => {
     setCurrentYear(new Date().getFullYear());
@@ -76,7 +76,7 @@ const form = loginFormContent;
         </div>
 
         {/* main content + illustration */}
-        <div className="relative z-10 min-h-0 flex-1 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-6 items-center py-[clamp(0.5rem,2vh,1.5rem)]">
+        <div className="relative z-10 min-h-0 flex-1 grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-6 items-center py-[clamp(0.5rem,2vh,1.5rem)]">
           <div className="min-h-0">
             <h1 className="text-[clamp(2.6rem,4.4vh,3.4rem)] leading-[1.15] font-extrabold text-[var(--color-secondary-darker)] dark:text-white">
               {heading.lineOne}
@@ -117,7 +117,7 @@ const form = loginFormContent;
           </div>
 
           {/* illustration */}
-          <div className="hidden xl:flex h-full min-h-0 items-center justify-center">
+          <div className="hidden 2xl:flex h-full min-h-0 items-center justify-center max-w-[400px]">
             <img
               src={illustration}
               alt="Login illustration"
@@ -162,90 +162,89 @@ const form = loginFormContent;
       </div>
 
       {/* ─────────────── RIGHT PANEL ─────────────── */}
-     <div className="relative flex flex-col items-center lg:h-screen min-h-screen lg:overflow-y-auto px-5 py-8 bg-white dark:bg-[var(--color-secondary-darker)]">
+      <div className="relative flex flex-col items-center lg:h-screen min-h-screen lg:overflow-y-auto px-5 py-8 bg-white dark:bg-[var(--color-secondary-darker)]">
         {/* mobile logo */}
-        {/* mobile logo */}
-<div className="lg:hidden w-full max-w-[420px] shrink-0">
-  <BrandLogo variant="text" className="h-12 w-auto object-contain" />
-</div>
-<div className="flex-1 w-full flex flex-col items-center justify-center">
-        <div className="w-full max-w-[420px] rounded-3xl bg-white dark:bg-white/5 lg:shadow-[0_10px_40px_rgba(15,23,42,0.08)] px-6 sm:px-8 py-[clamp(1.25rem,4vh,2.25rem)]">
-          {/* lock badge */}
-          <div className="grid place-items-center">
-            <span className="grid place-items-center h-[clamp(2.75rem,6vh,4rem)] w-[clamp(2.75rem,6vh,4rem)] rounded-full bg-[var(--color-primary-lighter)] text-[var(--color-primary)]">
-              <FaLock className="text-[clamp(0.9rem,2.2vh,1.25rem)]" />
-            </span>
-          </div>
-
-          <h2 className="mt-[clamp(0.6rem,1.8vh,1.25rem)] text-center text-[clamp(1.35rem,3.2vh,1.9rem)] font-bold text-[var(--color-secondary-darker)] dark:text-white">
-            {form.title}
-          </h2>
-          <p className="mt-1 text-center text-[clamp(0.75rem,1.6vh,0.875rem)] text-gray-500 dark:text-gray-400">
-            {form.subtitle}
-          </p>
-
-          <form
-            onSubmit={handleSubmit}
-            className="mt-[clamp(1rem,2.8vh,2rem)] flex flex-col gap-[clamp(0.75rem,2vh,1.25rem)]"
-          >
-            {/* email */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block mb-1.5 text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold text-[var(--color-secondary-darker)] dark:text-gray-200"
-              >
-                {form.emailLabel}
-              </label>
-              <div className="flex items-center gap-3 rounded-xl border border-[var(--color-primary-light)] focus-within:border-[var(--color-primary)] focus-within:ring-2 focus-within:ring-[var(--color-primary-lighter)] transition px-3 py-[clamp(0.5rem,1.4vh,0.75rem)]">
-                <span className="grid place-items-center h-8 w-8 shrink-0 rounded-lg bg-[var(--color-primary-lighter)] text-[var(--color-primary)]">
-                  <FaEnvelope className="text-sm" />
-                </span>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={form.emailPlaceholder}
-                  className="w-full bg-transparent outline-none text-[var(--color-secondary-darker)] dark:text-white placeholder:text-gray-400"
-                />
-              </div>
+        <div className="lg:hidden w-full max-w-[420px] shrink-0">
+          <BrandLogo variant="text" className="h-12 w-auto object-contain" />
+        </div>
+        <div className="flex-1 w-full flex flex-col items-center justify-center">
+          <div className="w-full max-w-[480px] rounded-3xl bg-white dark:bg-white/5 lg:shadow-[0_10px_40px_rgba(15,23,42,0.08)] px-6 sm:px-8 py-[clamp(1.25rem,4vh,2.25rem)]">
+            {/* lock badge */}
+            <div className="grid place-items-center">
+              <span className="grid place-items-center h-[clamp(2.75rem,6vh,4rem)] w-[clamp(2.75rem,6vh,4rem)] rounded-full bg-[var(--color-primary-lighter)] text-[var(--color-primary)]">
+                <FaLock className="text-[clamp(0.9rem,2.2vh,1.25rem)]" />
+              </span>
             </div>
 
-            {/* password */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block mb-1.5 text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold text-[var(--color-secondary-darker)] dark:text-gray-200"
-              >
-                {form.passwordLabel}
-              </label>
-              <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 dark:bg-white/5 focus-within:border-[var(--color-primary)] focus-within:ring-2 focus-within:ring-[var(--color-primary-lighter)] transition px-3 py-[clamp(0.5rem,1.4vh,0.75rem)]">
-                <span className="grid place-items-center h-8 w-8 shrink-0 rounded-lg bg-gray-200 dark:bg-white/10 text-gray-500">
-                  <FaLock className="text-sm" />
-                </span>
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={form.passwordPlaceholder}
-                  className="w-full bg-transparent outline-none text-[var(--color-secondary-darker)] dark:text-white placeholder:text-gray-400"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="text-gray-400 hover:text-[var(--color-primary)] cursor-pointer transition"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+            <h2 className="mt-[clamp(0.6rem,1.8vh,1.25rem)] text-center text-[clamp(1.35rem,3.2vh,1.9rem)] font-bold text-[var(--color-secondary-darker)] dark:text-white">
+              {form.title}
+            </h2>
+            <p className="mt-1 text-center text-[clamp(0.75rem,1.6vh,0.875rem)] text-gray-500 dark:text-gray-400">
+              {form.subtitle}
+            </p>
+
+            <form
+              onSubmit={handleSubmit}
+              className="mt-[clamp(1rem,2.8vh,2rem)] flex flex-col gap-[clamp(0.75rem,2vh,1.25rem)]"
+            >
+              {/* email */}
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block mb-1.5 text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold text-[var(--color-secondary-darker)] dark:text-gray-200"
                 >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
-                </button>
+                  {form.emailLabel}
+                </label>
+                <div className="flex items-center gap-3 rounded-xl border border-[var(--color-primary-light)] focus-within:border-[var(--color-primary)] focus-within:ring-2 focus-within:ring-[var(--color-primary-lighter)] transition px-3 py-[clamp(0.5rem,1.4vh,0.75rem)]">
+                  <span className="grid place-items-center h-8 w-8 shrink-0 rounded-lg bg-[var(--color-primary-lighter)] text-[var(--color-primary)]">
+                    <FaEnvelope className="text-sm" />
+                  </span>
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={form.emailPlaceholder}
+                    className="w-full bg-transparent outline-none text-[var(--color-secondary-darker)] dark:text-white placeholder:text-gray-400"
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* remember + forgot */}
-            {/* <div className="flex items-center justify-between text-[clamp(0.75rem,1.6vh,0.875rem)]">
+              {/* password */}
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block mb-1.5 text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold text-[var(--color-secondary-darker)] dark:text-gray-200"
+                >
+                  {form.passwordLabel}
+                </label>
+                <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 dark:bg-white/5 focus-within:border-[var(--color-primary)] focus-within:ring-2 focus-within:ring-[var(--color-primary-lighter)] transition px-3 py-[clamp(0.5rem,1.4vh,0.75rem)]">
+                  <span className="grid place-items-center h-8 w-8 shrink-0 rounded-lg bg-gray-200 dark:bg-white/10 text-gray-500">
+                    <FaLock className="text-sm" />
+                  </span>
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={form.passwordPlaceholder}
+                    className="w-full bg-transparent outline-none text-[var(--color-secondary-darker)] dark:text-white placeholder:text-gray-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="text-gray-400 hover:text-[var(--color-primary)] cursor-pointer transition"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
+              </div>
+
+              {/* remember + forgot */}
+              {/* <div className="flex items-center justify-between text-[clamp(0.75rem,1.6vh,0.875rem)]">
               <label className="flex items-center gap-2 cursor-pointer select-none text-gray-600 dark:text-gray-300">
                 <input
                   type="checkbox"
@@ -263,53 +262,53 @@ const form = loginFormContent;
               </Link>
             </div> */}
 
-            {/* submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full cursor-pointer flex items-center justify-center gap-2 py-[clamp(0.6rem,1.7vh,0.9rem)] rounded-xl text-white font-semibold bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-dark)] hover:from-[var(--color-primary-dark)] hover:to-[var(--color-primary-darker)] shadow-lg shadow-[var(--color-primary-lighter)] transition disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <FaLock className="text-sm" />
-              {loading ? form.submitLoadingLabel : form.submitLabel}
-            </button>
-          </form>
+              {/* submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full cursor-pointer flex items-center justify-center gap-2 py-[clamp(0.6rem,1.7vh,0.9rem)] rounded-xl text-white font-semibold bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-dark)] hover:from-[var(--color-primary-dark)] hover:to-[var(--color-primary-darker)] shadow-lg shadow-[var(--color-primary-lighter)] transition disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <FaLock className="text-sm" />
+                {loading ? form.submitLoadingLabel : form.submitLabel}
+              </button>
+            </form>
 
-          {/* divider */}
-          <div className="my-[clamp(0.75rem,2.2vh,1.5rem)] flex items-center gap-4">
-            <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
-            <span className="text-sm text-gray-400">{form.dividerLabel}</span>
-            <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
+            {/* divider */}
+            <div className="my-[clamp(0.75rem,2.2vh,1.5rem)] flex items-center gap-4">
+              <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
+              <span className="text-sm text-gray-400">{form.dividerLabel}</span>
+              <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
+            </div>
+
+            {/* register */}
+            <Link
+              href={form.registerHref}
+              className="flex items-center justify-center gap-2 w-full py-[clamp(0.6rem,1.7vh,0.9rem)] rounded-xl border border-gray-200 dark:border-white/10 text-[clamp(0.75rem,1.6vh,0.875rem)] text-gray-600 dark:text-gray-300 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition"
+            >
+              <FaUserPlus className="text-gray-400" />
+              <span>
+                {form.registerPrompt}{" "}
+                <span className="text-[var(--color-primary)] font-semibold">
+                  {form.registerLabel}
+                </span>
+              </span>
+            </Link>
           </div>
 
-          {/* register */}
-          <Link
-            href={form.registerHref}
-            className="flex items-center justify-center gap-2 w-full py-[clamp(0.6rem,1.7vh,0.9rem)] rounded-xl border border-gray-200 dark:border-white/10 text-[clamp(0.75rem,1.6vh,0.875rem)] text-gray-600 dark:text-gray-300 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition"
-          >
-            <FaUserPlus className="text-gray-400" />
-            <span>
-              {form.registerPrompt}{" "}
-              <span className="text-[var(--color-primary)] font-semibold">
-                {form.registerLabel}
+          {/* footer */}
+          <div className="mt-[clamp(1rem,2.5vh,2rem)] text-center space-y-1">
+            <p className="flex items-center justify-center gap-2 text-xs text-gray-400">
+              <FaShieldAlt className="text-[var(--color-primary-light)]" />
+              {form.securityNote}
+            </p>
+            <p className="text-xs text-gray-400">
+              &copy; {currentYear}{" "}
+              <span className="text-[var(--color-primary)] font-medium">
+                {form.brandName}
               </span>
-            </span>
-          </Link>
-        </div>
-
-        {/* footer */}
-        <div className="mt-[clamp(1rem,2.5vh,2rem)] text-center space-y-1">
-          <p className="flex items-center justify-center gap-2 text-xs text-gray-400">
-            <FaShieldAlt className="text-[var(--color-primary-light)]" />
-            {form.securityNote}
-          </p>
-          <p className="text-xs text-gray-400">
-            &copy; {currentYear}{" "}
-            <span className="text-[var(--color-primary)] font-medium">
-              {form.brandName}
-            </span>
-            . {form.copyrightSuffix}
-          </p>
-        </div>
+              . {form.copyrightSuffix}
+            </p>
+          </div>
         </div>
       </div>
     </div>

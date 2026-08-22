@@ -65,78 +65,7 @@ export interface LoginPageContent {
   };
 }
 
-export const loginPageContent: LoginPageContent = {
-  illustration: "/bglogo.png",
 
-  heading: {
-    lineOne: "Smart Solutions.",
-    lineTwo: "Stronger ",
-    highlight: "Businesses.",
-  },
-
-  description:
-    "Consultancy CRM helps you manage clients, projects, and tasks in one place. Streamline your workflow, boost team collaboration, and deliver better results every time.",
-
-  features: [
-    {
-      icon: FaUsers,
-      title: "Client Management",
-      description:
-        "Organize client information and communication in a centralized system.",
-    },
-    {
-      icon: FaBriefcase,
-      title: "Project Tracking",
-      description:
-        "Plan, assign, and track projects to ensure timely delivery.",
-    },
-    {
-      icon: FaChartBar,
-      title: "Business Insights",
-      description:
-        "Get real-time reports and analytics to make smarter decisions.",
-    },
-    {
-      icon: FaShieldAlt,
-      title: "Secure & Reliable",
-      description:
-        "Your data is safe with role-based access and industry-standard security.",
-    },
-  ],
-
-  highlightCard: {
-    icon: FaRocket,
-    title: "Empowering Your Success",
-    description:
-      "We're here to help you build better relationships, work smarter, and grow your business.",
-    stats: [
-      { icon: FaUsers, value: "10K+", label: "Happy Clients" },
-      { icon: FaChartLine, value: "25K+", label: "Projects Managed" },
-      { icon: FaTrophy, value: "98%", label: "Client Satisfaction" },
-    ],
-  },
-
-  form: {
-    title: "Admin Login",
-    subtitle: "Welcome back! Please login to continue.",
-    emailLabel: "Email Address",
-    emailPlaceholder: "admin@example.com",
-    passwordLabel: "Password",
-    passwordPlaceholder: "••••••••••",
-    rememberLabel: "Remember me",
-    forgotLabel: "Forgot Password?",
-    forgotHref: "/forgot-password",
-    submitLabel: "Login",
-    submitLoadingLabel: "Logging in...",
-    dividerLabel: "or",
-    registerPrompt: "Don't have an Account?",
-    registerLabel: "Register",
-    registerHref: "/register",
-    securityNote: "Your data is protected with enterprise-grade security.",
-    brandName: "Consultancy CRM",
-    copyrightSuffix: "All rights reserved.",
-  },
-};
 
 /**
  * CONSULTATION VARIANT
@@ -217,6 +146,80 @@ export const consultPageContent: LoginPageContent = {
 };
 
 
+export const loginPageContent: LoginPageContent = {
+  illustration: "/bglogo.png",
+
+  heading: {
+    lineOne: "Smart Solutions.",
+    lineTwo: "Stronger ",
+    highlight: "Businesses.",
+  },
+
+  description:
+    "Consultancy CRM helps you manage clients, projects, and tasks in one place. Streamline your workflow, boost team collaboration, and deliver better results every time.",
+
+  features: [
+    {
+      icon: FaUsers,
+      title: "Client Management",
+      description:
+        "Organize client information and communication in a centralized system.",
+    },
+    {
+      icon: FaBriefcase,
+      title: "Project Tracking",
+      description:
+        "Plan, assign, and track projects to ensure timely delivery.",
+    },
+    {
+      icon: FaChartBar,
+      title: "Business Insights",
+      description:
+        "Get real-time reports and analytics to make smarter decisions.",
+    },
+    {
+      icon: FaShieldAlt,
+      title: "Secure & Reliable",
+      description:
+        "Your data is safe with role-based access and industry-standard security.",
+    },
+  ],
+
+  highlightCard: {
+    icon: FaRocket,
+    title: "Empowering Your Success",
+    description:
+      "We're here to help you build better relationships, work smarter, and grow your business.",
+    stats: [
+      { icon: FaUsers, value: "10K+", label: "Happy Clients" },
+      { icon: FaChartLine, value: "25K+", label: "Projects Managed" },
+      { icon: FaTrophy, value: "98%", label: "Client Satisfaction" },
+    ],
+  },
+
+  form: {
+    title: "Admin Login",
+    subtitle: "Welcome back! Please login to continue.",
+    emailLabel: "Email Address",
+    emailPlaceholder: "admin@example.com",
+    passwordLabel: "Password",
+    passwordPlaceholder: "••••••••••",
+    rememberLabel: "Remember me",
+    forgotLabel: "Forgot Password?",
+    forgotHref: "/forgot-password",
+    submitLabel: "Login",
+    submitLoadingLabel: "Logging in...",
+    dividerLabel: "or",
+    registerPrompt: "Don't have an Account?",
+    registerLabel: "Register",
+    registerHref: "/register",
+    securityNote: "Your data is protected with enterprise-grade security.",
+    brandName: "Consultancy CRM",
+    copyrightSuffix: "All rights reserved.",
+  },
+};
+
+
 
 
 
@@ -229,7 +232,7 @@ export const consultPageContent: LoginPageContent = {
  */
 
 
-const activeContent = consultPageContent;
+const activeContent = loginPageContent;
 
 
 export const loginLeftPanel = {

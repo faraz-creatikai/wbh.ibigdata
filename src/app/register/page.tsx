@@ -130,7 +130,7 @@ const Register = () => {
           </div>
 
           {/* main content + illustration */}
-          <div className="relative z-10 min-h-0 flex-1 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-6 items-center py-[clamp(0.5rem,2vh,1.5rem)]">
+          <div className="relative z-10 min-h-0 flex-1 grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-6 items-center py-[clamp(0.5rem,2vh,1.5rem)]">
             <div className="min-h-0">
               <h1 className="text-[clamp(2.6rem,4.4vh,3.4rem)] leading-[1.15] font-extrabold text-[var(--color-secondary-darker)] dark:text-white">
                 {heading.lineOne}
@@ -171,7 +171,7 @@ const Register = () => {
             </div>
 
             {/* illustration */}
-            <div className="hidden xl:flex h-full min-h-0 items-center justify-center">
+            <div className="hidden 2xl:flex h-full min-h-0 items-center justify-center">
               <img
                 src={illustration}
                 alt="Register illustration"
@@ -222,7 +222,7 @@ const Register = () => {
             <BrandLogo variant="text" className="h-12 w-auto object-contain" />
           </div>
 
-          <div className="w-full max-w-[420px] rounded-3xl bg-white dark:bg-white/5 lg:shadow-[0_10px_40px_rgba(15,23,42,0.08)] px-6 sm:px-8 py-[clamp(1.25rem,3.5vh,2rem)]">
+          <div className="w-full max-w-[480px] rounded-3xl bg-white dark:bg-white/5 lg:shadow-[0_10px_40px_rgba(15,23,42,0.08)] px-6 sm:px-8 py-[clamp(1.25rem,3.5vh,2rem)]">
             {/* badge */}
             <div className="flex itemcs-center justify-center gap-2.5">
               <span className="grid place-items-center mt-5 h-[clamp(2.6rem,5.6vh,3.6rem)] w-[clamp(2.6rem,5.6vh,3.6rem)] rounded-full bg-[var(--color-primary-lighter)] text-[var(--color-primary)]">
