@@ -250,7 +250,7 @@ const Register = () => {
             </h2>
           </div>
 
-          <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-start lg:justify-center px-5 lg:px-0 overflow-hidden">
+          <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-start lg:justify-center px-5 lg:px-0 overflow-y-auto">
             <div className="w-full max-w-[480px] rounded-3xl bg-white dark:bg-white/5 lg:shadow-[0_10px_40px_rgba(15,23,42,0.08)] px-1 sm:px-8 lg:px-8 py-[clamp(0.45rem,1.6dvh,1rem)] lg:py-[clamp(1.25rem,3.5vh,2rem)]">
               {/* badge */}
               <div className="flex itemcs-center justify-center gap-2.5">

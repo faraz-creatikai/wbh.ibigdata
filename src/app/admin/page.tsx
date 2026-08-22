@@ -193,7 +193,7 @@ const Login = () => {
           </h2>
         </div>
 
-        <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center lg:justify-center px-5 lg:px-0 overflow-hidden">
+        <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center lg:justify-center px-5 lg:px-0 overflow-y-auto">
           <div className="w-full max-w-[480px] rounded-3xl lg:rounded-3xl bg-white dark:bg-white/5 lg:shadow-[0_10px_40px_rgba(15,23,42,0.08)] px-1 sm:px-8 lg:px-8 py-[clamp(0.6rem,2dvh,1.5rem)] lg:py-[clamp(1.25rem,4vh,2.25rem)]">
             {/* lock badge — desktop only, mobile already shows illustration above */}
             <div className="hidden lg:grid place-items-center">
