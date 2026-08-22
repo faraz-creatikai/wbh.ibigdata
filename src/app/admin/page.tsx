@@ -52,10 +52,10 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen lg:h-screen lg:overflow-hidden w-full grid lg:grid-cols-[1.15fr_1fr] bg-white dark:bg-[var(--color-secondary-darker)]">
+    <div className="h-[100dvh] lg:h-screen overflow-hidden w-full grid lg:grid-cols-[1.15fr_1fr] bg-white dark:bg-[var(--color-secondary-darker)]">
       <Toaster position="top-right" />
 
-      {/* ─────────────── LEFT PANEL ─────────────── */}
+      {/* ─────────────── LEFT PANEL (DESKTOP ONLY — UNCHANGED) ─────────────── */}
       <div className="relative hidden lg:flex h-screen min-h-0 flex-col justify-between overflow-hidden px-8 xl:px-12 py-[clamp(1rem,2.5vh,2rem)] bg-gradient-to-br from-[var(--color-primary-lighter)] via-[#eef3fd] to-white dark:from-[var(--color-secondary-darker)] dark:via-[var(--color-secondary-dark)] dark:to-[var(--color-secondary-darker)]">
         {/* decorative dotted grid */}
         <div
@@ -162,40 +162,66 @@ const Login = () => {
       </div>
 
       {/* ─────────────── RIGHT PANEL ─────────────── */}
-      <div className="relative flex flex-col items-center lg:h-screen min-h-screen lg:overflow-y-auto px-5 py-8 bg-white dark:bg-[var(--color-secondary-darker)]">
-        {/* mobile logo */}
-        <div className="lg:hidden w-full max-w-[420px] shrink-0">
-          <BrandLogo variant="text" className="h-12 w-auto object-contain" />
+      <div className="relative flex flex-col items-center h-[100dvh] lg:h-screen overflow-hidden lg:overflow-y-auto px-0 lg:px-5 py-0 lg:py-8 bg-white dark:bg-[var(--color-secondary-darker)]">
+        {/* ═══════════ MOBILE HEADER (mobile only, desktop untouched) ═══════════ */}
+        <div className="lg:hidden relative w-full shrink-0 overflow-hidden rounded-b-[1.75rem] bg-gradient-to-br from-[var(--color-primary-lighter)] via-[#eef3fd] to-white dark:from-[var(--color-secondary-darker)] dark:via-[var(--color-secondary-dark)] dark:to-[var(--color-secondary-darker)] px-5 pt-[clamp(0.75rem,2.4dvh,1.1rem)] pb-[clamp(0.9rem,3dvh,1.4rem)]">
+          {/* decorative dotted grid — same treatment as the desktop panel */}
+          <div
+            className="pointer-events-none absolute -top-2 -right-2 h-24 w-24 opacity-40"
+            style={{
+              backgroundImage:
+                "radial-gradient(var(--color-primary-light) 1.5px, transparent 1.5px)",
+              backgroundSize: "12px 12px",
+            }}
+          />
+
+          {/* logo, top-left, original brand color — background is light so it just sits on it, no box, no filter */}
+          <div className="relative z-10 flex items-center justify-start">
+          </div>
+
+          {/* illustration */}
+          <div className="relative z-10 mt-[clamp(1.4rem,2.6dvh,1.75rem)] mb-5 flex justify-center">
+            <BrandLogo variant="text" className="h-[70px] w-auto object-contain" />
+           
+          </div>
+
+          {/* tagline */}
+          <h2 className="relative z-10 mt-[clamp(0.35rem,1.2dvh,0.6rem)] text-center text-[clamp(1rem,3dvh,1.25rem)] font-bold leading-snug text-[var(--color-secondary-darker)] dark:text-white">
+            Log in to stay on top of
+            <br />
+            your tasks and projects.
+          </h2>
         </div>
-        <div className="flex-1 w-full flex flex-col items-center justify-center">
-          <div className="w-full max-w-[480px] rounded-3xl bg-white dark:bg-white/5 lg:shadow-[0_10px_40px_rgba(15,23,42,0.08)] px-6 sm:px-8 py-[clamp(1.25rem,4vh,2.25rem)]">
-            {/* lock badge */}
-            <div className="grid place-items-center">
+
+        <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center lg:justify-center px-5 lg:px-0 overflow-hidden">
+          <div className="w-full max-w-[480px] rounded-3xl lg:rounded-3xl bg-white dark:bg-white/5 lg:shadow-[0_10px_40px_rgba(15,23,42,0.08)] px-1 sm:px-8 lg:px-8 py-[clamp(0.6rem,2dvh,1.5rem)] lg:py-[clamp(1.25rem,4vh,2.25rem)]">
+            {/* lock badge — desktop only, mobile already shows illustration above */}
+            <div className="hidden lg:grid place-items-center">
               <span className="grid place-items-center h-[clamp(2.75rem,6vh,4rem)] w-[clamp(2.75rem,6vh,4rem)] rounded-full bg-[var(--color-primary-lighter)] text-[var(--color-primary)]">
                 <FaLock className="text-[clamp(0.9rem,2.2vh,1.25rem)]" />
               </span>
             </div>
 
-            <h2 className="mt-[clamp(0.6rem,1.8vh,1.25rem)] text-center text-[clamp(1.35rem,3.2vh,1.9rem)] font-bold text-[var(--color-secondary-darker)] dark:text-white">
+            <h2 className="mt-0 lg:mt-[clamp(0.6rem,1.8vh,1.25rem)] text-center text-[clamp(1.15rem,3dvh,1.9rem)] lg:text-[clamp(1.35rem,3.2vh,1.9rem)] font-bold text-[var(--color-secondary-darker)] dark:text-white">
               {form.title}
             </h2>
-            <p className="mt-1 text-center text-[clamp(0.75rem,1.6vh,0.875rem)] text-gray-500 dark:text-gray-400">
+            <p className="mt-1 text-center text-[clamp(0.7rem,1.4dvh,0.875rem)] lg:text-[clamp(0.75rem,1.6vh,0.875rem)] text-gray-500 dark:text-gray-400">
               {form.subtitle}
             </p>
 
             <form
               onSubmit={handleSubmit}
-              className="mt-[clamp(1rem,2.8vh,2rem)] flex flex-col gap-[clamp(0.75rem,2vh,1.25rem)]"
+              className="mt-[clamp(0.65rem,2dvh,2rem)] lg:mt-[clamp(1rem,2.8vh,2rem)] flex flex-col gap-[clamp(0.55rem,1.6dvh,1.25rem)] lg:gap-[clamp(0.75rem,2vh,1.25rem)]"
             >
               {/* email */}
               <div>
                 <label
                   htmlFor="email"
-                  className="block mb-1.5 text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold text-[var(--color-secondary-darker)] dark:text-gray-200"
+                  className="block mb-1.5 text-[clamp(0.72rem,1.4dvh,0.875rem)] lg:text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold text-[var(--color-secondary-darker)] dark:text-gray-200"
                 >
                   {form.emailLabel}
                 </label>
-                <div className="flex items-center gap-3 rounded-xl border border-[var(--color-primary-light)] focus-within:border-[var(--color-primary)] focus-within:ring-2 focus-within:ring-[var(--color-primary-lighter)] transition px-3 py-[clamp(0.5rem,1.4vh,0.75rem)]">
+                <div className="flex items-center gap-3 rounded-xl border border-[var(--color-primary-light)] focus-within:border-[var(--color-primary)] focus-within:ring-2 focus-within:ring-[var(--color-primary-lighter)] transition px-3 py-[clamp(0.4rem,1.3dvh,0.75rem)] lg:py-[clamp(0.5rem,1.4vh,0.75rem)]">
                   <span className="grid place-items-center h-8 w-8 shrink-0 rounded-lg bg-[var(--color-primary-lighter)] text-[var(--color-primary)]">
                     <FaEnvelope className="text-sm" />
                   </span>
@@ -215,11 +241,11 @@ const Login = () => {
               <div>
                 <label
                   htmlFor="password"
-                  className="block mb-1.5 text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold text-[var(--color-secondary-darker)] dark:text-gray-200"
+                  className="block mb-1.5 text-[clamp(0.72rem,1.4dvh,0.875rem)] lg:text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold text-[var(--color-secondary-darker)] dark:text-gray-200"
                 >
                   {form.passwordLabel}
                 </label>
-                <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 dark:bg-white/5 focus-within:border-[var(--color-primary)] focus-within:ring-2 focus-within:ring-[var(--color-primary-lighter)] transition px-3 py-[clamp(0.5rem,1.4vh,0.75rem)]">
+                <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 dark:bg-white/5 focus-within:border-[var(--color-primary)] focus-within:ring-2 focus-within:ring-[var(--color-primary-lighter)] transition px-3 py-[clamp(0.4rem,1.3dvh,0.75rem)] lg:py-[clamp(0.5rem,1.4vh,0.75rem)]">
                   <span className="grid place-items-center h-8 w-8 shrink-0 rounded-lg bg-gray-200 dark:bg-white/10 text-gray-500">
                     <FaLock className="text-sm" />
                   </span>
@@ -266,7 +292,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full cursor-pointer flex items-center justify-center gap-2 py-[clamp(0.6rem,1.7vh,0.9rem)] rounded-xl text-white font-semibold bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-dark)] hover:from-[var(--color-primary-dark)] hover:to-[var(--color-primary-darker)] shadow-lg shadow-[var(--color-primary-lighter)] transition disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full cursor-pointer flex items-center justify-center gap-2 py-[clamp(0.5rem,1.6dvh,0.9rem)] lg:py-[clamp(0.6rem,1.7vh,0.9rem)] rounded-xl text-white font-semibold bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-dark)] hover:from-[var(--color-primary-dark)] hover:to-[var(--color-primary-darker)] shadow-lg shadow-[var(--color-primary-lighter)] transition disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <FaLock className="text-sm" />
                 {loading ? form.submitLoadingLabel : form.submitLabel}
@@ -274,7 +300,7 @@ const Login = () => {
             </form>
 
             {/* divider */}
-            <div className="my-[clamp(0.75rem,2.2vh,1.5rem)] flex items-center gap-4">
+            <div className="my-[clamp(0.5rem,1.6dvh,1.5rem)] lg:my-[clamp(0.75rem,2.2vh,1.5rem)] flex items-center gap-4">
               <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
               <span className="text-sm text-gray-400">{form.dividerLabel}</span>
               <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
@@ -283,7 +309,7 @@ const Login = () => {
             {/* register */}
             <Link
               href={form.registerHref}
-              className="flex items-center justify-center gap-2 w-full py-[clamp(0.6rem,1.7vh,0.9rem)] rounded-xl border border-gray-200 dark:border-white/10 text-[clamp(0.75rem,1.6vh,0.875rem)] text-gray-600 dark:text-gray-300 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition"
+              className="flex items-center justify-center gap-2 w-full py-[clamp(0.5rem,1.6dvh,0.9rem)] lg:py-[clamp(0.6rem,1.7vh,0.9rem)] rounded-xl border border-gray-200 dark:border-white/10 text-[clamp(0.72rem,1.4dvh,0.875rem)] lg:text-[clamp(0.75rem,1.6vh,0.875rem)] text-gray-600 dark:text-gray-300 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] transition"
             >
               <FaUserPlus className="text-gray-400" />
               <span>
@@ -296,12 +322,12 @@ const Login = () => {
           </div>
 
           {/* footer */}
-          <div className="mt-[clamp(1rem,2.5vh,2rem)] text-center space-y-1">
-            <p className="flex items-center justify-center gap-2 text-xs text-gray-400">
+          <div className="mt-[clamp(0.4rem,1.4dvh,2rem)] lg:mt-[clamp(1rem,2.5vh,2rem)] text-center space-y-1 shrink-0">
+            <p className="flex items-center justify-center gap-2 text-[10px] lg:text-xs text-gray-400">
               <FaShieldAlt className="text-[var(--color-primary-light)]" />
               {form.securityNote}
             </p>
-            <p className="text-xs text-gray-400">
+            <p className="hidden lg:block text-xs text-gray-400">
               &copy; {currentYear}{" "}
               <span className="text-[var(--color-primary)] font-medium">
                 {form.brandName}
