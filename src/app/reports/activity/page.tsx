@@ -265,19 +265,19 @@ function StatCard({
     const t = tones[tone] ?? tones.primary;
 
     return (
-        <div className="group relative overflow-hidden rounded-2xl border border-[var(--color-primary-light)] bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+        <div className="group relative overflow-hidden rounded-2xl border border-[var(--color-primary-light)] bg-white p-3 md:p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
             <span className={`absolute inset-y-0 left-0 w-1 ${t.bar}`} aria-hidden="true" />
             <div className="flex items-start justify-between gap-2 pl-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+                <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
                 {icon && (
-                    <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg ${t.bg} ${t.text}`}>
+                    <span className={`flex h-6 w-6 md:h-7 md:w-7 flex-shrink-0 items-center justify-center rounded-lg ${t.bg} ${t.text}`}>
                         {icon}
                     </span>
                 )}
             </div>
             <div className="mt-2 flex items-end justify-between gap-2 pl-2">
-                <p className="text-2xl font-bold leading-none tabular-nums text-slate-800">{value}</p>
-                {sub && <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${t.bg} ${t.text}`}>{sub}</span>}
+                <p className="text-xl md:text-2xl font-bold leading-none tabular-nums text-slate-800">{value}</p>
+                {sub && <span className={`rounded-full px-2 py-0.5 text-[9px] md:text-[10px] font-bold ${t.bg} ${t.text}`}>{sub}</span>}
             </div>
         </div>
     );
@@ -285,7 +285,7 @@ function StatCard({
 
 function RowSkeleton({ cols = 4 }: { cols?: number }) {
     return (
-        <div className="flex items-center gap-3 border-b border-[var(--color-primary-light)] px-4 py-3.5 animate-pulse">
+        <div className="flex items-center gap-2 md:gap-3 border-b border-[var(--color-primary-light)] px-3 py-2.5 md:px-4 md:py-3.5 animate-pulse">
             <div className="h-8 w-8 rounded-xl bg-[var(--color-primary-lighter)]" />
             <div className="flex-1 space-y-1.5">
                 <div className="h-3 w-32 rounded bg-[var(--color-primary-lighter)]" />
@@ -300,14 +300,14 @@ function RowSkeleton({ cols = 4 }: { cols?: number }) {
 
 function Empty({ text, hint }: { text: string; hint?: string }) {
     return (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-[var(--color-primary-light)] py-14 text-center">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-primary-lighter)]">
+        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-[var(--color-primary-light)] py-10 md:py-14 text-center">
+            <div className="mb-3 flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-2xl bg-[var(--color-primary-lighter)]">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1.5" strokeLinecap="round">
                     <circle cx="12" cy="12" r="9" /><path d="M12 8v4l3 2" />
                 </svg>
             </div>
             <p className="text-sm font-bold text-slate-600">{text}</p>
-            {hint && <p className="mt-1 max-w-xs text-xs text-slate-400">{hint}</p>}
+            {hint && <p className="mt-1 max-w-xs text-[11px] md:text-xs text-slate-400">{hint}</p>}
         </div>
     );
 }
@@ -322,18 +322,18 @@ function ActivityRow({ a, showUser = true, hideView = false }: { a: ActivityItem
     const changed: string[] = a.meta?.changed ?? [];
 
     return (
-        <div className="group flex gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--color-primary-lighter)]/50">
-            <span className={`mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full ring-4 ring-white ${s.dot}`} />
+        <div className="group flex gap-2 md:gap-2 px-3 py-2.5  transition-colors hover:bg-[var(--color-primary-lighter)]/50">
+            <span className={`mt-1.5 h-2 w-2 md:h-2.5 md:w-2.5 flex-shrink-0 rounded-full ring-4 ring-white ${s.dot}`} />
             <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
                     {showUser && (
-                        <span className="text-xs font-bold text-slate-700">{a.admin?.name ?? "Unknown"}</span>
+                        <span className="text-[11px] md:text-xs font-bold text-slate-700">{a.admin?.name ?? "Unknown"}</span>
                     )}
                     <ActionBadge action={a.action} />
-                    <span className="text-xs text-slate-400">{ENTITY_LABEL[a.entity] ?? a.entity}</span>
+                    <span className="text-[10px] md:text-xs text-slate-400">{ENTITY_LABEL[a.entity] ?? a.entity}</span>
                 </div>
 
-                <p className="mt-1 truncate text-xs text-slate-500">
+                <p className="mt-1 truncate text-[11px] md:text-xs text-slate-500">
                     <span className="font-semibold text-slate-700">{a.entityName || "—"}</span>
                     {a.target && (
                         <span className="text-slate-400"> · to {a.target.name}</span>
@@ -359,8 +359,8 @@ function ActivityRow({ a, showUser = true, hideView = false }: { a: ActivityItem
 
             <div className="flex flex-shrink-0 items-center gap-2">
                 <div className="text-right">
-                    <p className="text-[10px] font-semibold text-slate-400">{timeAgo(a.createdAt)}</p>
-                    <p className="text-[10px] text-slate-300">{fmtTime(a.createdAt)}</p>
+                    <p className="text-[9px] md:text-[10px] font-semibold text-slate-400">{timeAgo(a.createdAt)}</p>
+                    <p className="text-[9px] md:text-[10px] text-slate-300">{fmtTime(a.createdAt)}</p>
                 </div>
                 {!hideView && (
                     canView ? (
@@ -424,18 +424,18 @@ function TimelineDrawer({
     return (
         <>
             <div className="fixed cursor-pointer inset-0 z-40 bg-slate-900/30 backdrop-blur-sm" onClick={onClose} />
-            <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-xl flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-300">
+            <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-xl max-sm:max-w-[100vw] flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-300">
                 {/* header */}
-                <div className="flex items-start justify-between gap-3 border-b border-[var(--color-primary-light)] px-6 py-5">
-                    <div className="flex items-center gap-3">
+                <div className="flex items-start justify-between gap-2 md:gap-3 border-b border-[var(--color-primary-light)] px-4 py-4 md:px-6 md:py-5">
+                    <div className="flex items-center gap-2 md:gap-3">
                         <Avatar name={user?.name ?? "…"} online={isOnline} size={44} />
                         <div>
-                            <h2 className="text-base font-bold text-slate-800">{user?.name ?? "Loading…"}</h2>
-                            <div className="mt-1 flex items-center gap-2">
-                                <span className="rounded-full bg-[var(--color-primary-lighter)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--color-primary)]">
+                            <h2 className="text-sm md:text-base font-bold text-slate-800">{user?.name ?? "Loading…"}</h2>
+                            <div className="mt-1 flex items-center gap-1.5 md:gap-2">
+                                <span className="rounded-full bg-[var(--color-primary-lighter)] px-2.5 py-0.5 text-[9px] md:text-[10px] font-bold text-[var(--color-primary)]">
                                     {ROLE_LABEL[user?.role ?? ""] ?? user?.role}
                                 </span>
-                                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${isOnline ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] md:text-[10px] font-bold ${isOnline ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
                                     <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? "animate-pulse bg-emerald-500" : "bg-slate-400"}`} />
                                     {isOnline ? "Online now" : "Offline"}
                                 </span>
@@ -452,16 +452,16 @@ function TimelineDrawer({
                         { l: "Online time", v: fmtDuration(totals.secs) },
                         { l: "Activities", v: totals.acts },
                     ].map((x) => (
-                        <div key={x.l} className="bg-white px-4 py-3 text-center">
-                            <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{x.l}</p>
-                            <p className="mt-1 text-sm font-bold tabular-nums text-slate-800">{x.v}</p>
+                        <div key={x.l} className="bg-white px-3 py-2 md:px-4 md:py-3 text-center">
+                            <p className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest text-slate-400">{x.l}</p>
+                            <p className="mt-0.5 md:mt-1 text-xs md:text-sm font-bold tabular-nums text-slate-800">{x.v}</p>
                         </div>
                     ))}
                 </div>
 
                 {/* body */}
-                <div className="flex-1 overflow-y-auto px-6 py-5">
-                    <p className="mb-4 text-xs font-bold uppercase tracking-widest text-[var(--color-primary)]">
+                <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5">
+                    <p className="mb-3 md:mb-4 text-[10px] md:text-xs font-bold uppercase tracking-widest text-[var(--color-primary)]">
                         Online / offline timeline
                     </p>
 
@@ -470,7 +470,7 @@ function TimelineDrawer({
                     ) : sessions.length === 0 && unlinked.length === 0 ? (
                         <Empty text="No sessions in this range" hint="This user was not online during the selected dates." />
                     ) : (
-                        <div className="relative space-y-3 pl-5">
+                        <div className="relative space-y-3 pl-4 md:pl-5">
                             {/* vertical line */}
                             <span className="absolute left-[7px] top-2 bottom-2 w-px bg-[var(--color-primary-light)]" />
 
@@ -478,29 +478,29 @@ function TimelineDrawer({
                                 const isOpen = open === s.sessionId;
                                 return (
                                     <div key={s.sessionId} className="relative">
-                                        <span className={`absolute -left-5 top-4 h-3 w-3 rounded-full border-2 border-white ${s.isOnline ? "animate-pulse bg-emerald-500" : "bg-[var(--color-primary)]"}`} />
+                                        <span className={`absolute -left-4 md:-left-5 top-4 h-2.5 w-2.5 md:h-3 md:w-3 rounded-full border-2 border-white ${s.isOnline ? "animate-pulse bg-emerald-500" : "bg-[var(--color-primary)]"}`} />
 
                                         <div className="overflow-hidden rounded-xl border border-[var(--color-primary-light)] bg-white transition-shadow hover:shadow-sm">
                                             <button
                                                 onClick={() => setOpen(isOpen ? null : s.sessionId)}
-                                                className="flex cursor-pointer w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--color-primary-lighter)]/60"
+                                                className="flex cursor-pointer w-full items-center justify-between gap-2 md:gap-3 px-3 py-2.5 md:px-4 md:py-3 text-left transition-colors hover:bg-[var(--color-primary-lighter)]/60"
                                             >
                                                 <div className="min-w-0">
-                                                    <p className="text-xs font-bold text-slate-700">
+                                                    <p className="text-[11px] md:text-xs font-bold text-slate-700">
                                                         {fmtDate(s.loginAt)} · {fmtTime(s.loginAt)}
                                                         <span className="text-slate-300"> → </span>
                                                         {s.isOnline
                                                             ? <span className="text-emerald-600">still online</span>
                                                             : fmtTime(s.logoutAt)}
                                                     </p>
-                                                    <p className="mt-0.5 text-[10px] text-slate-400">
+                                                    <p className="mt-0.5 text-[9px] md:text-[10px] text-slate-400">
                                                         {fmtDuration(s.durationSec)} online · {s.totalActivities} {s.totalActivities === 1 ? "activity" : "activities"}
                                                         {s.ip ? ` · ${s.ip}` : ""}
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     {s.totalActivities > 0 && (
-                                                        <span className="rounded-full bg-[var(--color-primary-lighter)] px-2 py-1 text-[10px] font-bold tabular-nums text-[var(--color-primary)]">
+                                                        <span className="rounded-full bg-[var(--color-primary-lighter)] px-2 py-1 text-[9px] md:text-[10px] font-bold tabular-nums text-[var(--color-primary)]">
                                                             {s.totalActivities}
                                                         </span>
                                                     )}
@@ -512,12 +512,12 @@ function TimelineDrawer({
                                                 <div className="border-t border-[var(--color-primary-light)] bg-slate-50/50">
                                                     {/* per-session counts */}
                                                     {Object.keys(s.counts).length > 0 && (
-                                                        <div className="flex flex-wrap gap-1.5 px-4 pt-3">
+                                                        <div className="flex flex-wrap gap-1.5 px-3 pt-2.5 md:px-4 md:pt-3">
                                                             {Object.entries(s.counts).map(([k, v]) => {
                                                                 const [entity, action] = k.split("_");
                                                                 const st = ACTION_STYLE[action] ?? ACTION_STYLE.update;
                                                                 return (
-                                                                    <span key={k} className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${st.bg} ${st.text}`}>
+                                                                    <span key={k} className={`rounded-full px-2 py-0.5 text-[9px] md:text-[10px] font-bold ${st.bg} ${st.text}`}>
                                                                         {st.label} {ENTITY_LABEL[entity] ?? entity} · {v}
                                                                     </span>
                                                                 );
@@ -526,7 +526,7 @@ function TimelineDrawer({
                                                     )}
                                                     <div className="divide-y divide-[var(--color-primary-light)]">
                                                         {s.activities.length === 0 ? (
-                                                            <p className="px-4 py-4 text-center text-xs italic text-slate-300">No activity in this session</p>
+                                                            <p className="px-3 py-3 md:px-4 md:py-4 text-center text-[11px] md:text-xs italic text-slate-300">No activity in this session</p>
                                                         ) : (
                                                             s.activities.map((a) => <ActivityRow key={a.id} a={a} showUser={false} />)
                                                         )}
@@ -540,11 +540,11 @@ function TimelineDrawer({
 
                             {unlinked.length > 0 && (
                                 <div className="relative">
-                                    <span className="absolute -left-5 top-4 h-3 w-3 rounded-full border-2 border-white bg-slate-300" />
+                                    <span className="absolute -left-4 md:-left-5 top-4 h-2.5 w-2.5 md:h-3 md:w-3 rounded-full border-2 border-white bg-slate-300" />
                                     <div className="overflow-hidden rounded-xl border border-dashed border-slate-300 bg-white">
-                                        <div className="px-4 py-3">
-                                            <p className="text-xs font-bold text-slate-600">Outside a tracked session</p>
-                                            <p className="mt-0.5 text-[10px] text-slate-400">
+                                        <div className="px-3 py-2.5 md:px-4 md:py-3">
+                                            <p className="text-[11px] md:text-xs font-bold text-slate-600">Outside a tracked session</p>
+                                            <p className="mt-0.5 text-[9px] md:text-[10px] text-slate-400">
                                                 {unlinked.length} activities done while not connected (API / mobile / socket off)
                                             </p>
                                         </div>
@@ -558,8 +558,8 @@ function TimelineDrawer({
                     )}
                 </div>
 
-                <div className="border-t border-[var(--color-primary-light)] px-6 py-4">
-                    <button onClick={onClose} className="w-full cursor-pointer rounded-xl border-2 border-[var(--color-primary-light)] py-2.5 text-sm font-bold text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary-lighter)]">
+                <div className="border-t border-[var(--color-primary-light)] px-4 py-3 md:px-6 md:py-4">
+                    <button onClick={onClose} className="w-full cursor-pointer rounded-xl border-2 border-[var(--color-primary-light)] py-2 md:py-2.5 text-xs md:text-sm font-bold text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary-lighter)]">
                         Close
                     </button>
                 </div>
@@ -641,14 +641,14 @@ function RecordDrawer({
     return (
         <>
             <div className="fixed cursor-pointer inset-0 z-[60] bg-slate-900/30 backdrop-blur-sm" onClick={onClose} />
-            <div className="fixed inset-y-0 right-0 z-[70] flex w-full max-w-lg flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-300">
+            <div className="fixed inset-y-0 right-0 z-[70] flex w-full max-w-lg max-sm:max-w-[100vw] flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-300">
                 {/* header */}
-                <div className="flex items-start justify-between gap-3 border-b border-[var(--color-primary-light)] px-6 py-5">
+                <div className="flex items-start justify-between gap-3 border-b border-[var(--color-primary-light)] px-4 py-4 md:px-6 md:py-5">
                     <div className="min-w-0">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary)]">
+                        <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary)]">
                             {ENTITY_LABEL[entity]} details
                         </p>
-                        <h2 className="mt-1 truncate text-base font-bold text-slate-800">
+                        <h2 className="mt-0.5 md:mt-1 truncate text-sm md:text-base font-bold text-slate-800">
                             {loading
                                 ? "Loading…"
                                 : entity === "customer"
@@ -656,7 +656,7 @@ function RecordDrawer({
                                     : rec?.customer?.customerName ?? "Deleted record"}
                         </h2>
                         {deleted && (
-                            <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-bold text-red-600">
+                            <span className="mt-1 md:mt-1.5 inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-[9px] md:text-[10px] font-bold text-red-600">
                                 <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Deleted
                             </span>
                         )}
@@ -666,18 +666,18 @@ function RecordDrawer({
 
                 <div className="flex-1 overflow-y-auto">
                     {loading ? (
-                        <div className="space-y-3 p-6">
+                        <div className="space-y-3 p-4 md:p-6">
                             {Array.from({ length: 6 }).map((_, i) => <RowSkeleton key={i} cols={1} />)}
                         </div>
                     ) : !res ? (
-                        <div className="p-6"><Empty text="Could not load this record" hint="It may be outside your access scope." /></div>
+                        <div className="p-4 md:p-6"><Empty text="Could not load this record" hint="It may be outside your access scope." /></div>
                     ) : (
                         <>
                             {deleted ? (
-                                <div className="px-6 py-5">
-                                    <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3">
-                                        <p className="text-xs font-bold text-red-600">This record was deleted</p>
-                                        <p className="mt-0.5 text-[11px] text-red-400">
+                                <div className="px-4 py-4 md:px-6 md:py-5">
+                                    <div className="rounded-xl border border-red-100 bg-red-50 px-3 py-2.5 md:px-4 md:py-3">
+                                        <p className="text-[11px] md:text-xs font-bold text-red-600">This record was deleted</p>
+                                        <p className="mt-0.5 text-[10px] md:text-[11px] text-red-400">
                                             It no longer exists in the database. Below is what was captured at delete time.
                                         </p>
                                     </div>
@@ -687,21 +687,21 @@ function RecordDrawer({
                                                 .filter(([k]) => !["ip", "changed"].includes(k))
                                                 .map(([k, v]) => (
                                                     <div key={k} className="flex items-center justify-between gap-3 border-b border-[var(--color-primary-light)] py-2 last:border-0">
-                                                        <dt className="text-[11px] capitalize text-slate-400">{k}</dt>
-                                                        <dd className="truncate text-xs font-semibold text-slate-600">{String(v ?? "—")}</dd>
+                                                        <dt className="text-[10px] md:text-[11px] capitalize text-slate-400">{k}</dt>
+                                                        <dd className="truncate text-[11px] md:text-xs font-semibold text-slate-600">{String(v ?? "—")}</dd>
                                                     </div>
                                                 ))}
                                         </dl>
                                     )}
                                 </div>
                             ) : (
-                                <div className="px-6 py-5">
-                                    <p className="mb-3 text-xs font-bold uppercase tracking-widest text-[var(--color-primary)]">Overview</p>
-                                    <dl className="grid grid-cols-2 gap-x-4">
+                                <div className="px-4 py-4 md:px-6 md:py-5">
+                                    <p className="mb-2 md:mb-3 text-[10px] md:text-xs font-bold uppercase tracking-widest text-[var(--color-primary)]">Overview</p>
+                                    <dl className="grid grid-cols-2 gap-x-3 md:gap-x-4">
                                         {fields.map(({ label, value }) => (
-                                            <div key={label} className="border-b border-[var(--color-primary-light)] py-2.5">
-                                                <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</dt>
-                                                <dd className="mt-0.5 truncate text-xs font-semibold text-slate-700">
+                                            <div key={label} className="border-b border-[var(--color-primary-light)] py-2 md:py-2.5">
+                                                <dt className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</dt>
+                                                <dd className="mt-0.5 truncate text-[11px] md:text-xs font-semibold text-slate-700">
                                                     {value === null || value === undefined || value === "" ? "—" : String(value)}
                                                 </dd>
                                             </div>
@@ -710,10 +710,10 @@ function RecordDrawer({
 
                                     {entity === "customer" && rec?.assignedTo?.length > 0 && (
                                         <div className="mt-4">
-                                            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Assigned To</p>
+                                            <p className="mb-1.5 md:mb-2 text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-slate-400">Assigned To</p>
                                             <div className="flex flex-wrap gap-1.5">
                                                 {rec.assignedTo.map((u: ActivityUser) => (
-                                                    <span key={u.id} className="rounded-full bg-[var(--color-primary-lighter)] px-2.5 py-1 text-[10px] font-bold text-[var(--color-primary)]">
+                                                    <span key={u.id} className="rounded-full bg-[var(--color-primary-lighter)] px-2.5 py-1 text-[9px] md:text-[10px] font-bold text-[var(--color-primary)]">
                                                         {u.name}
                                                     </span>
                                                 ))}
@@ -723,8 +723,8 @@ function RecordDrawer({
 
                                     {rec?.Description && (
                                         <div className="mt-4">
-                                            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Description</p>
-                                            <p className="rounded-xl border border-[var(--color-primary-light)] bg-[var(--color-primary-lighter)] p-3 text-xs leading-relaxed text-slate-600">
+                                            <p className="mb-1.5 md:mb-2 text-[9px] md:text-[10px] font-bold uppercase tracking-wider text-slate-400">Description</p>
+                                            <p className="rounded-xl border border-[var(--color-primary-light)] bg-[var(--color-primary-lighter)] p-2.5 md:p-3 text-[11px] md:text-xs leading-relaxed text-slate-600">
                                                 {rec.Description}
                                             </p>
                                         </div>
@@ -734,7 +734,7 @@ function RecordDrawer({
 
                             {/* record history */}
                             <div className="border-t border-[var(--color-primary-light)]">
-                                <p className="px-6 pb-1 pt-5 text-xs font-bold uppercase tracking-widest text-[var(--color-primary)]">
+                                <p className="px-4 md:px-6 pb-1 pt-4 md:pt-5 text-[10px] md:text-xs font-bold uppercase tracking-widest text-[var(--color-primary)]">
                                     History ({res.history.length})
                                 </p>
                                 <div className="divide-y divide-[var(--color-primary-light)]">
@@ -745,14 +745,14 @@ function RecordDrawer({
                     )}
                 </div>
 
-                <div className="flex gap-3 border-t border-[var(--color-primary-light)] px-6 py-4">
-                    <button onClick={onClose} className="flex-1 cursor-pointer rounded-xl border-2 border-[var(--color-primary-light)] py-2.5 text-sm font-bold text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary-lighter)]">
+                <div className="flex gap-2 md:gap-3 border-t border-[var(--color-primary-light)] px-4 py-3 md:px-6 md:py-4">
+                    <button onClick={onClose} className="flex-1 cursor-pointer rounded-xl border-2 border-[var(--color-primary-light)] py-2 md:py-2.5 text-xs md:text-sm font-bold text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary-lighter)]">
                         Close
                     </button>
                     <button
                         onClick={openFullPage}
                         disabled={!rec}
-                        className="flex-1 cursor-pointer rounded-xl bg-[var(--color-primary)] py-2.5 text-sm font-bold text-white transition-all hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex-1 cursor-pointer rounded-xl bg-[var(--color-primary)] py-2 md:py-2.5 text-xs md:text-sm font-bold text-white transition-all hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         Open full page →
                     </button>
@@ -785,7 +785,7 @@ function ViewButton({ disabled, onClick }: { disabled?: boolean; onClick: () => 
 
 function DeletedBadge() {
     return (
-        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[9px] font-bold text-red-600">
+        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[8px] md:text-[9px] font-bold text-red-600">
             <span className="h-1 w-1 rounded-full bg-red-500" /> Deleted
         </span>
     );
@@ -825,18 +825,18 @@ function TouchedRecordsPanel({ params }: { params: string }) {
     return (
         <div className="overflow-hidden rounded-2xl border border-[var(--color-primary-light)] bg-white shadow-sm">
             {/* tabs */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-primary-light)] px-5 py-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[var(--color-primary-light)] px-4 py-3 md:px-5 md:py-4">
                 <div>
                     <h2 className="text-sm font-bold text-slate-800">Records touched</h2>
-                    <p className="text-[11px] text-slate-400">Every customer &amp; follow-up affected in this date range</p>
+                    <p className="text-[10px] md:text-[11px] text-slate-400">Every customer &amp; follow-up affected in this date range</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between md:justify-end gap-2 w-full md:w-auto">
                     <div className="flex overflow-hidden rounded-full border-2 border-[var(--color-primary-light)] bg-white">
                         {(["customer", "followup"] as const).map((t) => (
                             <button
                                 key={t}
                                 onClick={() => setTab(t)}
-                                className={`px-4 py-2 cursor-pointer text-xs font-bold transition-all
+                                className={`px-3 py-1.5 md:px-4 md:py-2 cursor-pointer text-[11px] md:text-xs font-bold transition-all
                   ${tab === t
                                         ? "bg-[var(--color-primary)] text-white"
                                         : "text-slate-500 hover:bg-[var(--color-primary-lighter)] hover:text-[var(--color-primary)]"}`}
@@ -845,7 +845,7 @@ function TouchedRecordsPanel({ params }: { params: string }) {
                             </button>
                         ))}
                     </div>
-                    <span className="rounded-full border border-[var(--color-primary-light)] bg-[var(--color-primary-lighter)] px-3 py-1 text-[10px] font-bold tabular-nums text-[var(--color-primary)]">
+                    <span className="rounded-full border border-[var(--color-primary-light)] bg-[var(--color-primary-lighter)] px-2.5 py-1 md:px-3 text-[9px] md:text-[10px] font-bold tabular-nums text-[var(--color-primary)]">
                         {pg.total} total
                     </span>
                 </div>
@@ -856,7 +856,7 @@ function TouchedRecordsPanel({ params }: { params: string }) {
                 {loading ? (
                     Array.from({ length: 6 }).map((_, i) => <RowSkeleton key={i} cols={3} />)
                 ) : rows.length === 0 ? (
-                    <div className="p-5">
+                    <div className="p-4 md:p-5">
                         <Empty
                             text={tab === "customer" ? "No customers touched" : "No follow-ups touched"}
                             hint="Nothing was added, edited or deleted in this range."
@@ -864,20 +864,20 @@ function TouchedRecordsPanel({ params }: { params: string }) {
                     </div>
                 ) : tab === "customer" ? (
                     customers.map((c) => (
-                        <div key={c.customerId} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-[var(--color-primary-lighter)]/50">
-                            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary-lighter)] text-[11px] font-bold text-[var(--color-primary)] ring-1 ring-inset ring-[var(--color-primary-light)]">
+                        <div key={c.customerId} className="flex items-center gap-2 md:gap-3 px-3 py-2.5 md:px-5 md:py-3 transition-colors hover:bg-[var(--color-primary-lighter)]/50">
+                            <div className="flex h-8 w-8 md:h-9 md:w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary-lighter)] text-[10px] md:text-[11px] font-bold text-[var(--color-primary)] ring-1 ring-inset ring-[var(--color-primary-light)]">
                                 {initials(c.customerName)}
                             </div>
 
                             <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-1.5">
-                                    <p className="truncate text-xs font-bold text-slate-700">{c.customerName}</p>
+                                    <p className="truncate text-[11px] md:text-xs font-bold text-slate-700">{c.customerName}</p>
                                     {c.isDeleted && <DeletedBadge />}
                                     {c.dealClosed && (
-                                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700">Deal Closed</span>
+                                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[8px] md:text-[9px] font-bold text-emerald-700">Deal Closed</span>
                                     )}
                                 </div>
-                                <p className="mt-0.5 truncate text-[11px] text-slate-400">
+                                <p className="mt-0.5 truncate text-[10px] md:text-[11px] text-slate-400">
                                     {[c.contact, c.city, c.campaign].filter(Boolean).join(" · ") || "—"}
                                 </p>
                             </div>
@@ -886,7 +886,7 @@ function TouchedRecordsPanel({ params }: { params: string }) {
                             <div className="hidden flex-shrink-0 items-center gap-1 sm:flex">
                                 {(["create", "import", "update", "delete", "assign"] as const).map((a) =>
                                     c.counts?.[a] ? (
-                                        <span key={a} className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${ACTION_STYLE[a].bg} ${ACTION_STYLE[a].text}`}>
+                                        <span key={a} className={`rounded-full px-2 py-0.5 text-[9px] md:text-[10px] font-bold ${ACTION_STYLE[a].bg} ${ACTION_STYLE[a].text}`}>
                                             {ACTION_STYLE[a].label} {c.counts[a]}
                                         </span>
                                     ) : null
@@ -894,8 +894,8 @@ function TouchedRecordsPanel({ params }: { params: string }) {
                             </div>
 
                             <div className="hidden w-28 flex-shrink-0 text-right md:block">
-                                <p className="truncate text-[11px] font-semibold text-slate-600">{c.lastBy?.name ?? "—"}</p>
-                                <p className="text-[10px] text-slate-400">{timeAgo(c.lastActivityAt)}</p>
+                                <p className="truncate text-[10px] md:text-[11px] font-semibold text-slate-600">{c.lastBy?.name ?? "—"}</p>
+                                <p className="text-[9px] md:text-[10px] text-slate-400">{timeAgo(c.lastActivityAt)}</p>
                             </div>
 
                             <ViewButton
@@ -906,37 +906,37 @@ function TouchedRecordsPanel({ params }: { params: string }) {
                     ))
                 ) : (
                     followups.map((f) => (
-                        <div key={f.followupId} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-[var(--color-primary-lighter)]/50">
-                            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-violet-50 text-[11px] font-bold text-violet-600">
+                        <div key={f.followupId} className="flex items-center gap-2 md:gap-3 px-3 py-2.5 md:px-5 md:py-3 transition-colors hover:bg-[var(--color-primary-lighter)]/50">
+                            <div className="flex h-8 w-8 md:h-9 md:w-9 flex-shrink-0 items-center justify-center rounded-xl bg-violet-50 text-[10px] md:text-[11px] font-bold text-violet-600">
                                 ☎
                             </div>
 
                             <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-1.5">
-                                    <p className="truncate text-xs font-bold text-slate-700">{f.customerName}</p>
+                                    <p className="truncate text-[11px] md:text-xs font-bold text-slate-700">{f.customerName}</p>
                                     {f.isDeleted && <DeletedBadge />}
                                     {f.StatusType && (
-                                        <span className="rounded-full bg-[var(--color-primary-lighter)] px-2 py-0.5 text-[9px] font-bold text-[var(--color-primary)]">
+                                        <span className="rounded-full bg-[var(--color-primary-lighter)] px-2 py-0.5 text-[8px] md:text-[9px] font-bold text-[var(--color-primary)]">
                                             {f.StatusType}
                                         </span>
                                     )}
                                 </div>
-                                <p className="mt-0.5 truncate text-[11px] text-slate-400">
+                                <p className="mt-0.5 truncate text-[10px] md:text-[11px] text-slate-400">
                                     {[f.contact, f.city].filter(Boolean).join(" · ")}
                                     {f.FollowupNextDate ? ` · next ${f.FollowupNextDate}` : ""}
                                 </p>
                             </div>
 
                             <div className="hidden flex-shrink-0 items-center gap-1 sm:flex">
-                                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] md:text-[10px] font-bold text-slate-500">
                                     {f.totalActivities} {f.totalActivities === 1 ? "action" : "actions"}
                                 </span>
                                 {f.lastAction && <ActionBadge action={f.lastAction} />}
                             </div>
 
                             <div className="hidden w-28 flex-shrink-0 text-right md:block">
-                                <p className="truncate text-[11px] font-semibold text-slate-600">{f.lastBy?.name ?? "—"}</p>
-                                <p className="text-[10px] text-slate-400">{timeAgo(f.lastActivityAt)}</p>
+                                <p className="truncate text-[10px] md:text-[11px] font-semibold text-slate-600">{f.lastBy?.name ?? "—"}</p>
+                                <p className="text-[9px] md:text-[10px] text-slate-400">{timeAgo(f.lastActivityAt)}</p>
                             </div>
 
                             <ViewButton
@@ -949,16 +949,16 @@ function TouchedRecordsPanel({ params }: { params: string }) {
             </div>
 
             {pg.totalPages > 1 && (
-                <div className="flex items-center justify-between gap-2 border-t border-[var(--color-primary-light)] px-5 py-3">
+                <div className="flex items-center justify-between gap-2 border-t border-[var(--color-primary-light)] px-4 py-3 md:px-5 md:py-3">
                     <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        className="rounded-lg cursor-pointer border-2 border-[var(--color-primary-light)] px-3 py-1.5 text-[11px] font-bold text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary-lighter)] disabled:opacity-40">
+                        className="rounded-lg cursor-pointer border-2 border-[var(--color-primary-light)] px-2.5 py-1.5 md:px-3 md:py-1.5 text-[10px] md:text-[11px] font-bold text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary-lighter)] disabled:opacity-40">
                         ← Prev
                     </button>
-                    <span className="text-[11px] font-semibold text-slate-400">
+                    <span className="text-[10px] md:text-[11px] font-semibold text-slate-400">
                         {(pg.page - 1) * pg.limit + 1}–{Math.min(pg.page * pg.limit, pg.total)} of {pg.total}
                     </span>
                     <button disabled={page >= pg.totalPages} onClick={() => setPage((p) => p + 1)}
-                        className="rounded-lg cursor-pointer border-2 border-[var(--color-primary-light)] px-3 py-1.5 text-[11px] font-bold text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary-lighter)] disabled:opacity-40">
+                        className="rounded-lg cursor-pointer border-2 border-[var(--color-primary-light)] px-2.5 py-1.5 md:px-3 md:py-1.5 text-[10px] md:text-[11px] font-bold text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary-lighter)] disabled:opacity-40">
                         Next →
                     </button>
                 </div>
@@ -1009,6 +1009,7 @@ export default function UserActivityPage() {
     const [page, setPage] = useState(1);
 
     const debRef = useRef<NodeJS.Timeout | null>(null);
+    const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
     const onSearch = (v: string) => {
         setSearch(v);
@@ -1081,6 +1082,8 @@ export default function UserActivityPage() {
         if (debSearch.trim()) p.set("search", debSearch.trim());
         return p.toString();
     }, [summaryParams, action, debSearch]);
+
+    const activeFilterCount = (from !== TODAY || to !== TODAY ? 1 : 0) + (adminId ? 1 : 0) + (entity ? 1 : 0) + (action ? 1 : 0);
 
     // ── auth ──────────────────────────────────────────────────────────────────
     useEffect(() => {
@@ -1214,45 +1217,51 @@ export default function UserActivityPage() {
         <ViewCtx.Provider value={openRecord}>
             <div className="min-h-screen overflow-hidden rounded-md bg-white">
                 <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Instrument+Serif&display=swap');
-        body { font-family: 'DM Sans', sans-serif; }
-        .heading-font { font-family: 'Instrument Serif', serif; }
-        .animate-in { animation-fill-mode: both; }
-        @keyframes slide-in-from-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        @keyframes slide-in-from-top { from { transform: translateY(-12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .slide-in-from-right { animation-name: slide-in-from-right; }
-        .slide-in-from-top { animation-name: slide-in-from-top; }
-        .duration-300 { animation-duration: 300ms; }
-        @keyframes shimmer-skeleton { 0%{opacity:1} 50%{opacity:.5} 100%{opacity:1} }
-        .animate-pulse { animation: shimmer-skeleton 1.5s ease-in-out infinite; }
-      `}</style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Instrument+Serif&display=swap');
+    body { font-family: 'DM Sans', sans-serif; }
+    .heading-font { font-family: 'Instrument Serif', serif; }
+    .animate-in { animation-fill-mode: both; }
+    @keyframes slide-in-from-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    @keyframes slide-in-from-top { from { transform: translateY(-12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    
+    /* ADDED FOR MOBILE DRAWER */
+    @keyframes slide-in-from-bottom { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .slide-in-from-bottom { animation-name: slide-in-from-bottom; }
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
+
+    .slide-in-from-right { animation-name: slide-in-from-right; }
+    .slide-in-from-top { animation-name: slide-in-from-top; }
+    .duration-300 { animation-duration: 300ms; }
+    @keyframes shimmer-skeleton { 0%{opacity:1} 50%{opacity:.5} 100%{opacity:1} }
+    .animate-pulse { animation: shimmer-skeleton 1.5s ease-in-out infinite; }
+`}</style>
 
                 {/* ── Header ──────────────────────────────────────────────────────── */}
-                <header className="sticky top-0   bg-white/85 backdrop-blur-md">
-                    <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 px-6 py-4 max-md:px-3">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)] shadow-sm">
-                                <GlyphIcon path={Icon.activity} className="h-5 w-5 text-white" />
+                <header className="sticky top-0   bg-white/85 backdrop-blur-md ">
+                    <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 px-3 py-3 md:px-6 md:py-4">
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-xl bg-[var(--color-primary)] shadow-sm">
+                                <GlyphIcon path={Icon.activity} className="h-4 w-4 md:h-5 md:w-5 text-white" />
                             </div>
                             <div>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary)] opacity-70">Reports</p>
-                                <h1 className=" -mt-0.5 text-2xl leading-none text-slate-800">User Activity</h1>
+                                <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary)] opacity-70">Reports</p>
+                                <h1 className=" -mt-0.5 text-xl md:text-2xl leading-none text-slate-800">User Activity</h1>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
-                                <span className="relative flex h-2 w-2">
+                            <span className="inline-flex items-center gap-1.5 md:gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1.5 md:px-3 md:py-2 text-[10px] md:text-xs font-bold text-emerald-700">
+                                <span className="relative flex h-1.5 w-1.5 md:h-2 md:w-2">
                                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                                    <span className="relative inline-flex h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-emerald-500" />
                                 </span>
                                 {onlineCount} online
                             </span>
                             <button
                                 onClick={() => { setPage(1); setFrom(from); setTo(to); setDebSearch(debSearch + ""); }}
-                                className="flex items-center cursor-pointer gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-xs font-bold text-white transition-all hover:bg-[var(--color-primary-dark)]"
+                                className="flex items-center cursor-pointer gap-1.5 md:gap-2 rounded-xl bg-[var(--color-primary)] px-3 py-1.5 md:px-4 md:py-2 text-[10px] md:text-xs font-bold text-white transition-all hover:bg-[var(--color-primary-dark)]"
                             >
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
                                     <path d="M23 4v6h-6M1 20v-6h6" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
                                 </svg>
                                 Refresh
@@ -1263,10 +1272,10 @@ export default function UserActivityPage() {
 
                 {/* live presence toast */}
                 {flash && (
-                    <div className="pointer-events-none fixed right-6 top-20 z-50 animate-in slide-in-from-top duration-300">
-                        <div className="flex items-center gap-2.5 rounded-xl border border-[var(--color-primary-light)] bg-white px-4 py-2.5 shadow-lg">
+                    <div className="pointer-events-none fixed right-4 md:right-6 top-20 z-50 animate-in slide-in-from-top duration-300">
+                        <div className="flex items-center gap-2.5 rounded-xl border border-[var(--color-primary-light)] bg-white px-3 py-2 md:px-4 md:py-2.5 shadow-lg">
                             <span className={`h-2 w-2 rounded-full ${flash.isOnline ? "bg-emerald-500" : "bg-slate-400"}`} />
-                            <p className="text-xs font-semibold text-slate-700">
+                            <p className="text-[11px] md:text-xs font-semibold text-slate-700">
                                 {flash.name} <span className="font-normal text-slate-400">
                                     {flash.isOnline ? "came online" : "went offline"}</span>
                             </p>
@@ -1274,66 +1283,163 @@ export default function UserActivityPage() {
                     </div>
                 )}
 
-                <main className="mx-auto max-w-[1600px] px-6 py-8 max-md:px-3">
-                    <p className="mb-6 -mt-2 text-sm text-slate-400">
+                <main className="mx-auto max-w-[1600px] px-3 py-5  ">
+                    <p className="mb-4 md:mb-6 -mt-2 text-xs md:text-sm text-slate-400">
                         Who did what, when they were online, and everything they touched — all in one place.
                     </p>
 
                     {/* ── Filters ─────────────────────────────────────────────────── */}
-                    <div className="mb-6 rounded-2xl  bg-white p-4 ">
+
+                    {/* 1. MOBILE TRIGGER & SEARCH (Hidden on PC) */}
+                    <div className="mb-5 flex items-center gap-2 md:hidden">
+                        <div className="relative flex-1">
+                            <GlyphIcon path={Icon.search} className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <input
+                                value={search}
+                                onChange={(e) => onSearch(e.target.value)}
+                                placeholder="Search records..."
+                                className="w-full rounded-2xl border-none bg-white py-3 pl-10 pr-4 text-xs font-medium text-slate-700 shadow-sm ring-1 ring-inset ring-slate-200 focus:ring-2 focus:ring-[var(--color-primary)] outline-none transition-all"
+                            />
+                            {search && (
+                                <button type="button" onClick={() => onSearch("")} className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-slate-100 text-slate-400">✕</button>
+                            )}
+                        </div>
+                        <button
+                            onClick={() => setIsMobileFilterOpen(true)}
+                            className="relative flex h-[42px] cursor-pointer items-center justify-center gap-1.5 rounded-2xl bg-white px-4 text-xs font-bold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-200 transition-all active:bg-slate-50"
+                        >
+                            <GlyphIcon path={Icon.filter} className="h-4 w-4 text-[var(--color-primary)]" />
+                            Filters
+                            {activeFilterCount > 0 && (
+                                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white bg-[var(--color-primary)] text-[9px] font-bold text-white shadow-sm">
+                                    {activeFilterCount}
+                                </span>
+                            )}
+                        </button>
+                    </div>
+
+                    {/* 2. MOBILE DRAWER / BOTTOM SHEET */}
+                    {isMobileFilterOpen && (
+                        <div className="md:hidden">
+                            {/* Backdrop */}
+                            <div className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setIsMobileFilterOpen(false)} />
+
+                            {/* Drawer */}
+                            <div className="fixed inset-x-0 bottom-0 z-[110] flex max-h-[88vh] flex-col rounded-t-[2rem] bg-white shadow-2xl animate-in slide-in-from-bottom duration-300">
+                                {/* Grab handle */}
+                                <div className="absolute left-1/2 top-3 h-1.5 w-12 -translate-x-1/2 rounded-full bg-slate-200" />
+
+                                {/* Header */}
+                                <div className="mt-4 flex items-center justify-between border-b border-slate-100 px-6 pb-4 pt-3">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-slate-800">Advanced Filters</h3>
+                                        <p className="text-[11px] text-slate-400">Refine your activity results</p>
+                                    </div>
+                                    <button onClick={() => setIsMobileFilterOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500">✕</button>
+                                </div>
+
+                                {/* Body */}
+                                <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+
+                                    {/* Quick Ranges */}
+                                    <div>
+                                        <h4 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Timeframe</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {[{ l: "Today", d: 0 }, { l: "Last 7 Days", d: 6 }, { l: "Last 30 Days", d: 29 }].map(({ l, d }) => {
+                                                const start = toInputDate(new Date(Date.now() - d * 86400000));
+                                                const active = from === start && to === TODAY;
+                                                return (
+                                                    <button
+                                                        key={l}
+                                                        onClick={() => { setFrom(start); setTo(TODAY); }}
+                                                        className={`rounded-full px-4 py-2 text-[11px] font-bold transition-all ${active ? "bg-[var(--color-primary)] text-white shadow-md shadow-primary/20" : "bg-white ring-1 ring-inset ring-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                                                    >
+                                                        {l}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Custom Dates */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <DateSelector label="Custom From" value={isoToDDMMYYYY(from)} onChange={(v) => { setFrom(ddmmyyyyToISO(v)); }} />
+                                        </div>
+                                        <div>
+                                            <DateSelector label="Custom To" value={isoToDDMMYYYY(to)} onChange={(v) => { setTo(ddmmyyyyToISO(v)); }} />
+                                        </div>
+                                    </div>
+
+                                    {/* Selects */}
+                                    <div className="space-y-4">
+                                        <h4 className="mb-2 mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">Activity Details</h4>
+                                        <div className="relative z-30">
+                                            <SingleSelect label="Target User" options={userOptionList} value={selectedUserLabel} onChange={handleUserChange} isSearchable />
+                                        </div>
+                                        <div className="relative z-20">
+                                            <SingleSelect label="Module Type" options={moduleOptionList} value={selectedModuleLabel} onChange={handleModuleChange} />
+                                        </div>
+                                        <div className="relative z-10">
+                                            <SingleSelect label="Action Performed" options={actionOptionList} value={selectedActionLabel} onChange={handleActionChange} />
+                                        </div>
+                                    </div>
+                                    <div className="h-8" />
+                                </div>
+
+                                {/* Sticky Footer */}
+                                <div className="border-t border-slate-100 bg-white p-4 pb-safe mb-4 flex gap-3 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+                                    <button onClick={resetFilters} className="flex-1 rounded-2xl bg-slate-100 py-3.5 text-xs font-bold text-slate-600 transition-active active:bg-slate-200">
+                                        Clear All
+                                    </button>
+                                    <button onClick={() => setIsMobileFilterOpen(false)} className="flex-[2] rounded-2xl bg-[var(--color-primary)] py-3.5 text-xs font-bold text-white shadow-lg shadow-[var(--color-primary-light)] transition-active active:bg-[var(--color-primary-dark)]">
+                                        Show Results
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+
+                    {/* 3. PC INLINE FILTER (Hidden on Mobile) */}
+                    <div className="hidden md:block mb-6 rounded-2xl  p-4 ">
                         <div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
                             <GlyphIcon path={Icon.filter} className="h-3.5 w-3.5" />
                             Filters
                         </div>
                         <div className="flex flex-wrap items-end gap-3">
-                            {/* dates */}
+
                             <div className="min-w-[160px]">
-                                <DateSelector
-                                    label="From"
-                                    value={isoToDDMMYYYY(from)}
-                                    onChange={(v) => { setFrom(ddmmyyyyToISO(v)); setPage(1); }}
-                                />
+                                <DateSelector label="From" value={isoToDDMMYYYY(from)} onChange={(v) => { setFrom(ddmmyyyyToISO(v)); setPage(1); }} />
                             </div>
                             <div className="min-w-[160px]">
-                                <DateSelector
-                                    label="To"
-                                    value={isoToDDMMYYYY(to)}
-                                    onChange={(v) => { setTo(ddmmyyyyToISO(v)); setPage(1); }}
-                                />
+                                <DateSelector label="To" value={isoToDDMMYYYY(to)} onChange={(v) => { setTo(ddmmyyyyToISO(v)); setPage(1); }} />
                             </div>
 
-                            {/* user */}
                             <div className="flex min-w-[190px] flex-1 flex-col gap-1">
-                                <SingleSelect
-                                    label="User"
-                                    options={userOptionList}
-                                    value={selectedUserLabel}
-                                    onChange={handleUserChange}
-                                    isSearchable
-                                />
+                                <SingleSelect label="User" options={userOptionList} value={selectedUserLabel} onChange={handleUserChange} isSearchable />
                             </div>
 
-                            {/* module */}
                             <div className="flex min-w-[160px] flex-col gap-1">
-                                <SingleSelect
-                                    label="Module"
-                                    options={moduleOptionList}
-                                    value={selectedModuleLabel}
-                                    onChange={handleModuleChange}
-                                />
+                                <SingleSelect label="Module" options={moduleOptionList} value={selectedModuleLabel} onChange={handleModuleChange} />
                             </div>
 
-                            {/* action */}
                             <div className="flex min-w-[160px] flex-col gap-1">
-                                <SingleSelect
-                                    label="Action"
-                                    options={actionOptionList}
-                                    value={selectedActionLabel}
-                                    onChange={handleActionChange}
-                                />
+                                <SingleSelect label="Action" options={actionOptionList} value={selectedActionLabel} onChange={handleActionChange} />
                             </div>
 
-                            {/* quick ranges */}
+                            <div className="min-w-[200px] flex-1">
+                                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-slate-400">Search</label>
+                                <div className="relative">
+                                    <GlyphIcon path={Icon.search} className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                    <input value={search} onChange={(e) => onSearch(e.target.value)} placeholder="Customer or user name…"
+                                        className="w-full rounded-xl border-2 border-[var(--color-primary-light)] placeholder:text-slate-400 bg-white py-2 pl-9 pr-8 text-xs text-slate-700 outline-none transition-all focus:border-[var(--color-primary)]" />
+                                    {search && (
+                                        <button type="button" onClick={() => onSearch("")} className="absolute right-2.5 top-1/2 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full text-slate-300 hover:bg-slate-100 hover:text-slate-500">✕</button>
+                                    )}
+                                </div>
+                            </div>
+
                             <div className="flex flex-col gap-1">
                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Quick</label>
                                 <div className="flex overflow-hidden rounded-full border-2 border-[var(--color-primary-light)] bg-white">
@@ -1348,10 +1454,7 @@ export default function UserActivityPage() {
                                             <button
                                                 key={l}
                                                 onClick={() => { setFrom(start); setTo(TODAY); setPage(1); }}
-                                                className={`cursor-pointer px-3 py-2 text-xs font-bold transition-all
-                        ${active
-                                                        ? "bg-[var(--color-primary)] text-white"
-                                                        : "text-slate-500 hover:bg-[var(--color-primary-lighter)] hover:text-[var(--color-primary)]"}`}
+                                                className={`cursor-pointer px-3 py-2 text-xs font-bold transition-all ${active ? "bg-[var(--color-primary)] text-white" : "text-slate-500 hover:bg-[var(--color-primary-lighter)] hover:text-[var(--color-primary)]"}`}
                                             >
                                                 {l}
                                             </button>
@@ -1360,29 +1463,8 @@ export default function UserActivityPage() {
                                 </div>
                             </div>
 
-                            {/* search */}
-                            <div className="min-w-[200px] flex-1">
-                                <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-slate-400">Search</label>
-                                <div className="relative">
-                                    <GlyphIcon path={Icon.search} className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                                    <input value={search} onChange={(e) => onSearch(e.target.value)} placeholder="Customer or user name…"
-                                        className="w-full rounded-xl border-2 border-[var(--color-primary-light)] placeholder:text-slate-400 bg-white py-2 pl-9 pr-8 text-xs text-slate-700 placeholder:text-slate-300 outline-none transition-all focus:border-[var(--color-primary)]" />
-                                    {search && (
-                                        <button
-                                            type="button"
-                                            onClick={() => onSearch("")}
-                                            aria-label="Clear search"
-                                            className="absolute right-2.5 top-1/2 flex h-4 w-4 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-500"
-                                        >
-                                            ✕
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
                             {isFiltered && (
-                                <button onClick={resetFilters}
-                                    className="rounded-xl cursor-pointer border-2 border-[var(--color-primary-light)] px-4 py-2 text-xs font-bold text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary-lighter)]">
+                                <button onClick={resetFilters} className="rounded-xl cursor-pointer border-2 border-[var(--color-primary-light)] px-4 py-2 text-xs font-bold text-[var(--color-primary)] hover:bg-[var(--color-primary-lighter)]">
                                     Clear
                                 </button>
                             )}
@@ -1390,14 +1472,14 @@ export default function UserActivityPage() {
                     </div>
 
                     {error && (
-                        <div className="mb-6 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-6 py-4">
-                            <span className="text-lg">⚠️</span>
-                            <p className="text-sm font-medium text-red-600">{error}</p>
+                        <div className="mb-4 md:mb-6 flex items-center gap-2 md:gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 md:px-6 md:py-4">
+                            <span className="text-base md:text-lg">⚠️</span>
+                            <p className="text-xs md:text-sm font-medium text-red-600">{error}</p>
                         </div>
                     )}
 
                     {/* ── KPI cards ───────────────────────────────────────────────── */}
-                    <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                    <div className="mb-4 md:mb-6 grid grid-cols-2 gap-2 md:gap-3 sm:grid-cols-3 lg:grid-cols-4 ">
                         <StatCard label="Total Activities" value={totals.activities} sub="All" tone="primary" icon={<GlyphIcon path={Icon.activity} />} />
                         <StatCard label="Customers Added" value={kpi.added} sub="New" tone="emerald" icon={<GlyphIcon path={Icon.plusCircle} />} />
                         <StatCard label="Imported" value={kpi.imported} sub="Bulk" tone="blue" icon={<GlyphIcon path={Icon.download} />} />
@@ -1409,44 +1491,45 @@ export default function UserActivityPage() {
                     </div>
 
                     {/* ── Body grid ───────────────────────────────────────────────── */}
-                    <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
+                    <div className="grid grid-cols-1 gap-2 xl:grid-cols-3">
 
                         {/* ── LEFT : per user summary ─────────────────────────────── */}
-                        <section className="xl:col-span-3">
+                        <section className="xl:col-span-2">
                             <div className="overflow-hidden rounded-2xl border border-[var(--color-primary-light)] bg-white shadow-sm">
-                                <div className="flex items-center justify-between  bg-[var(--color-primary)] px-5 py-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[var(--color-primary)] px-4 py-2.5 md:px-4 md:py-3">
                                     <div>
-                                        <h2 className="text-sm font-bold text-slate-100">Team performance</h2>
-                                        <p className="text-[11px] text-slate-200">Click a user to open their online timeline</p>
+                                        <h2 className="text-xs md:text-sm font-bold text-slate-100">Team performance</h2>
+                                        <p className="text-[10px] md:text-[11px] text-slate-200">Click a user to open their online timeline</p>
                                     </div>
-                                    <span className="rounded-full border border-[var(--color-primary-light)] bg-[var(--color-primary-lighter)] px-3 py-1 text-[10px] font-bold tabular-nums text-[var(--color-primary)]">
+                                    <span className="w-max rounded-full border border-[var(--color-primary-light)] bg-[var(--color-primary-lighter)] px-2.5 py-0.5 text-[9px] md:text-[10px] font-bold tabular-nums text-[var(--color-primary)]">
                                         {summary.length} users
                                     </span>
                                 </div>
 
                                 {/* table */}
-                                <div className="overflow-x-auto">
-                                    <div className="min-w-[620px]">
-                                        {/* HEADER */}
-                                        <div className="grid grid-cols-12 gap-2 border-b border-[var(--color-primary-light)] bg-[var(--color-primary)] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-slate-100">
-                                            <div className="col-span-3">User</div>
-                                            <div className="col-span-1 text-center">Added</div>
-                                            <div className="col-span-1 text-center">Imp</div>
-                                            <div className="col-span-1 text-center">Edited</div>
-                                            <div className="col-span-1 text-center">Deleted</div>
-                                            <div className="col-span-1 text-center">Assign</div>
-
-                                            <div className="col-span-1 text-center">F/ups</div>
-                                            <div className="col-span-1 text-center">Total</div>
-                                            <div className="col-span-1 text-right">Online</div>
-                                            {/* CHANGED: col-span-2 to col-span-1 */}
-                                            <div className="col-span-1 text-right">Action</div>
+                                <div className="overflow-x-auto hide-scrollbar">
+                                    <div className="min-w-[640px]">
+                                        {/* HEADER — weighted columns instead of forced 12-col squeeze */}
+                                        <div
+                                            className="grid gap-1.5 border-b border-[var(--color-primary-light)] bg-[var(--color-primary)] px-3 py-2 lg:px-4 lg:py-2.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-100"
+                                            style={{ gridTemplateColumns: "2.2fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 0.9fr 1.3fr 0.9fr" }}
+                                        >
+                                            <div className="whitespace-nowrap">User</div>
+                                            <div className="text-center whitespace-nowrap">Added</div>
+                                            <div className="text-center whitespace-nowrap">Imp</div>
+                                            <div className="text-center whitespace-nowrap">Edited</div>
+                                            <div className="text-center whitespace-nowrap">Deleted</div>
+                                            <div className="text-center whitespace-nowrap">Assign</div>
+                                            <div className="text-center whitespace-nowrap">F/ups</div>
+                                            <div className="text-center whitespace-nowrap">Total</div>
+                                            <div className="text-right whitespace-nowrap">Online</div>
+                                            <div className="text-right whitespace-nowrap">Action</div>
                                         </div>
 
                                         {loadingSummary ? (
                                             Array.from({ length: 6 }).map((_, i) => <RowSkeleton key={i} cols={5} />)
                                         ) : summary.length === 0 ? (
-                                            <div className="p-5"><Empty text="No activity yet" hint="Nothing was recorded for the selected date range." /></div>
+                                            <div className="p-4"><Empty text="No activity yet" hint="Nothing was recorded for the selected date range." /></div>
                                         ) : (
                                             summary.map((r) => {
                                                 const c = r.counts ?? {};
@@ -1461,34 +1544,34 @@ export default function UserActivityPage() {
                                                         tabIndex={0}
                                                         onClick={openTimeline}
                                                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTimeline(); } }}
-                                                        className="grid cursor-pointer w-full grid-cols-12 items-center gap-2 border-b border-[var(--color-primary-light)] px-5 py-3 text-left transition-colors last:border-0 hover:bg-[var(--color-primary-lighter)]/60"
+                                                        style={{ gridTemplateColumns: "2.2fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 0.9fr 1.3fr 0.9fr" }}
+                                                        className="grid cursor-pointer w-full items-center gap-1.5 border-b border-[var(--color-primary-light)] px-3 py-2 lg:px-4 lg:py-2.5 text-left transition-colors last:border-0 hover:bg-[var(--color-primary-lighter)]/60"
                                                     >
-                                                        <div className="col-span-3 flex min-w-0 items-center gap-2.5">
+                                                        <div className="flex min-w-0 items-center gap-2">
                                                             <Avatar name={r.user.name} online={online} />
                                                             <div className="min-w-0">
-                                                                <p className="truncate text-xs font-bold text-slate-700">{r.user.name}</p>
-                                                                <p className="truncate text-[10px] text-slate-400">
+                                                                <p className="truncate text-[11px] md:text-xs font-bold text-slate-700">{r.user.name}</p>
+                                                                <p className="truncate text-[9px] md:text-[10px] text-slate-400">
                                                                     {ROLE_LABEL[r.user.role] ?? r.user.role}{r.user.city ? ` · ${r.user.city}` : ""}
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                        <div className="col-span-1 flex justify-center"><CountPill value={c.customer?.create ?? 0} action="create" /></div>
-                                                        <div className="col-span-1 flex justify-center"><CountPill value={c.customer?.import ?? 0} action="import" /></div>
-                                                        <div className="col-span-1 flex justify-center"><CountPill value={c.customer?.update ?? 0} action="update" /></div>
-                                                        <div className="col-span-1 flex justify-center"><CountPill value={c.customer?.delete ?? 0} action="delete" /></div>
-                                                        <div className="col-span-1 flex justify-center"><CountPill value={c.customer?.assign ?? 0} action="assign" /></div>
-                                                        <div className="col-span-1 flex justify-center"><CountPill value={followups} action="assign" /></div>
-                                                        <div className="col-span-1 text-center">
-                                                            <span className="rounded-full bg-[var(--color-primary-lighter)] px-2 py-0.5 text-xs font-bold tabular-nums text-[var(--color-primary)]">
+                                                        <div className="flex justify-center"><CountPill value={c.customer?.create ?? 0} action="create" /></div>
+                                                        <div className="flex justify-center"><CountPill value={c.customer?.import ?? 0} action="import" /></div>
+                                                        <div className="flex justify-center"><CountPill value={c.customer?.update ?? 0} action="update" /></div>
+                                                        <div className="flex justify-center"><CountPill value={c.customer?.delete ?? 0} action="delete" /></div>
+                                                        <div className="flex justify-center"><CountPill value={c.customer?.assign ?? 0} action="assign" /></div>
+                                                        <div className="flex justify-center"><CountPill value={followups} action="assign" /></div>
+                                                        <div className="text-center">
+                                                            <span className="rounded-full bg-[var(--color-primary-lighter)] px-2 py-0.5 text-[10px] md:text-xs font-bold tabular-nums text-[var(--color-primary)]">
                                                                 {r.totalActivities}
                                                             </span>
                                                         </div>
-                                                        <div className="col-span-1 text-right">
-                                                            <p className="text-xs font-bold tabular-nums text-slate-700">{fmtDuration(r.onlineSeconds)}</p>
-                                                            <p className="text-[10px] text-slate-400">{r.sessionCount} sessions</p>
+                                                        <div className="text-right">
+                                                            <p className="text-[11px] md:text-xs font-bold tabular-nums text-slate-700">{fmtDuration(r.onlineSeconds)}</p>
+                                                            <p className="text-[9px] md:text-[10px] text-slate-400">{r.sessionCount} sessions</p>
                                                         </div>
-                                                        {/* CHANGED: col-span-2 to col-span-1 */}
-                                                        <div className="col-span-1 flex justify-end">
+                                                        <div className="flex justify-end">
                                                             <ViewButton onClick={() => router.push(CRM_ROUTES.user(r.user.id))} />
                                                         </div>
                                                     </div>
@@ -1501,45 +1584,45 @@ export default function UserActivityPage() {
                         </section>
 
                         {/* ── RIGHT : live feed ───────────────────────────────────── */}
-                        <section className="xl:col-span-2">
-                            <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--color-primary-light)] bg-white shadow-sm">
-                                <div className="flex items-center justify-between border-b border-[var(--color-primary-light)] px-5 py-4">
+                        <section className="xl:col-span-1">
+                            <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--color-primary-light)] bg-white shadow-sm mt-3 xl:mt-0">
+                                <div className="flex items-center justify-between border-b border-[var(--color-primary-light)] px-4 py-2.5 ">
                                     <div>
-                                        <h2 className="text-sm font-bold text-slate-800">Activity feed</h2>
-                                        <p className="text-[11px] text-slate-400">{pagination.total} records</p>
+                                        <h2 className="text-xs md:text-sm font-bold text-slate-800">Activity feed</h2>
+                                        <p className="text-[10px] md:text-[11px] text-slate-400">{pagination.total} records</p>
                                     </div>
-                                    <span className="rounded-full border border-[var(--color-primary-light)] bg-[var(--color-primary-lighter)] px-3 py-1 text-[10px] font-bold text-[var(--color-primary)]">
+                                    <span className="rounded-full border border-[var(--color-primary-light)] bg-[var(--color-primary-lighter)] px-2.5 py-1 text-[9px] md:text-[10px] font-bold text-[var(--color-primary)]">
                                         Page {pagination.page}/{pagination.totalPages || 1}
                                     </span>
                                 </div>
 
-                                <div className="max-h-[620px] flex-1 divide-y divide-[var(--color-primary-light)] overflow-y-auto">
+                                <div className="max-h-[500px] md:max-h-[620px] flex-1 divide-y divide-[var(--color-primary-light)] overflow-y-auto">
                                     {loadingFeed ? (
                                         Array.from({ length: 8 }).map((_, i) => <RowSkeleton key={i} cols={1} />)
                                     ) : feed.length === 0 ? (
-                                        <div className="p-5"><Empty text="No activities found" hint="Try widening the date range or clearing filters." /></div>
+                                        <div className="p-4"><Empty text="No activities found" hint="Try widening the date range or clearing filters." /></div>
                                     ) : (
                                         feed.map((a) => <ActivityRow key={a.id} a={a} />)
                                     )}
                                 </div>
 
                                 {pagination.totalPages > 1 && (
-                                    <div className="flex items-center justify-between gap-2 border-t border-[var(--color-primary-light)] px-5 py-3">
+                                    <div className="flex items-center justify-between gap-2 border-t border-[var(--color-primary-light)] px-4 py-2.5 md:px-4">
                                         <button
                                             disabled={page <= 1}
                                             onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                            className="rounded-lg cursor-pointer border-2 border-[var(--color-primary-light)] px-3 py-1.5 text-[11px] font-bold text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary-lighter)] disabled:opacity-40"
+                                            className="rounded-lg cursor-pointer border-2 border-[var(--color-primary-light)] px-2.5 py-1.5 text-[10px] md:text-[11px] font-bold text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary-lighter)] disabled:opacity-40"
                                         >
                                             ← Prev
                                         </button>
-                                        <span className="text-[11px] font-semibold text-slate-400">
+                                        <span className="text-[10px] md:text-[11px] font-semibold text-slate-400">
                                             {(pagination.page - 1) * pagination.limit + 1}–
                                             {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
                                         </span>
                                         <button
                                             disabled={page >= pagination.totalPages}
                                             onClick={() => setPage((p) => p + 1)}
-                                            className="rounded-lg cursor-pointer border-2 border-[var(--color-primary-light)] px-3 py-1.5 text-[11px] font-bold text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary-lighter)] disabled:opacity-40"
+                                            className="rounded-lg cursor-pointer border-2 border-[var(--color-primary-light)] px-2.5 py-1.5 text-[10px] md:text-[11px] font-bold text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary-lighter)] disabled:opacity-40"
                                         >
                                             Next →
                                         </button>
@@ -1550,7 +1633,7 @@ export default function UserActivityPage() {
                     </div>
 
                     {/* ── Records touched (Customers / Follow-ups) ─────────────── */}
-                    <div className="mt-5">
+                    <div className="mt-4 md:mt-5">
                         <TouchedRecordsPanel params={recordParams} />
                     </div>
                 </main>
