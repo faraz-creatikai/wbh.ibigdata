@@ -40,7 +40,7 @@ const SmallScreenData = () => {
       pTag: "Report",
       icon: <Cable size={34} />,
       color: " backdrop-blur-[2px] bg-green-600",
-      url: "/reports/customer"
+      url: "/reports/activity"
 
     }, {
       pTag: "Status Type",

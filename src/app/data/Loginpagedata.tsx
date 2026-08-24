@@ -75,7 +75,7 @@ export const loginPageContent: LoginPageContent = {
   },
 
   description:
-    "Consultancy CRM helps you manage clients, projects, and tasks in one place. Streamline your workflow, boost team collaboration, and deliver better results every time.",
+    "This platform helps you manage clients, projects, and tasks in one place. Streamline your workflow, boost team collaboration, and deliver better results every time.",
 
   features: [
     {

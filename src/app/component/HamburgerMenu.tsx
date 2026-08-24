@@ -68,7 +68,7 @@ export default function MobileHamburger() {
     },
     {
       title: " Report",
-      url: `/reports/customer`,
+      url: `/reports/activity`,
       icon: <BrickWallFire size={22} />
     }
 

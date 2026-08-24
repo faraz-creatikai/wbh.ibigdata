@@ -1221,7 +1221,7 @@ export default function UserActivityPage() {
       `}</style>
 
                 {/* ── Header ──────────────────────────────────────────────────────── */}
-                <header className="sticky top-0 z-30 border-b border-[var(--color-primary-light)] bg-white/85 backdrop-blur-md">
+                <header className="sticky top-0   bg-white/85 backdrop-blur-md">
                     <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 px-6 py-4 max-md:px-3">
                         <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)] shadow-sm">
@@ -1273,27 +1273,27 @@ export default function UserActivityPage() {
                     </p>
 
                     {/* ── Filters ─────────────────────────────────────────────────── */}
-                    <div className="mb-6 rounded-2xl border border-[var(--color-primary-light)] bg-white p-4 shadow-sm">
+                    <div className="mb-6 rounded-2xl  bg-white p-4 ">
                         <div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
                             <GlyphIcon path={Icon.filter} className="h-3.5 w-3.5" />
                             Filters
                         </div>
                         <div className="flex flex-wrap items-end gap-3">
                             {/* dates */}
-<div className="min-w-[160px]">
-    <DateSelector
-        label="From"
-        value={isoToDDMMYYYY(from)}
-        onChange={(v) => { setFrom(ddmmyyyyToISO(v)); setPage(1); }}
-    />
-</div>
-<div className="min-w-[160px]">
-    <DateSelector
-        label="To"
-        value={isoToDDMMYYYY(to)}
-        onChange={(v) => { setTo(ddmmyyyyToISO(v)); setPage(1); }}
-    />
-</div>
+                            <div className="min-w-[160px]">
+                                <DateSelector
+                                    label="From"
+                                    value={isoToDDMMYYYY(from)}
+                                    onChange={(v) => { setFrom(ddmmyyyyToISO(v)); setPage(1); }}
+                                />
+                            </div>
+                            <div className="min-w-[160px]">
+                                <DateSelector
+                                    label="To"
+                                    value={isoToDDMMYYYY(to)}
+                                    onChange={(v) => { setTo(ddmmyyyyToISO(v)); setPage(1); }}
+                                />
+                            </div>
 
                             {/* user */}
                             <div className="flex min-w-[190px] flex-1 flex-col gap-1">
@@ -1406,10 +1406,10 @@ export default function UserActivityPage() {
                         {/* ── LEFT : per user summary ─────────────────────────────── */}
                         <section className="xl:col-span-3">
                             <div className="overflow-hidden rounded-2xl border border-[var(--color-primary-light)] bg-white shadow-sm">
-                                <div className="flex items-center justify-between border-b border-[var(--color-primary-light)] px-5 py-4">
+                                <div className="flex items-center justify-between  bg-[var(--color-primary)] px-5 py-4">
                                     <div>
-                                        <h2 className="text-sm font-bold text-slate-800">Team performance</h2>
-                                        <p className="text-[11px] text-slate-400">Click a user to open their online timeline</p>
+                                        <h2 className="text-sm font-bold text-slate-100">Team performance</h2>
+                                        <p className="text-[11px] text-slate-200">Click a user to open their online timeline</p>
                                     </div>
                                     <span className="rounded-full border border-[var(--color-primary-light)] bg-[var(--color-primary-lighter)] px-3 py-1 text-[10px] font-bold tabular-nums text-[var(--color-primary)]">
                                         {summary.length} users
@@ -1419,7 +1419,8 @@ export default function UserActivityPage() {
                                 {/* table */}
                                 <div className="overflow-x-auto">
                                     <div className="min-w-[620px]">
-                                        <div className="grid grid-cols-12 gap-2 border-b border-[var(--color-primary-light)] bg-slate-50/60 px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                        {/* HEADER */}
+                                        <div className="grid grid-cols-12 gap-2 border-b border-[var(--color-primary-light)] bg-[var(--color-primary)] px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-slate-100">
                                             <div className="col-span-3">User</div>
                                             <div className="col-span-1 text-center">Added</div>
                                             <div className="col-span-1 text-center">Imp</div>
@@ -1427,7 +1428,8 @@ export default function UserActivityPage() {
                                             <div className="col-span-1 text-center">Deleted</div>
                                             <div className="col-span-1 text-center">F/ups</div>
                                             <div className="col-span-1 text-center">Total</div>
-                                            <div className="col-span-2 text-right">Online</div>
+                                            <div className="col-span-1 text-right">Online</div>
+                                            {/* CHANGED: col-span-2 to col-span-1 */}
                                             <div className="col-span-2 text-right">Action</div>
                                         </div>
 
@@ -1470,10 +1472,11 @@ export default function UserActivityPage() {
                                                                 {r.totalActivities}
                                                             </span>
                                                         </div>
-                                                        <div className="col-span-2 text-right">
+                                                        <div className="col-span-1 text-right">
                                                             <p className="text-xs font-bold tabular-nums text-slate-700">{fmtDuration(r.onlineSeconds)}</p>
                                                             <p className="text-[10px] text-slate-400">{r.sessionCount} sessions</p>
                                                         </div>
+                                                        {/* CHANGED: col-span-2 to col-span-1 */}
                                                         <div className="col-span-2 flex justify-end">
                                                             <ViewButton onClick={() => router.push(CRM_ROUTES.user(r.user.id))} />
                                                         </div>
