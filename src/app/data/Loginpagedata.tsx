@@ -229,7 +229,7 @@ export const consultPageContent: LoginPageContent = {
  */
 
 
-const activeContent = consultPageContent;
+const activeContent = loginPageContent;
 
 
 export const loginLeftPanel = {
