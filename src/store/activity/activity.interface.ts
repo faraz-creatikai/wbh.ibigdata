@@ -1,7 +1,7 @@
 // src/store/activity/activity.interface.ts
 
 export type ActivityAction =
-  | "create" | "update" | "delete" | "assign" | "unassign" | "login" | "logout";
+  | "create" | "update" | "delete" | "assign" | "unassign" | "login" | "logout" | "import";
 
 export type ActivityEntity =
   | "customer" | "followup" | "property" | "contact" | "admin";

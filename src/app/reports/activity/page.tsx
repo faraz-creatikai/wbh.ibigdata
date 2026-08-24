@@ -1,8 +1,6 @@
 "use client";
 
-// src/app/(dashboard)/activity/page.tsx   <-- put it wherever your routes live
-
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
     getActivityFeed,
@@ -26,6 +24,9 @@ import type {
 } from "@/store/activity/activity.interface";
 import { getSocket, initSocket } from "@/socket/socket"; // <-- your existing socket file
 import { checkAuthAdmin } from "@/store/auth";
+import SingleSelect from "@/app/component/SingleSelect";
+import DateSelector from "@/app/component/DateSelector";
+
 
 
 // ─── EDIT THESE to match your existing CRM pages ──────────────────────────────
@@ -79,6 +80,18 @@ function initials(name = "?") {
     return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 }
 
+const isoToDDMMYYYY = (iso: string) => {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-");
+    return `${d}-${m}-${y}`;
+};
+
+const ddmmyyyyToISO = (display: string) => {
+    if (!display) return "";
+    const [d, m, y] = display.split("-");
+    return `${y}-${m}-${d}`;
+};
+
 const ROLE_LABEL: Record<string, string> = {
     administrator: "Administrator",
     client_admin: "Client Admin",
@@ -89,6 +102,7 @@ const ROLE_LABEL: Record<string, string> = {
 
 const ACTION_STYLE: Record<string, { bg: string; text: string; dot: string; label: string; icon: string }> = {
     create: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", label: "Added", icon: "＋" },
+    import: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", label: "Imported", icon: "📥" },
     update: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500", label: "Edited", icon: "✎" },
     delete: { bg: "bg-red-50", text: "text-red-600", dot: "bg-red-500", label: "Deleted", icon: "🗑" },
     assign: { bg: "bg-violet-50", text: "text-violet-700", dot: "bg-violet-500", label: "Assigned", icon: "→" },
@@ -106,7 +120,78 @@ const ENTITY_LABEL: Record<string, string> = {
 };
 
 const ENTITY_OPTIONS = ["customer", "followup"];
-const ACTION_OPTIONS = ["create", "update", "delete", "assign", "unassign"];
+const ACTION_OPTIONS = ["create", "import", "update", "delete", "assign", "unassign"];
+
+/** turns an action's dot color into a matching border-color utility, so KPI cards / accents
+ *  automatically stay in sync with the same taxonomy used across badges & the feed */
+function accentBorder(action: string) {
+    return (ACTION_STYLE[action] ?? ACTION_STYLE.update).dot.replace("bg-", "border-");
+}
+
+// ─── Icons (kept as hand-rolled inline SVGs to match the rest of the app) ─────
+
+const Icon = {
+    activity: (
+        <path d="M3 3v18h18M18 17V9M13 17V5M8 17v-3" />
+    ),
+    plusCircle: (
+        <>
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v8M8 12h8" />
+        </>
+    ),
+    download: (
+        <>
+            <path d="M12 3v11m0 0l-4-4m4 4l4-4" />
+            <path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3" />
+        </>
+    ),
+    pencil: (
+        <>
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+        </>
+    ),
+    trash: (
+        <>
+            <path d="M3 6h18" />
+            <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+            <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+        </>
+    ),
+    phone: (
+        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.8 19.8 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.8 19.8 0 011.12 4.18 2 2 0 013.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L7.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0122 16.92z" />
+    ),
+    clock: (
+        <>
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 3" />
+        </>
+    ),
+    search: (
+        <>
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.3-4.3" />
+        </>
+    ),
+    calendar: (
+        <>
+            <rect x="3" y="5" width="18" height="16" rx="2" />
+            <path d="M16 3v4M8 3v4M3 10h18" />
+        </>
+    ),
+    filter: (
+        <path d="M4 5h16M7 12h10M10 19h4" />
+    ),
+};
+
+function GlyphIcon({ path, className = "h-3.5 w-3.5" }: { path: ReactNode; className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            {path}
+        </svg>
+    );
+}
 
 // ─── Small UI pieces ──────────────────────────────────────────────────────────
 
@@ -114,7 +199,7 @@ function Avatar({ name, online, size = 34 }: { name: string; online?: boolean; s
     return (
         <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
             <div
-                className="flex h-full w-full items-center justify-center rounded-xl bg-[var(--color-primary-lighter)] text-[11px] font-bold text-[var(--color-primary)]"
+                className="flex h-full w-full items-center justify-center rounded-xl bg-[var(--color-primary-lighter)] text-[11px] font-bold text-[var(--color-primary)] ring-1 ring-inset ring-[var(--color-primary-light)]"
             >
                 {initials(name)}
             </div>
@@ -131,28 +216,61 @@ function Avatar({ name, online, size = 34 }: { name: string; online?: boolean; s
 function ActionBadge({ action }: { action: ActivityAction }) {
     const s = ACTION_STYLE[action] ?? ACTION_STYLE.update;
     return (
-        <span className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-bold ${s.bg} ${s.text}`}>
-            <span className="text-[9px]">{s.icon}</span>
+        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${s.bg} ${s.text}`}>
+            <span className="text-[9px] leading-none">{s.icon}</span>
             {s.label}
         </span>
     );
 }
 
-function StatCard({ label, value, sub, tone = "primary" }: { label: string; value: string | number; sub?: string; tone?: string }) {
-    const tones: Record<string, string> = {
-        primary: "text-[var(--color-primary)] bg-[var(--color-primary-lighter)] border-[var(--color-primary-light)]",
-        emerald: "text-emerald-700 bg-emerald-50 border-emerald-100",
-        amber: "text-amber-700 bg-amber-50 border-amber-100",
-        red: "text-red-600 bg-red-50 border-red-100",
-        violet: "text-violet-700 bg-violet-50 border-violet-100",
-        slate: "text-slate-600 bg-slate-50 border-slate-200",
-    };
+function CountPill({ value, action }: { value: number; action: string }) {
+    const s = ACTION_STYLE[action] ?? ACTION_STYLE.update;
+    if (!value) return <span className="text-xs font-semibold text-slate-300">—</span>;
     return (
-        <div className="rounded-2xl border border-[var(--color-primary-light)] bg-white p-4 shadow-sm transition-all hover:shadow-md">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
-            <div className="mt-2 flex items-end justify-between gap-2">
-                <p className="text-2xl font-bold leading-none text-slate-800">{value}</p>
-                <span className={`rounded-lg border px-2 py-0.5 text-[10px] font-bold ${tones[tone]}`}>{sub ?? ""}</span>
+        <span className={`inline-flex min-w-[1.75rem] items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums ${s.bg} ${s.text}`}>
+            {value}
+        </span>
+    );
+}
+
+function StatCard({
+    label,
+    value,
+    sub,
+    tone = "primary",
+    icon,
+}: {
+    label: string;
+    value: string | number;
+    sub?: string;
+    tone?: string;
+    icon?: ReactNode;
+}) {
+    const tones: Record<string, { text: string; bg: string; bar: string }> = {
+        primary: { text: "text-[var(--color-primary)]", bg: "bg-[var(--color-primary-lighter)]", bar: "bg-[var(--color-primary)]" },
+        emerald: { text: "text-emerald-700", bg: "bg-emerald-50", bar: "bg-emerald-500" },
+        blue: { text: "text-blue-700", bg: "bg-blue-50", bar: "bg-blue-500" },
+        amber: { text: "text-amber-700", bg: "bg-amber-50", bar: "bg-amber-500" },
+        red: { text: "text-red-600", bg: "bg-red-50", bar: "bg-red-500" },
+        violet: { text: "text-violet-700", bg: "bg-violet-50", bar: "bg-violet-500" },
+        slate: { text: "text-slate-600", bg: "bg-slate-50", bar: "bg-slate-400" },
+    };
+    const t = tones[tone] ?? tones.primary;
+
+    return (
+        <div className="group relative overflow-hidden rounded-2xl border border-[var(--color-primary-light)] bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+            <span className={`absolute inset-y-0 left-0 w-1 ${t.bar}`} aria-hidden="true" />
+            <div className="flex items-start justify-between gap-2 pl-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+                {icon && (
+                    <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg ${t.bg} ${t.text}`}>
+                        {icon}
+                    </span>
+                )}
+            </div>
+            <div className="mt-2 flex items-end justify-between gap-2 pl-2">
+                <p className="text-2xl font-bold leading-none tabular-nums text-slate-800">{value}</p>
+                {sub && <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${t.bg} ${t.text}`}>{sub}</span>}
             </div>
         </div>
     );
@@ -160,7 +278,7 @@ function StatCard({ label, value, sub, tone = "primary" }: { label: string; valu
 
 function RowSkeleton({ cols = 4 }: { cols?: number }) {
     return (
-        <div className="flex items-center gap-3 border-b border-[var(--color-primary-light)] px-4 py-3 animate-pulse">
+        <div className="flex items-center gap-3 border-b border-[var(--color-primary-light)] px-4 py-3.5 animate-pulse">
             <div className="h-8 w-8 rounded-xl bg-[var(--color-primary-lighter)]" />
             <div className="flex-1 space-y-1.5">
                 <div className="h-3 w-32 rounded bg-[var(--color-primary-lighter)]" />
@@ -197,8 +315,8 @@ function ActivityRow({ a, showUser = true, hideView = false }: { a: ActivityItem
     const changed: string[] = a.meta?.changed ?? [];
 
     return (
-        <div className="group flex gap-3 px-4 py-3 transition-colors hover:bg-[var(--color-primary-lighter)]/50">
-            <span className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${s.dot}`} />
+        <div className="group flex gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--color-primary-lighter)]/50">
+            <span className={`mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full ring-4 ring-white ${s.dot}`} />
             <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
                     {showUser && (
@@ -208,7 +326,7 @@ function ActivityRow({ a, showUser = true, hideView = false }: { a: ActivityItem
                     <span className="text-xs text-slate-400">{ENTITY_LABEL[a.entity] ?? a.entity}</span>
                 </div>
 
-                <p className="mt-0.5 truncate text-xs text-slate-500">
+                <p className="mt-1 truncate text-xs text-slate-500">
                     <span className="font-semibold text-slate-700">{a.entityName || "—"}</span>
                     {a.target && (
                         <span className="text-slate-400"> · to {a.target.name}</span>
@@ -298,26 +416,26 @@ function TimelineDrawer({
 
     return (
         <>
-            <div className="fixed cursor-pointer inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+            <div className="fixed cursor-pointer inset-0 z-40 bg-slate-900/30 backdrop-blur-sm" onClick={onClose} />
             <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-xl flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-300">
                 {/* header */}
                 <div className="flex items-start justify-between gap-3 border-b border-[var(--color-primary-light)] px-6 py-5">
                     <div className="flex items-center gap-3">
-                        <Avatar name={user?.name ?? "…"} online={isOnline} size={40} />
+                        <Avatar name={user?.name ?? "…"} online={isOnline} size={44} />
                         <div>
                             <h2 className="text-base font-bold text-slate-800">{user?.name ?? "Loading…"}</h2>
                             <div className="mt-1 flex items-center gap-2">
-                                <span className="rounded-lg bg-[var(--color-primary-lighter)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-primary)]">
+                                <span className="rounded-full bg-[var(--color-primary-lighter)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--color-primary)]">
                                     {ROLE_LABEL[user?.role ?? ""] ?? user?.role}
                                 </span>
-                                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${isOnline ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${isOnline ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
                                     <span className={`h-1.5 w-1.5 rounded-full ${isOnline ? "animate-pulse bg-emerald-500" : "bg-slate-400"}`} />
                                     {isOnline ? "Online now" : "Offline"}
                                 </span>
                             </div>
                         </div>
                     </div>
-                    <button onClick={onClose} className="cursor-pointer flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-all hover:bg-slate-50 hover:text-slate-600">✕</button>
+                    <button onClick={onClose} aria-label="Close timeline" className="cursor-pointer flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-all hover:bg-slate-50 hover:text-slate-600">✕</button>
                 </div>
 
                 {/* mini stats */}
@@ -329,7 +447,7 @@ function TimelineDrawer({
                     ].map((x) => (
                         <div key={x.l} className="bg-white px-4 py-3 text-center">
                             <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{x.l}</p>
-                            <p className="mt-1 text-sm font-bold text-slate-800">{x.v}</p>
+                            <p className="mt-1 text-sm font-bold tabular-nums text-slate-800">{x.v}</p>
                         </div>
                     ))}
                 </div>
@@ -337,7 +455,7 @@ function TimelineDrawer({
                 {/* body */}
                 <div className="flex-1 overflow-y-auto px-6 py-5">
                     <p className="mb-4 text-xs font-bold uppercase tracking-widest text-[var(--color-primary)]">
-                        Online / Offline Timeline
+                        Online / offline timeline
                     </p>
 
                     {loading ? (
@@ -355,7 +473,7 @@ function TimelineDrawer({
                                     <div key={s.sessionId} className="relative">
                                         <span className={`absolute -left-5 top-4 h-3 w-3 rounded-full border-2 border-white ${s.isOnline ? "animate-pulse bg-emerald-500" : "bg-[var(--color-primary)]"}`} />
 
-                                        <div className="overflow-hidden rounded-xl border border-[var(--color-primary-light)] bg-white">
+                                        <div className="overflow-hidden rounded-xl border border-[var(--color-primary-light)] bg-white transition-shadow hover:shadow-sm">
                                             <button
                                                 onClick={() => setOpen(isOpen ? null : s.sessionId)}
                                                 className="flex cursor-pointer w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--color-primary-lighter)]/60"
@@ -375,7 +493,7 @@ function TimelineDrawer({
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     {s.totalActivities > 0 && (
-                                                        <span className="rounded-lg bg-[var(--color-primary-lighter)] px-2 py-1 text-[10px] font-bold text-[var(--color-primary)]">
+                                                        <span className="rounded-full bg-[var(--color-primary-lighter)] px-2 py-1 text-[10px] font-bold tabular-nums text-[var(--color-primary)]">
                                                             {s.totalActivities}
                                                         </span>
                                                     )}
@@ -392,7 +510,7 @@ function TimelineDrawer({
                                                                 const [entity, action] = k.split("_");
                                                                 const st = ACTION_STYLE[action] ?? ACTION_STYLE.update;
                                                                 return (
-                                                                    <span key={k} className={`rounded-lg px-2 py-0.5 text-[10px] font-bold ${st.bg} ${st.text}`}>
+                                                                    <span key={k} className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${st.bg} ${st.text}`}>
                                                                         {st.label} {ENTITY_LABEL[entity] ?? entity} · {v}
                                                                     </span>
                                                                 );
@@ -515,13 +633,13 @@ function RecordDrawer({
 
     return (
         <>
-            <div className="fixed cursor-pointer inset-0 z-[60] bg-black/30 backdrop-blur-sm" onClick={onClose} />
+            <div className="fixed cursor-pointer inset-0 z-[60] bg-slate-900/30 backdrop-blur-sm" onClick={onClose} />
             <div className="fixed inset-y-0 right-0 z-[70] flex w-full max-w-lg flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-300">
                 {/* header */}
                 <div className="flex items-start justify-between gap-3 border-b border-[var(--color-primary-light)] px-6 py-5">
                     <div className="min-w-0">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary)]">
-                            {ENTITY_LABEL[entity]} Details
+                            {ENTITY_LABEL[entity]} details
                         </p>
                         <h2 className="mt-1 truncate text-base font-bold text-slate-800">
                             {loading
@@ -536,7 +654,7 @@ function RecordDrawer({
                             </span>
                         )}
                     </div>
-                    <button onClick={onClose} className="flex cursor-pointer h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-all hover:bg-slate-50 hover:text-slate-600">✕</button>
+                    <button onClick={onClose} aria-label="Close record preview" className="flex cursor-pointer h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-all hover:bg-slate-50 hover:text-slate-600">✕</button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
@@ -588,7 +706,7 @@ function RecordDrawer({
                                             <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Assigned To</p>
                                             <div className="flex flex-wrap gap-1.5">
                                                 {rec.assignedTo.map((u: ActivityUser) => (
-                                                    <span key={u.id} className="rounded-lg bg-[var(--color-primary-lighter)] px-2.5 py-1 text-[10px] font-bold text-[var(--color-primary)]">
+                                                    <span key={u.id} className="rounded-full bg-[var(--color-primary-lighter)] px-2.5 py-1 text-[10px] font-bold text-[var(--color-primary)]">
                                                         {u.name}
                                                     </span>
                                                 ))}
@@ -702,11 +820,11 @@ function TouchedRecordsPanel({ params }: { params: string }) {
             {/* tabs */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-primary-light)] px-5 py-4">
                 <div>
-                    <h2 className="text-sm font-bold text-slate-800">Records Touched</h2>
-                    <p className="text-[11px] text-slate-400">Every customer & follow-up affected in this date range</p>
+                    <h2 className="text-sm font-bold text-slate-800">Records touched</h2>
+                    <p className="text-[11px] text-slate-400">Every customer &amp; follow-up affected in this date range</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="flex overflow-hidden rounded-xl border-2 border-[var(--color-primary-light)] bg-white">
+                    <div className="flex overflow-hidden rounded-full border-2 border-[var(--color-primary-light)] bg-white">
                         {(["customer", "followup"] as const).map((t) => (
                             <button
                                 key={t}
@@ -720,7 +838,7 @@ function TouchedRecordsPanel({ params }: { params: string }) {
                             </button>
                         ))}
                     </div>
-                    <span className="rounded-full border border-[var(--color-primary-light)] bg-[var(--color-primary-lighter)] px-3 py-1 text-[10px] font-bold text-[var(--color-primary)]">
+                    <span className="rounded-full border border-[var(--color-primary-light)] bg-[var(--color-primary-lighter)] px-3 py-1 text-[10px] font-bold tabular-nums text-[var(--color-primary)]">
                         {pg.total} total
                     </span>
                 </div>
@@ -740,7 +858,7 @@ function TouchedRecordsPanel({ params }: { params: string }) {
                 ) : tab === "customer" ? (
                     customers.map((c) => (
                         <div key={c.customerId} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-[var(--color-primary-lighter)]/50">
-                            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary-lighter)] text-[11px] font-bold text-[var(--color-primary)]">
+                            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary-lighter)] text-[11px] font-bold text-[var(--color-primary)] ring-1 ring-inset ring-[var(--color-primary-light)]">
                                 {initials(c.customerName)}
                             </div>
 
@@ -759,9 +877,9 @@ function TouchedRecordsPanel({ params }: { params: string }) {
 
                             {/* count chips */}
                             <div className="hidden flex-shrink-0 items-center gap-1 sm:flex">
-                                {(["create", "update", "delete", "assign"] as const).map((a) =>
+                                {(["create", "import", "update", "delete", "assign"] as const).map((a) =>
                                     c.counts?.[a] ? (
-                                        <span key={a} className={`rounded-lg px-2 py-0.5 text-[10px] font-bold ${ACTION_STYLE[a].bg} ${ACTION_STYLE[a].text}`}>
+                                        <span key={a} className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${ACTION_STYLE[a].bg} ${ACTION_STYLE[a].text}`}>
                                             {ACTION_STYLE[a].label} {c.counts[a]}
                                         </span>
                                     ) : null
@@ -803,7 +921,7 @@ function TouchedRecordsPanel({ params }: { params: string }) {
                             </div>
 
                             <div className="hidden flex-shrink-0 items-center gap-1 sm:flex">
-                                <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
                                     {f.totalActivities} {f.totalActivities === 1 ? "action" : "actions"}
                                 </span>
                                 {f.lastAction && <ActionBadge action={f.lastAction} />}
@@ -889,6 +1007,41 @@ export default function UserActivityPage() {
         setSearch(v);
         if (debRef.current) clearTimeout(debRef.current);
         debRef.current = setTimeout(() => { setDebSearch(v); setPage(1); }, 400);
+    };
+
+    // ── dropdown <-> state adapters for the reusable SingleSelect ──────────────
+    const userOptionList = useMemo(
+        () => ["All Users", ...users.map((u) => `${u.name} — ${ROLE_LABEL[u.role] ?? u.role}`)],
+        [users]
+    );
+    const selectedUserLabel = useMemo(() => {
+        if (!adminId) return "All Users";
+        const u = users.find((x) => x.id === adminId);
+        return u ? `${u.name} — ${ROLE_LABEL[u.role] ?? u.role}` : "All Users";
+    }, [adminId, users]);
+    const handleUserChange = (label: string) => {
+        if (label === "All Users") { setAdminId(""); setPage(1); return; }
+        const match = users.find((u) => `${u.name} — ${ROLE_LABEL[u.role] ?? u.role}` === label);
+        setAdminId(match?.id ?? "");
+        setPage(1);
+    };
+
+    const moduleOptionList = useMemo(() => ["All Modules", ...ENTITY_OPTIONS.map((e) => ENTITY_LABEL[e])], []);
+    const selectedModuleLabel = entity ? (ENTITY_LABEL[entity] ?? "All Modules") : "All Modules";
+    const handleModuleChange = (label: string) => {
+        if (label === "All Modules") { setEntity(""); setPage(1); return; }
+        const key = ENTITY_OPTIONS.find((e) => ENTITY_LABEL[e] === label) ?? "";
+        setEntity(key);
+        setPage(1);
+    };
+
+    const actionOptionList = useMemo(() => ["All Actions", ...ACTION_OPTIONS.map((a) => ACTION_STYLE[a].label)], []);
+    const selectedActionLabel = action ? (ACTION_STYLE[action]?.label ?? "All Actions") : "All Actions";
+    const handleActionChange = (label: string) => {
+        if (label === "All Actions") { setAction(""); setPage(1); return; }
+        const key = ACTION_OPTIONS.find((a) => ACTION_STYLE[a].label === label) ?? "";
+        setAction(key);
+        setPage(1);
     };
 
     const rangeParams = useMemo(() => {
@@ -1000,9 +1153,10 @@ export default function UserActivityPage() {
 
     // ── derived KPI numbers ───────────────────────────────────────────────────
     const kpi = useMemo(() => {
-        const acc = { added: 0, edited: 0, deleted: 0, followups: 0, assigned: 0 };
+        const acc = { added: 0, imported: 0, edited: 0, deleted: 0, followups: 0, assigned: 0 };
         for (const r of summary) {
             acc.added += r.counts?.customer?.create ?? 0;
+            acc.imported += r.counts?.customer?.import ?? 0;
             acc.edited += r.counts?.customer?.update ?? 0;
             acc.deleted += r.counts?.customer?.delete ?? 0;
             acc.assigned += (r.counts?.customer?.assign ?? 0) + (r.counts?.customer?.unassign ?? 0);
@@ -1040,9 +1194,9 @@ export default function UserActivityPage() {
                         <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
                     </svg>
                 </div>
-                <h2 className="text-lg font-bold text-slate-800">Access Restricted</h2>
+                <h2 className="text-lg font-bold text-slate-800">Access restricted</h2>
                 <p className="mt-1 max-w-sm text-sm text-slate-400">
-                    Activity reports are available to admins only. Please contact your administrator if you need access.
+                    Activity reports are available to admins only. Contact your administrator if you need access.
                 </p>
             </div>
         );
@@ -1051,7 +1205,7 @@ export default function UserActivityPage() {
     // ── render ────────────────────────────────────────────────────────────────
     return (
         <ViewCtx.Provider value={openRecord}>
-            <div className="min-h-screen overflow-hidden rounded-md bg-gradient-to-br from-slate-50 via-[var(--color-primary-lighter)] to-white">
+            <div className="min-h-screen overflow-hidden rounded-md bg-white">
                 <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Instrument+Serif&display=swap');
         body { font-family: 'DM Sans', sans-serif; }
@@ -1067,19 +1221,20 @@ export default function UserActivityPage() {
       `}</style>
 
                 {/* ── Header ──────────────────────────────────────────────────────── */}
-                <header className="sticky top-0 border-b border-[var(--color-primary-light)] bg-white/80 backdrop-blur-md">
-                    <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-6 py-4 max-md:px-3">
+                <header className="sticky top-0 z-30 border-b border-[var(--color-primary-light)] bg-white/85 backdrop-blur-md">
+                    <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 px-6 py-4 max-md:px-3">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-primary)]">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-                                    <path d="M3 3v18h18" /><path d="M18 17V9M13 17V5M8 17v-3" />
-                                </svg>
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)] shadow-sm">
+                                <GlyphIcon path={Icon.activity} className="h-5 w-5 text-white" />
                             </div>
-                            <span className="text-sm font-semibold text-slate-700">User Activity</span>
+                            <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-primary)] opacity-70">Reports</p>
+                                <h1 className=" -mt-0.5 text-2xl leading-none text-slate-800">User Activity</h1>
+                            </div>
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
+                            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
                                 <span className="relative flex h-2 w-2">
                                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                                     <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
@@ -1112,73 +1267,69 @@ export default function UserActivityPage() {
                     </div>
                 )}
 
-                <main className="mx-auto max-w-7xl px-6 py-8 max-md:px-3">
-                    {/* Title */}
-                    {/*  <div className="mb-6">
-                    <div className="mb-2 flex items-center gap-2">
-                        <div className="h-px flex-1 bg-[var(--color-primary-light)]" />
-                        <span className="text-xs font-semibold uppercase tracking-widest text-[var(--color-primary)] opacity-60">Activity Report</span>
-                        <div className="h-px flex-1 bg-[var(--color-primary-light)]" />
-                    </div>
-                    <h1 className="heading-font text-4xl leading-tight text-slate-800">User Activity</h1>
-                    <p className="mt-1 text-sm text-slate-400">
-                        Who did what, when they were online, and everything they touched in the CRM.
+                <main className="mx-auto max-w-[1600px] px-6 py-8 max-md:px-3">
+                    <p className="mb-6 -mt-2 text-sm text-slate-400">
+                        Who did what, when they were online, and everything they touched — all in one place.
                     </p>
-                </div> */}
 
                     {/* ── Filters ─────────────────────────────────────────────────── */}
                     <div className="mb-6 rounded-2xl border border-[var(--color-primary-light)] bg-white p-4 shadow-sm">
+                        <div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                            <GlyphIcon path={Icon.filter} className="h-3.5 w-3.5" />
+                            Filters
+                        </div>
                         <div className="flex flex-wrap items-end gap-3">
                             {/* dates */}
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">From</label>
-                                <input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(1); }}
-                                    className="rounded-xl border-2 border-[var(--color-primary-light)] bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none transition-all focus:border-[var(--color-primary)]" />
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">To</label>
-                                <input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(1); }}
-                                    className="rounded-xl border-2 border-[var(--color-primary-light)] bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none transition-all focus:border-[var(--color-primary)]" />
-                            </div>
+<div className="min-w-[160px]">
+    <DateSelector
+        label="From"
+        value={isoToDDMMYYYY(from)}
+        onChange={(v) => { setFrom(ddmmyyyyToISO(v)); setPage(1); }}
+    />
+</div>
+<div className="min-w-[160px]">
+    <DateSelector
+        label="To"
+        value={isoToDDMMYYYY(to)}
+        onChange={(v) => { setTo(ddmmyyyyToISO(v)); setPage(1); }}
+    />
+</div>
 
                             {/* user */}
-                            <div className="flex min-w-[160px] flex-1 flex-col gap-1">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">User</label>
-                                <select value={adminId} onChange={(e) => { setAdminId(e.target.value); setPage(1); }}
-                                    className="rounded-xl border-2 border-[var(--color-primary-light)] bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none transition-all focus:border-[var(--color-primary)]">
-                                    <option value="">All users</option>
-                                    {users.map((u) => (
-                                        <option key={u.id} value={u.id}>
-                                            {u.name} — {ROLE_LABEL[u.role] ?? u.role}
-                                        </option>
-                                    ))}
-                                </select>
+                            <div className="flex min-w-[190px] flex-1 flex-col gap-1">
+                                <SingleSelect
+                                    label="User"
+                                    options={userOptionList}
+                                    value={selectedUserLabel}
+                                    onChange={handleUserChange}
+                                    isSearchable
+                                />
                             </div>
 
-                            {/* entity */}
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Module</label>
-                                <select value={entity} onChange={(e) => { setEntity(e.target.value); setPage(1); }}
-                                    className="rounded-xl border-2 border-[var(--color-primary-light)] bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none transition-all focus:border-[var(--color-primary)]">
-                                    <option value="">All modules</option>
-                                    {ENTITY_OPTIONS.map((e) => <option key={e} value={e}>{ENTITY_LABEL[e]}</option>)}
-                                </select>
+                            {/* module */}
+                            <div className="flex min-w-[160px] flex-col gap-1">
+                                <SingleSelect
+                                    label="Module"
+                                    options={moduleOptionList}
+                                    value={selectedModuleLabel}
+                                    onChange={handleModuleChange}
+                                />
                             </div>
 
                             {/* action */}
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Action</label>
-                                <select value={action} onChange={(e) => { setAction(e.target.value); setPage(1); }}
-                                    className="rounded-xl border-2 border-[var(--color-primary-light)] bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none transition-all focus:border-[var(--color-primary)]">
-                                    <option value="">All actions</option>
-                                    {ACTION_OPTIONS.map((a) => <option key={a} value={a}>{ACTION_STYLE[a].label}</option>)}
-                                </select>
+                            <div className="flex min-w-[160px] flex-col gap-1">
+                                <SingleSelect
+                                    label="Action"
+                                    options={actionOptionList}
+                                    value={selectedActionLabel}
+                                    onChange={handleActionChange}
+                                />
                             </div>
 
                             {/* quick ranges */}
                             <div className="flex flex-col gap-1">
                                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Quick</label>
-                                <div className="flex overflow-hidden rounded-xl border-2 border-[var(--color-primary-light)] bg-white">
+                                <div className="flex overflow-hidden rounded-full border-2 border-[var(--color-primary-light)] bg-white">
                                     {[
                                         { l: "Today", d: 0 },
                                         { l: "7D", d: 6 },
@@ -1203,10 +1354,23 @@ export default function UserActivityPage() {
                             </div>
 
                             {/* search */}
-                            <div className="relative min-w-[180px] flex-1">
+                            <div className="min-w-[200px] flex-1">
                                 <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-slate-400">Search</label>
-                                <input value={search} onChange={(e) => onSearch(e.target.value)} placeholder="Customer or user name…"
-                                    className="w-full rounded-xl border-2 border-[var(--color-primary-light)] bg-white px-3 py-2 text-xs text-slate-700 placeholder:text-slate-300 outline-none transition-all focus:border-[var(--color-primary)]" />
+                                <div className="relative">
+                                    <GlyphIcon path={Icon.search} className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                    <input value={search} onChange={(e) => onSearch(e.target.value)} placeholder="Customer or user name…"
+                                        className="w-full rounded-xl border-2 border-[var(--color-primary-light)] placeholder:text-slate-400 bg-white py-2 pl-9 pr-8 text-xs text-slate-700 placeholder:text-slate-300 outline-none transition-all focus:border-[var(--color-primary)]" />
+                                    {search && (
+                                        <button
+                                            type="button"
+                                            onClick={() => onSearch("")}
+                                            aria-label="Clear search"
+                                            className="absolute right-2.5 top-1/2 flex h-4 w-4 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-500"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             {isFiltered && (
@@ -1226,13 +1390,14 @@ export default function UserActivityPage() {
                     )}
 
                     {/* ── KPI cards ───────────────────────────────────────────────── */}
-                    <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-                        <StatCard label="Total Activities" value={totals.activities} sub="all" tone="primary" />
-                        <StatCard label="Customers Added" value={kpi.added} sub="new" tone="emerald" />
-                        <StatCard label="Customers Edited" value={kpi.edited} sub="edit" tone="amber" />
-                        <StatCard label="Customers Deleted" value={kpi.deleted} sub="del" tone="red" />
-                        <StatCard label="Follow-ups" value={kpi.followups} sub="all" tone="violet" />
-                        <StatCard label="Total Online Time" value={fmtDuration(totals.onlineSeconds)} sub={`${totals.users} users`} tone="slate" />
+                    <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                        <StatCard label="Total Activities" value={totals.activities} sub="All" tone="primary" icon={<GlyphIcon path={Icon.activity} />} />
+                        <StatCard label="Customers Added" value={kpi.added} sub="New" tone="emerald" icon={<GlyphIcon path={Icon.plusCircle} />} />
+                        <StatCard label="Imported" value={kpi.imported} sub="Bulk" tone="blue" icon={<GlyphIcon path={Icon.download} />} />
+                        <StatCard label="Customers Edited" value={kpi.edited} sub="Edit" tone="amber" icon={<GlyphIcon path={Icon.pencil} />} />
+                        <StatCard label="Customers Deleted" value={kpi.deleted} sub="Del" tone="red" icon={<GlyphIcon path={Icon.trash} />} />
+                        <StatCard label="Follow-ups" value={kpi.followups} sub="All" tone="violet" icon={<GlyphIcon path={Icon.phone} />} />
+                        <StatCard label="Total Online Time" value={fmtDuration(totals.onlineSeconds)} sub={`${totals.users} users`} tone="slate" icon={<GlyphIcon path={Icon.clock} />} />
                     </div>
 
                     {/* ── Body grid ───────────────────────────────────────────────── */}
@@ -1243,10 +1408,10 @@ export default function UserActivityPage() {
                             <div className="overflow-hidden rounded-2xl border border-[var(--color-primary-light)] bg-white shadow-sm">
                                 <div className="flex items-center justify-between border-b border-[var(--color-primary-light)] px-5 py-4">
                                     <div>
-                                        <h2 className="text-sm font-bold text-slate-800">Team Performance</h2>
+                                        <h2 className="text-sm font-bold text-slate-800">Team performance</h2>
                                         <p className="text-[11px] text-slate-400">Click a user to open their online timeline</p>
                                     </div>
-                                    <span className="rounded-full border border-[var(--color-primary-light)] bg-[var(--color-primary-lighter)] px-3 py-1 text-[10px] font-bold text-[var(--color-primary)]">
+                                    <span className="rounded-full border border-[var(--color-primary-light)] bg-[var(--color-primary-lighter)] px-3 py-1 text-[10px] font-bold tabular-nums text-[var(--color-primary)]">
                                         {summary.length} users
                                     </span>
                                 </div>
@@ -1254,9 +1419,10 @@ export default function UserActivityPage() {
                                 {/* table */}
                                 <div className="overflow-x-auto">
                                     <div className="min-w-[620px]">
-                                                                                <div className="grid grid-cols-12 gap-2 border-b border-[var(--color-primary-light)] bg-slate-50/60 px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                        <div className="grid grid-cols-12 gap-2 border-b border-[var(--color-primary-light)] bg-slate-50/60 px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                                             <div className="col-span-3">User</div>
                                             <div className="col-span-1 text-center">Added</div>
+                                            <div className="col-span-1 text-center">Imp</div>
                                             <div className="col-span-1 text-center">Edited</div>
                                             <div className="col-span-1 text-center">Deleted</div>
                                             <div className="col-span-1 text-center">F/ups</div>
@@ -1294,17 +1460,18 @@ export default function UserActivityPage() {
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                        <div className="col-span-1 text-center text-xs font-bold text-emerald-600">{c.customer?.create ?? 0}</div>
-                                                        <div className="col-span-1 text-center text-xs font-bold text-amber-600">{c.customer?.update ?? 0}</div>
-                                                        <div className="col-span-1 text-center text-xs font-bold text-red-500">{c.customer?.delete ?? 0}</div>
-                                                        <div className="col-span-1 text-center text-xs font-bold text-violet-600">{followups}</div>
+                                                        <div className="col-span-1 flex justify-center"><CountPill value={c.customer?.create ?? 0} action="create" /></div>
+                                                        <div className="col-span-1 flex justify-center"><CountPill value={c.customer?.import ?? 0} action="import" /></div>
+                                                        <div className="col-span-1 flex justify-center"><CountPill value={c.customer?.update ?? 0} action="update" /></div>
+                                                        <div className="col-span-1 flex justify-center"><CountPill value={c.customer?.delete ?? 0} action="delete" /></div>
+                                                        <div className="col-span-1 flex justify-center"><CountPill value={followups} action="assign" /></div>
                                                         <div className="col-span-1 text-center">
-                                                            <span className="rounded-lg bg-[var(--color-primary-lighter)] px-2 py-0.5 text-xs font-bold text-[var(--color-primary)]">
+                                                            <span className="rounded-full bg-[var(--color-primary-lighter)] px-2 py-0.5 text-xs font-bold tabular-nums text-[var(--color-primary)]">
                                                                 {r.totalActivities}
                                                             </span>
                                                         </div>
                                                         <div className="col-span-2 text-right">
-                                                            <p className="text-xs font-bold text-slate-700">{fmtDuration(r.onlineSeconds)}</p>
+                                                            <p className="text-xs font-bold tabular-nums text-slate-700">{fmtDuration(r.onlineSeconds)}</p>
                                                             <p className="text-[10px] text-slate-400">{r.sessionCount} sessions</p>
                                                         </div>
                                                         <div className="col-span-2 flex justify-end">
@@ -1324,7 +1491,7 @@ export default function UserActivityPage() {
                             <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--color-primary-light)] bg-white shadow-sm">
                                 <div className="flex items-center justify-between border-b border-[var(--color-primary-light)] px-5 py-4">
                                     <div>
-                                        <h2 className="text-sm font-bold text-slate-800">Activity Feed</h2>
+                                        <h2 className="text-sm font-bold text-slate-800">Activity feed</h2>
                                         <p className="text-[11px] text-slate-400">{pagination.total} records</p>
                                     </div>
                                     <span className="rounded-full border border-[var(--color-primary-light)] bg-[var(--color-primary-lighter)] px-3 py-1 text-[10px] font-bold text-[var(--color-primary)]">
