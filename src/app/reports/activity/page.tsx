@@ -183,6 +183,13 @@ const Icon = {
     filter: (
         <path d="M4 5h16M7 12h10M10 19h4" />
     ),
+    assign: (
+        <>
+            <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+            <circle cx="8.5" cy="7" r="4" />
+            <path d="M17 11l2 2 4-4" />
+        </>
+    ),
 };
 
 function GlyphIcon({ path, className = "h-3.5 w-3.5" }: { path: ReactNode; className?: string }) {
@@ -771,7 +778,7 @@ function ViewButton({ disabled, onClick }: { disabled?: boolean; onClick: () => 
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
             </svg>
-            View
+
         </button>
     );
 }
@@ -1396,6 +1403,7 @@ export default function UserActivityPage() {
                         <StatCard label="Imported" value={kpi.imported} sub="Bulk" tone="blue" icon={<GlyphIcon path={Icon.download} />} />
                         <StatCard label="Customers Edited" value={kpi.edited} sub="Edit" tone="amber" icon={<GlyphIcon path={Icon.pencil} />} />
                         <StatCard label="Customers Deleted" value={kpi.deleted} sub="Del" tone="red" icon={<GlyphIcon path={Icon.trash} />} />
+                        <StatCard label="Customers Assigned" value={kpi.assigned} sub="Edit" tone="blue" icon={<GlyphIcon path={Icon.assign} />} />
                         <StatCard label="Follow-ups" value={kpi.followups} sub="All" tone="violet" icon={<GlyphIcon path={Icon.phone} />} />
                         <StatCard label="Total Online Time" value={fmtDuration(totals.onlineSeconds)} sub={`${totals.users} users`} tone="slate" icon={<GlyphIcon path={Icon.clock} />} />
                     </div>
@@ -1426,11 +1434,13 @@ export default function UserActivityPage() {
                                             <div className="col-span-1 text-center">Imp</div>
                                             <div className="col-span-1 text-center">Edited</div>
                                             <div className="col-span-1 text-center">Deleted</div>
+                                            <div className="col-span-1 text-center">Assign</div>
+
                                             <div className="col-span-1 text-center">F/ups</div>
                                             <div className="col-span-1 text-center">Total</div>
                                             <div className="col-span-1 text-right">Online</div>
                                             {/* CHANGED: col-span-2 to col-span-1 */}
-                                            <div className="col-span-2 text-right">Action</div>
+                                            <div className="col-span-1 text-right">Action</div>
                                         </div>
 
                                         {loadingSummary ? (
@@ -1466,6 +1476,7 @@ export default function UserActivityPage() {
                                                         <div className="col-span-1 flex justify-center"><CountPill value={c.customer?.import ?? 0} action="import" /></div>
                                                         <div className="col-span-1 flex justify-center"><CountPill value={c.customer?.update ?? 0} action="update" /></div>
                                                         <div className="col-span-1 flex justify-center"><CountPill value={c.customer?.delete ?? 0} action="delete" /></div>
+                                                        <div className="col-span-1 flex justify-center"><CountPill value={c.customer?.assign ?? 0} action="assign" /></div>
                                                         <div className="col-span-1 flex justify-center"><CountPill value={followups} action="assign" /></div>
                                                         <div className="col-span-1 text-center">
                                                             <span className="rounded-full bg-[var(--color-primary-lighter)] px-2 py-0.5 text-xs font-bold tabular-nums text-[var(--color-primary)]">
@@ -1477,7 +1488,7 @@ export default function UserActivityPage() {
                                                             <p className="text-[10px] text-slate-400">{r.sessionCount} sessions</p>
                                                         </div>
                                                         {/* CHANGED: col-span-2 to col-span-1 */}
-                                                        <div className="col-span-2 flex justify-end">
+                                                        <div className="col-span-1 flex justify-end">
                                                             <ViewButton onClick={() => router.push(CRM_ROUTES.user(r.user.id))} />
                                                         </div>
                                                     </div>
