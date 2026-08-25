@@ -941,7 +941,7 @@ export default function CustomerFollowups() {
                                                     className="px-4 py-3  border border-gray-200 text-[var(--color-primary)] cursor-pointer hover:underline"
                                                     onClick={() => {
                                                         setIsFollowupDialogOpen(true);
-                                                        handleFollowups(item.customerid);
+                                                        handleFollowups(item.customerid,item.Name);
                                                     }}
                                                 >
                                                     Follow UP
