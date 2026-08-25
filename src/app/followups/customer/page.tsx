@@ -251,13 +251,14 @@ export default function CustomerFollowups() {
         await getFollowups();
     };
 
-    const handleFollowups = async (id: string) => {
+    const handleFollowups = async (id: string, Name: string) => {
         const data = await getFollowupByCustomerId(id as string);
         if (data) {
             console.log("Followups customer data", data)
             setFollowupDialogData(data.map((item: any) => ({
                 _id: item._id,
                 customer: item.customer._id,
+                 Name: Name,
                 StartDate: item.StartDate,
                 StatusType: item.StatusType,
                 FollowupNextDate: item.FollowupNextDate,
@@ -704,7 +705,7 @@ export default function CustomerFollowups() {
                         labelLeads={phonetableheader}
                         onFollowup={(lead) => {
                             setIsFollowupDialogOpen(true);
-                            handleFollowups(lead.customerid);
+                            handleFollowups(lead.customerid,lead.Name);
                         }}
                         onAdd={(id) => addFollowup(id)}
                         onView={(id) => handleViewClick(id)}

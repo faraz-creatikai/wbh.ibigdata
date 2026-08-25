@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 
 interface OptionProps {
   className?: string;
@@ -11,6 +12,8 @@ interface OptionProps {
   isMulti?: boolean;
 }
 
+const DROPDOWN_MAX_HEIGHT = 224; // matches max-h-56 (14rem)
+
 export default function SingleSelect({
   className,
   options,
@@ -22,26 +25,36 @@ export default function SingleSelect({
 }: OptionProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [dropUp, setDropUp] = useState(false); 
+  const [dropUp, setDropUp] = useState(false);
+  const [coords, setCoords] = useState<{
+    left: number;
+    width: number;
+    top?: number;
+    bottom?: number;
+  }>({ left: 0, width: 0 });
+
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLUListElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Normalize value for display
   const displayValue = Array.isArray(value) ? value.join(", ") : value;
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click.
+  // The dropdown is portaled to <body>, so it's NOT a descendant of
+  // containerRef anymore — must also check dropdownRef, or every click
+  // on an option/search box gets treated as "outside" and closes it
+  // before the option's own onClick fires.
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      const target = event.target as Node;
+      const clickedInsideContainer = containerRef.current?.contains(target);
+      const clickedInsideDropdown = dropdownRef.current?.contains(target);
+
+      if (!clickedInsideContainer && !clickedInsideDropdown) {
         setOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
@@ -53,48 +66,108 @@ export default function SingleSelect({
     }
   }, [open, isSearchable]);
 
-  // Flip dropdown above the field when there isn't room below
-useEffect(() => {
-  if (!open) return;
-
+  // Shared position calculation, used both on open and on scroll/resize
   const updatePosition = () => {
     const el = containerRef.current;
     if (!el) return;
 
     const rect = el.getBoundingClientRect();
-    const DROPDOWN_MAX_HEIGHT = 224; // matches max-h-56 (14rem)
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
+    const shouldDropUp = spaceBelow < DROPDOWN_MAX_HEIGHT && spaceAbove > spaceBelow;
 
-    setDropUp(spaceBelow < DROPDOWN_MAX_HEIGHT && spaceAbove > spaceBelow);
+    setDropUp(shouldDropUp);
+    setCoords({
+      left: rect.left,
+      width: rect.width,
+      ...(shouldDropUp
+        ? { bottom: window.innerHeight - rect.top + 4, top: undefined }
+        : { top: rect.bottom + 4, bottom: undefined }),
+    });
   };
 
-  updatePosition();
-  // `true` = capture phase, so it also fires for scrollable parent containers
-  window.addEventListener("scroll", updatePosition, true);
-  window.addEventListener("resize", updatePosition);
+  // Recalculate on scroll/resize while open
+  useEffect(() => {
+    if (!open) return;
 
-  return () => {
-    window.removeEventListener("scroll", updatePosition, true);
-    window.removeEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [open]);
+
+  // Toggle handler: computes coords BEFORE opening, in the same event,
+  // so open + coords land in the same render — no left:0 flash on first open.
+  const toggleOpen = () => {
+    if (!open) updatePosition();
+    setOpen((prev) => !prev);
   };
-}, [open]);
 
   const handleSelect = (option: string) => {
     onChange?.(option);
     setOpen(false);
   };
 
-  // Filter options
   const displayedOptions = useMemo(() => {
     if (!isSearchable) return options;
-
     return options.filter((opt) =>
       opt.toLowerCase().includes(search.toLowerCase())
     );
   }, [options, search, isSearchable]);
 
   const isLabelFloating = Boolean(displayValue) || open;
+
+  const dropdown = (
+    <ul
+      ref={dropdownRef}
+      style={{
+        position: "fixed",
+        left: coords.left,
+        width: coords.width,
+        top: coords.top,
+        bottom: coords.bottom,
+      }}
+      className={`bg-white max-sm:dark:bg-[var(--color-childbgdark)] max-sm:dark:text-white shadow-lg border border-gray-300 max-sm:dark:border-gray-800 rounded-md max-h-56 overflow-auto
+      transition-[opacity,transform] duration-200 z-[9999] ${dropUp ? "origin-bottom" : "origin-top"}
+      ${
+        open
+          ? "opacity-100 scale-100 pointer-events-auto"
+          : "opacity-0 scale-95 pointer-events-none"
+      }`}
+    >
+      {isSearchable && (
+        <li className="sticky top-0 bg-white max-sm:dark:bg-[var(--color-childbgdark)] p-2 border-b z-10">
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="Search..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full px-2 py-1 border rounded-md text-sm outline-none focus:border-[var(--color-primary)]"
+          />
+        </li>
+      )}
+
+      {displayedOptions.length > 0 ? (
+        displayedOptions.map((opt, idx) => (
+          <li
+            key={idx}
+            onClick={() => handleSelect(opt)}
+            className="px-3 py-2 hover:bg-gray-100 cursor-pointer truncate"
+          >
+            {opt}
+          </li>
+        ))
+      ) : (
+        <li className="px-3 py-2 text-gray-500 text-sm">
+          {isSearchable ? "No matching results" : "No options available"}
+        </li>
+      )}
+    </ul>
+  );
 
   return (
     <div
@@ -104,7 +177,7 @@ useEffect(() => {
     >
       {/* Label */}
       <label
-        className={`absolute left-3 transition-all duration-200 px-1 bg-white max-sm:dark:bg-[var(--color-childbgdark)] max-sm:dark:text-gray-400 pointer-events-none
+        className={`absolute z-10 left-3 transition-all duration-200 px-1 bg-white max-sm:dark:bg-[var(--color-childbgdark)] max-sm:dark:text-gray-400 pointer-events-none
         ${
           isLabelFloating
             ? "-top-2 text-xs text-[var(--color-primary)]"
@@ -116,7 +189,7 @@ useEffect(() => {
 
       {/* Select box */}
       <div
-        onClick={() => setOpen(!open)}
+        onClick={toggleOpen}
         className={`w-full border rounded-md px-3 py-2 cursor-pointer bg-white max-sm:dark:bg-[var(--color-childbgdark)] max-sm:dark:text-white flex justify-between items-center
         ${
           error
@@ -144,56 +217,12 @@ useEffect(() => {
           strokeWidth="2"
           viewBox="0 0 24 24"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 9l-7 7-7-7"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </div>
 
-      {/* Dropdown */}
-      <ul
-  className={`absolute left-0 w-full bg-white max-sm:dark:bg-[var(--color-childbgdark)] max-sm:dark:text-white shadow-lg border border-gray-300 max-sm:dark:border-gray-800 rounded-md
-  ${dropUp ? "bottom-full mb-1 origin-bottom" : "top-full mt-1 origin-top"}
-  transition-all duration-200 transform z-50
-  ${
-    open
-      ? "opacity-100 scale-100 pointer-events-auto max-h-56 overflow-auto"
-      : "opacity-0 scale-95 pointer-events-none max-h-0 overflow-hidden"
-  }`}
->
-        {/* Search */}
-        {isSearchable && (
-          <li className="sticky top-0 bg-white max-sm:dark:bg-[var(--color-childbgdark)] p-2 border-b z-10">
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-2 py-1 border rounded-md text-sm outline-none focus:border-[var(--color-primary)]"
-            />
-          </li>
-        )}
-
-        {/* Options */}
-        {displayedOptions.length > 0 ? (
-          displayedOptions.map((opt, idx) => (
-            <li
-              key={idx}
-              onClick={() => handleSelect(opt)}
-              className="px-3 py-2 hover:bg-gray-100 cursor-pointer truncate"
-            >
-              {opt}
-            </li>
-          ))
-        ) : (
-          <li className="px-3 py-2 text-gray-500 text-sm">
-            {isSearchable ? "No matching results" : "No options available"}
-          </li>
-        )}
-      </ul>
+      {/* Dropdown, portaled to <body> so it can never be trapped behind a sibling's stacking context */}
+      {typeof document !== "undefined" && createPortal(dropdown, document.body)}
 
       {/* Error */}
       {error && <p className="text-red-500 text-sm mt-1">{error}</p>}

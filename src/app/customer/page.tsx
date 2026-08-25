@@ -4298,7 +4298,7 @@ export default function Customer() {
                                       cellValue = (
                                         <>
                                           {item.ContactNumber && (
-                                            <div className="flex flex-col items-start gap-1">
+                                            <div className="flex flex-col items-center gap-1">
                                               <span
                                                 className="font-medium text-gray-800 cursor-pointer"
                                                 onClick={() => handleAgentCalling(item._id)}
