@@ -14,3 +14,4 @@ export const DEFAULT_BRAND = {
     icon192Url: "/icons/icon-192x192.png",
     icon512Url: "/icons/icon-512x512.png",
 };
+

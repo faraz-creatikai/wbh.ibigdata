@@ -1,4 +1,4 @@
-export const BASE_URL = "https://apiedu.ibigdata.in/api";
+export const BASE_URL = "https://apimatri.ibigdata.in/api";
 //https://live-project-backend-1.onrender.com
 //https://propertyapi.aileadgenie.cloud/api
 //https://apidomain.ibigdata.in
@@ -60,8 +60,8 @@ export const API_ROUTES = {
 
     GETARCHIEVEDCUSTOMER: `${BASE_URL}/customer/archived`,
     GET_ARCHIEVEDCUSTOMER_BY_PARAMS: (params: string) => `${BASE_URL}/customer/archived?${params}`,
-    ARCHIEVECUSTOMER: (id: string) => `${BASE_URL}/customer/archive/${id}`,
-    UNARCHIEVECUSTOMER: (id: string) => `${BASE_URL}/customer/unarchive/${id}`,
+    ARCHIEVECUSTOMER: `${BASE_URL}/customer/archive`,
+    UNARCHIEVECUSTOMER:  `${BASE_URL}/customer/unarchive`,
 
     ADDSHORTLIST: `${BASE_URL}/customer/shortlist`,
     GETSHORTLIST: (id: string) => `${BASE_URL}/customer/shortlist/${id}`,
@@ -515,6 +515,4 @@ export const API_ROUTES = {
   }
 };
 
-export const API_URL = "https://apiedu.ibigdata.in";
-
-
+export const API_URL = "https://apimatri.ibigdata.in";

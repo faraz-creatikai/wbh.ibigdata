@@ -27,7 +27,8 @@ interface Customer {
 
 interface SheetState {
     open: boolean;
-    customer: Customer | null;
+    ids: string[];
+    displayName: string;
 }
 
 const LIMIT = 12;
@@ -89,7 +90,7 @@ function RestoreSheet({
     onConfirm: () => void;
     loading: boolean;
 }) {
-    if (!sheet.open || !sheet.customer) return null;
+    if (!sheet.open || sheet.ids.length === 0) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-gray-900/40 backdrop-blur-[2px]" onClick={onClose}>
             <div
@@ -111,7 +112,7 @@ function RestoreSheet({
                     <div>
                         <h3 className="text-base font-bold text-gray-900">Restore to active list?</h3>
                         <p className="text-sm text-gray-500 mt-1">
-                            <span className="font-semibold text-gray-800">{sheet.customer.customerName}</span> will show up in your calling list again.
+                            <span className="font-semibold text-gray-800">{sheet.displayName}</span> will show up in your calling list again.
                         </p>
                     </div>
                 </div>
@@ -128,7 +129,7 @@ function RestoreSheet({
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z" />
                             </svg>
                         )}
-                        Restore customer
+                        Restore {sheet.ids.length > 1 ? "Selected" : "Customer"}
                     </button>
                     <button
                         onClick={onClose}
@@ -218,8 +219,11 @@ function FilterDrawer({
 export default function ArchivedCustomersPage() {
     const router = useRouter();
     const [customers, setCustomers] = useState<Customer[]>([]);
+    const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
+    
+    // Filters & Pagination
     const [keyword, setKeyword] = useState("");
     const [city, setCity] = useState("");
     const [campaign, setCampaign] = useState("");
@@ -228,7 +232,9 @@ export default function ArchivedCustomersPage() {
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
     const [filterOpen, setFilterOpen] = useState(false);
-    const [sheet, setSheet] = useState<SheetState>({ open: false, customer: null });
+    
+    // Dialogs
+    const [sheet, setSheet] = useState<SheetState>({ open: false, ids: [], displayName: "" });
     const [isViewOpen, setIsViewOpen] = useState(false);
     const [customerToView, setCustomerToView] = useState<any>(null);
 
@@ -237,6 +243,8 @@ export default function ArchivedCustomersPage() {
 
     const fetchArchived = useCallback(async (pageNum = 1) => {
         setLoading(true);
+        setSelectedCustomers([]); // Clear selections on page/filter change
+        
         const params = new URLSearchParams({
             Skip: String((pageNum - 1) * LIMIT),
             Limit: String(LIMIT),
@@ -272,16 +280,36 @@ export default function ArchivedCustomersPage() {
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
+    // --- Select All & Toggle ---
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedCustomers(customers.map((c) => c._id || c.id));
+        } else {
+            setSelectedCustomers([]);
+        }
+    };
+
+    const toggleSelection = (id: string) => {
+        setSelectedCustomers((prev) =>
+            prev.includes(id) ? prev.filter((cId) => cId !== id) : [...prev, id]
+        );
+    };
+
+    // --- Action Confirm ---
     const handleRestoreConfirm = async () => {
-        if (!sheet.customer) return;
+        if (sheet.ids.length === 0) return;
+        
         setActionLoading(true);
-        const res = await unArchieveCustomer(sheet.customer._id || sheet.customer.id);
+        // Ensure API function handles array of ids
+        const res = await unArchieveCustomer(sheet.ids); 
+        
         if (res?.success) {
-            toast.success("Customer restored to active list");
-            setSheet({ open: false, customer: null });
+            toast.success(sheet.ids.length > 1 ? "Customers restored" : "Customer restored");
+            setSheet({ open: false, ids: [], displayName: "" });
+            setSelectedCustomers([]);
             fetchArchived(page);
         } else {
-            toast.error("Failed to restore customer");
+            toast.error("Failed to restore customer(s)");
         }
         setActionLoading(false);
     };
@@ -299,9 +327,8 @@ export default function ArchivedCustomersPage() {
         setIsViewOpen(true);
     };
 
-
     return (
-        <div className="min-h-screen bg-gray-50/60">
+        <div className="min-h-screen bg-gray-50/60 relative pb-28">
             <Toaster position="top-center" />
             <CustomerViewDialog
                 isOpen={isViewOpen}
@@ -313,7 +340,7 @@ export default function ArchivedCustomersPage() {
             />
             <RestoreSheet
                 sheet={sheet}
-                onClose={() => setSheet({ open: false, customer: null })}
+                onClose={() => setSheet({ open: false, ids: [], displayName: "" })}
                 onConfirm={handleRestoreConfirm}
                 loading={actionLoading}
             />
@@ -328,7 +355,7 @@ export default function ArchivedCustomersPage() {
             />
 
             {/* ── Sticky Top Bar ─────────────────────────────────────────────── */}
-            <div className="sticky top-0  bg-white/80 backdrop-blur-md border-b border-gray-100">
+            <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100">
                 <div className="max-w-7xl mx-auto px-4 pt-4 pb-3">
                     <div className="flex items-center gap-3 mb-3">
                         <button
@@ -367,8 +394,8 @@ export default function ArchivedCustomersPage() {
                         <button
                             onClick={() => setFilterOpen(true)}
                             className={`relative shrink-0 w-10 h-10 cursor-pointer rounded-full flex items-center justify-center border transition-all ${activeFilterCount > 0
-                                ? "bg-[var(--color-primary)] border-[var(--color-primary)] text-white"
-                                : "bg-white border-gray-200 text-gray-500 hover:border-[var(--color-primary-light)]"
+                                    ? "bg-[var(--color-primary)] border-[var(--color-primary)] text-white"
+                                    : "bg-white border-gray-200 text-gray-500 hover:border-[var(--color-primary-light)]"
                                 }`}
                         >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -385,7 +412,49 @@ export default function ArchivedCustomersPage() {
             </div>
 
             {/* ── Content ────────────────────────────────────────────────────── */}
-            <div className="max-w-7xl mx-auto px-4 py-5 pb-28">
+            <div className="max-w-7xl mx-auto px-4 py-5">
+
+                {/* Bulk Action / Select All Header */}
+                {!loading && customers.length > 0 && (
+                    <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 mb-4 shadow-sm border border-gray-100 min-h-[56px] transition-all">
+                        {selectedCustomers.length > 0 ? (
+                            <>
+                                <div className="flex items-center gap-3">
+                                    <button 
+                                        onClick={() => setSelectedCustomers([])} 
+                                        className="w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                                    </button>
+                                    <span className="text-sm font-bold text-[var(--color-primary)]">{selectedCustomers.length} Selected</span>
+                                </div>
+                                <button
+                                    onClick={() => setSheet({ open: true, ids: selectedCustomers, displayName: `${selectedCustomers.length} selected customers` })}
+                                    className="px-4 py-2 cursor-pointer bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] transition-colors text-white text-xs font-bold rounded-lg flex items-center gap-2"
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
+                                    Restore All
+                                </button>
+                            </>
+                        ) : (
+                            <label className="flex items-center gap-3 cursor-pointer select-none group w-full">
+                                <div className="relative flex items-center justify-center w-5 h-5">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedCustomers.length === customers.length && customers.length > 0}
+                                        onChange={handleSelectAll}
+                                        className="peer appearance-none w-5 h-5 border-2 border-gray-300 rounded cursor-pointer checked:bg-[var(--color-primary)] checked:border-[var(--color-primary)] transition-all"
+                                    />
+                                    <svg className="absolute w-3 h-3 text-white pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </div>
+                                <span className="text-sm font-semibold text-gray-600 group-hover:text-gray-900 transition-colors">Select All on this page</span>
+                            </label>
+                        )}
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
@@ -404,25 +473,43 @@ export default function ArchivedCustomersPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {customers.map((c) => {
                             const temp = (c.LeadTemperature || "cold").toLowerCase();
+                            const isSelected = selectedCustomers.includes(c._id || c.id);
+
                             return (
                                 <div
                                     key={c._id || c.id}
-                                    className="group relative rounded-2xl bg-white border border-gray-100 hover:border-[var(--color-primary-light)] hover:shadow-md shadow-sm transition-all p-4"
+                                    className={`group relative rounded-2xl bg-white border hover:shadow-md shadow-sm transition-all p-4 ${
+                                        isSelected ? "border-[var(--color-primary)] bg-[var(--color-primary-lighter)]/20" : "border-gray-100 hover:border-[var(--color-primary-light)]"
+                                    }`}
                                 >
                                     {/* temperature strip */}
-                                    <span className={`absolute top-0 left-4 right-4 h-[3px] rounded-b-full ${TEMP_STYLES[temp] || TEMP_STYLES.cold}`} />
+                                    <span className={`absolute top-0 left-4 right-10 h-[3px] rounded-b-full ${TEMP_STYLES[temp] || TEMP_STYLES.cold}`} />
 
-                                    <div className="flex items-start justify-between gap-2 mb-3">
+                                    {/* Checkbox (Absolute positioning) */}
+                                    <div className="absolute top-3 right-4 z-10 flex items-center justify-center">
+                                        <div className="relative flex items-center justify-center w-5 h-5">
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => toggleSelection(c._id || c.id)}
+                                                className="peer appearance-none w-5 h-5 border-2 border-gray-300 rounded cursor-pointer checked:bg-[var(--color-primary)] checked:border-[var(--color-primary)] transition-all"
+                                            />
+                                            <svg className="absolute w-3 h-3 text-white pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start justify-between gap-2 mb-3 mt-1">
                                         <div className="flex items-center gap-3 min-w-0">
                                             <div className="w-11 h-11 shrink-0 rounded-full bg-[var(--color-primary-lighter)] flex items-center justify-center">
                                                 <span className="text-xs font-bold text-[var(--color-primary)]">{initials(c.customerName)}</span>
                                             </div>
                                             <div className="min-w-0">
-                                                <p className="text-sm font-bold text-gray-900 truncate">{c.customerName}</p>
+                                                <p className="text-sm font-bold text-gray-900 truncate pr-4">{c.customerName}</p>
                                                 <p className="text-xs text-gray-500 truncate">{c.ContactNumber}</p>
                                             </div>
                                         </div>
-                                        <span className="shrink-0 text-[10px] font-semibold text-gray-400 whitespace-nowrap">{timeAgo(c.updatedAt)}</span>
                                     </div>
 
                                     {/* meta chips */}
@@ -443,15 +530,15 @@ export default function ArchivedCustomersPage() {
                                                 {c.Price}
                                             </span>
                                         )}
+                                        <span className="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-semibold text-gray-400 whitespace-nowrap ml-auto">
+                                            {timeAgo(c.updatedAt)}
+                                        </span>
                                     </div>
 
                                     {/* actions */}
-                                    <div className="flex items-center gap-2 pt-3 border-t border-gray-50">
+                                    <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
                                         <button
-                                            /* onClick={() => router.push(`/customer/${c._id || c.id}`)} */
-                                            onClick={() => {
-                                                handleViewClick(c._id || c.id)
-                                            }}
+                                            onClick={() => handleViewClick(c._id || c.id)}
                                             className="flex-1 inline-flex cursor-pointer items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 transition-colors"
                                         >
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
@@ -460,7 +547,7 @@ export default function ArchivedCustomersPage() {
                                             Open
                                         </button>
                                         <button
-                                            onClick={() => setSheet({ open: true, customer: c })}
+                                            onClick={() => setSheet({ open: true, ids: [c._id || c.id], displayName: c.customerName })}
                                             className="flex-1 inline-flex cursor-pointer items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-[var(--color-primary)] bg-[var(--color-primary-lighter)] hover:bg-[var(--color-primary-light)] transition-colors"
                                         >
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">

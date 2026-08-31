@@ -2060,19 +2060,28 @@ export default function Customer() {
     toast.error("Failed to close deal");
   };
 
-  const archiveCustomerHandler = async (id: string) => {
-    const response = await archieveCustomer(id);
+  // State definition update (if using TypeScript)
+  // const [archiveData, setArchiveData] = useState<{ids: string[], name?: string} | null>(null);
+
+  const archiveCustomerHandler = async (ids: string[]) => {
+    // Ensure your API function (archieveCustomer) is updated to pass `{ customerIds: ids }` in the body
+    const response = await archieveCustomer(ids);
+
     if (response?.success) {
       setIsArchiveOpen(false);
       setArchiveData(null);
-      toast.success("Customer archived");
+      toast.success(ids.length > 1 ? "Customers archived" : "Customer archived");
 
+      // Remove ALL archived IDs from the UI list
       setCustomerData((prevData) =>
-        prevData.filter((customer) => customer?._id !== id)
+        prevData.filter((customer) => !ids.includes(customer?._id))
       );
+
+      // Clear selection if you're using a selectedCustomers state
+      // setSelectedCustomers([]); 
       return;
     }
-    toast.error("Failed to archive customer");
+    toast.error("Failed to archive customer(s)");
   };
 
 
@@ -2498,45 +2507,49 @@ export default function Customer() {
         )
       }
 
-      {
-        isArchiveOpen && (
-          <PopupMenu onClose={() => { setIsArchiveOpen(false); setArchiveData(null); }}>
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 w-full max-w-md mx-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-[var(--color-primary-lighter)] flex items-center justify-center">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-gray-900">Archive Customer</h3>
-                    <p className="text-xs text-gray-500">This will remove it from your list only</p>
-                  </div>
+      {isArchiveOpen && archiveData && (
+        <PopupMenu onClose={() => { setIsArchiveOpen(false); setArchiveData(null); }}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 w-full max-w-md mx-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[var(--color-primary-lighter)] flex items-center justify-center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4" />
+                  </svg>
                 </div>
-                <p className="text-sm text-gray-700 mb-5">
-                  Are you sure you want to archive{" "}
-                  <span className="font-semibold text-gray-900">{archiveData?.name}</span>?
-                </p>
-                <div className="flex gap-3 justify-end">
-                  <button
-                    onClick={() => { setArchiveData(null); setIsArchiveOpen(false); }}
-                    className="px-4 py-2 cursor-pointer text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => archiveCustomerHandler(archiveData?.id)}
-                    className="px-4 py-2 cursor-pointer text-sm font-semibold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
-                  >
-                    Yes, Archive
-                  </button>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900">Archive Customer(s)</h3>
+                  <p className="text-xs text-gray-500">This will remove them from your list only</p>
                 </div>
               </div>
+
+              <p className="text-sm text-gray-700 mb-5">
+                Are you sure you want to archive{" "}
+                {archiveData.ids.length === 1 ? (
+                  <span className="font-semibold text-gray-900">{archiveData.name}</span>
+                ) : (
+                  <span className="font-semibold text-gray-900">{archiveData.ids.length} selected customers</span>
+                )}?
+              </p>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => { setArchiveData(null); setIsArchiveOpen(false); }}
+                  className="px-4 py-2 cursor-pointer text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => archiveCustomerHandler(archiveData.ids)}
+                  className="px-4 py-2 cursor-pointer text-sm font-semibold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  Yes, Archive
+                </button>
+              </div>
             </div>
-          </PopupMenu>
-        )
-      }
+          </div>
+        </PopupMenu>
+      )}
 
       {
         isTemperatureDialogOpen && temperatureDialogData && (
@@ -4078,6 +4091,23 @@ export default function Customer() {
                   }}><div className="absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300"></div>
                     <span className="relative">Whatsapp</span></button>
 
+                  <button
+                    type="button"
+                    className="relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)] rounded-tr-sm rounded-br-sm border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer"
+                    onClick={() => {
+                      if (selectedCustomers.length <= 0) {
+                        toast.error("Please select at least 1 customer");
+                      } else {
+                        setArchiveData({ ids: selectedCustomers });
+                        setIsArchiveOpen(true);
+                      }
+                    }}
+                  >
+                    <div className="absolute top-0 left-0 z-0 h-full bg-[var(--color-primary)] w-0 group-hover:w-full transition-all duration-300"></div>
+                    <span className="relative">Archive All</span>
+                  </button>
+
+
                   {
                     admin?.role !== "user" && <button type="button" className="relative overflow-hidden py-[2px] group hover:bg-[var(--color-primary-lighter)] hover:text-white text-[var(--color-primary)] bg-[var(--color-primary-lighter)] rounded-tr-sm rounded-br-sm border-l-[3px] px-2 border-l-[var(--color-primary)] cursor-pointer" onClick={() => {
                       if (customerData.length > 0) {
@@ -4633,7 +4663,7 @@ export default function Customer() {
                                     <Button
                                       onClick={() => {
                                         setArchiveData({
-                                          id: item._id,
+                                          ids: [item._id], // Convert to array
                                           name: item.Name,
                                         });
                                         setIsArchiveOpen(true);
@@ -4678,20 +4708,20 @@ export default function Customer() {
               <p className="text-sm">
                 Page {currentTablePage} of {totalCustomerPage}
               </p>
-              
+
               <div className="flex gap-3 w-full max-w-[400px] items-center justify-end">
                 <div
-                className={`w-[170px] ${isFetchingMore ? "opacity-50 pointer-events-none" : ""
-                  }`}
-              >
-                <SingleSelect
-                  label="Go to page"
-                  options={pageOptions}
-                  value={String(currentTablePage)}
-                  isSearchable
-                  onChange={(selected) => handleGoToPage(Number(selected))}
-                />
-              </div>
+                  className={`w-[170px] ${isFetchingMore ? "opacity-50 pointer-events-none" : ""
+                    }`}
+                >
+                  <SingleSelect
+                    label="Go to page"
+                    options={pageOptions}
+                    value={String(currentTablePage)}
+                    isSearchable
+                    onChange={(selected) => handleGoToPage(Number(selected))}
+                  />
+                </div>
                 <button
                   onClick={() => setCurrentTablePage(1)}
                   disabled={currentTablePage === 1}

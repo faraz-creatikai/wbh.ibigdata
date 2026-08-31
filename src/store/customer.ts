@@ -147,7 +147,7 @@ export const getAllCustomer = async () => {
   }
 }
 
-export const getCustomFieldValues= async () => {
+export const getCustomFieldValues = async () => {
   try {
     const response = await fetch(API_ROUTES.CUSTOMER.GET_CUSTOMER_FIELDS_VALUES, { credentials: "include" });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -209,7 +209,7 @@ export const getFilteredCustomer = async (params: string) => {
     const response = await fetch(API_ROUTES.CUSTOMER.GET_BY_PARAMS(params), { credentials: "include" });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
-    console.log(" params : ", params,"\n"," Data:", data)
+    console.log(" params : ", params, "\n", " Data:", data)
     return data;
   }
   catch (error) {
@@ -219,23 +219,23 @@ export const getFilteredCustomer = async (params: string) => {
 }
 
 export const getDuplicateContacts = async (data: any) => {
-    try {
-        let response = await fetch(API_ROUTES.CUSTOMER.CHECKDUPLICATES,
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-                credentials: "include"
-            }
-        );
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        response = await response.json();
-        return response;
-    }
-    catch (error) {
-        console.log("SERVER ERROR: ", error)
-        return null;
-    }
+  try {
+    let response = await fetch(API_ROUTES.CUSTOMER.CHECKDUPLICATES,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include"
+      }
+    );
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    response = await response.json();
+    return response;
+  }
+  catch (error) {
+    console.log("SERVER ERROR: ", error)
+    return null;
+  }
 }
 
 export const addCustomer = async (formData: FormData) => {
@@ -452,7 +452,7 @@ export const getRecommendedCustomers = async (data: any) => {
   }
 };
 
-export const dataMining= async () => {
+export const dataMining = async () => {
   try {
     const response = await fetch(API_ROUTES.CUSTOMER.DATAMINING, { credentials: "include" });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -557,7 +557,7 @@ export const getFilteredClosedDeals = async (params: string) => {
     const response = await fetch(API_ROUTES.CUSTOMER.GET_CLOSEDDEAL_BY_PARAMS(params), { credentials: "include" });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
-    console.log(" params : ", params,"\n"," Data:", data)
+    console.log(" params : ", params, "\n", " Data:", data)
     return data;
   }
   catch (error) {
@@ -566,7 +566,7 @@ export const getFilteredClosedDeals = async (params: string) => {
   }
 }
 
-export const closeCustomerDeal = async (id: string) => { 
+export const closeCustomerDeal = async (id: string) => {
   try {
     const response = await fetch(API_ROUTES.CUSTOMER.CLOSEDEAL(id),
       {
@@ -625,7 +625,7 @@ export const getFilteredArchievedCustomer = async (params: string) => {
     const response = await fetch(API_ROUTES.CUSTOMER.GET_ARCHIEVEDCUSTOMER_BY_PARAMS(params), { credentials: "include" });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
-    console.log(" params : ", params,"\n"," Data:", data)
+    console.log(" params : ", params, "\n", " Data:", data)
     return data;
   }
   catch (error) {
@@ -634,12 +634,15 @@ export const getFilteredArchievedCustomer = async (params: string) => {
   }
 }
 
-export const archieveCustomer = async (id: string) => { 
+export const archieveCustomer = async (ids: string[]) => {
   try {
-    const response = await fetch(API_ROUTES.CUSTOMER.ARCHIEVECUSTOMER(id),
+
+    const payload = { customerIds: ids }
+    const response = await fetch(API_ROUTES.CUSTOMER.ARCHIEVECUSTOMER,
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
         credentials: "include"
       }
     );
@@ -653,12 +656,14 @@ export const archieveCustomer = async (id: string) => {
   }
 }
 
-export const unArchieveCustomer = async (id: string) => {
+export const unArchieveCustomer = async (ids: string[]) => {
   try {
-    const response = await fetch(API_ROUTES.CUSTOMER.UNARCHIEVECUSTOMER(id),
+    const payload = { customerIds: ids }
+    const response = await fetch(API_ROUTES.CUSTOMER.UNARCHIEVECUSTOMER,
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
         credentials: "include"
       }
     );
@@ -675,75 +680,75 @@ export const unArchieveCustomer = async (id: string) => {
 
 //short list api calls
 export const addToShortlist = async (data: any) => {
-    try {
-        let response = await fetch(API_ROUTES.CUSTOMER.ADDSHORTLIST,
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-                credentials: "include"
-            }
-        );
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        response = await response.json();
-        return data;
-    }
-    catch (error) {
-        console.log("SERVER ERROR: ", error)
-        return null;
-    }
+  try {
+    let response = await fetch(API_ROUTES.CUSTOMER.ADDSHORTLIST,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include"
+      }
+    );
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    response = await response.json();
+    return data;
+  }
+  catch (error) {
+    console.log("SERVER ERROR: ", error)
+    return null;
+  }
 }
 
 export const getShortlist = async (id: string) => {
-    try {
-        const response = await fetch(API_ROUTES.CUSTOMER.GETSHORTLIST(id),{credentials: "include"});
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-        return data;
-    }
-    catch (error) {
-        console.log("SERVER ERROR: ", error)
-        return null;
-    } 
+  try {
+    const response = await fetch(API_ROUTES.CUSTOMER.GETSHORTLIST(id), { credentials: "include" });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+    return data;
+  }
+  catch (error) {
+    console.log("SERVER ERROR: ", error)
+    return null;
+  }
 }
 
 export const removeShortlist = async (data: any) => {
-    try {
-        let response = await fetch(API_ROUTES.CUSTOMER.REMOVESHORTLIST,
-            {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-                credentials: "include"
-            }
-        );
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        response = await response.json();
-        return data;
-    }
-    catch (error) {
-        console.log("SERVER ERROR: ", error)
-        return null;
-    }
+  try {
+    let response = await fetch(API_ROUTES.CUSTOMER.REMOVESHORTLIST,
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include"
+      }
+    );
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    response = await response.json();
+    return data;
+  }
+  catch (error) {
+    console.log("SERVER ERROR: ", error)
+    return null;
+  }
 }
 
 
 export const updateShortlist = async (data: any) => {
-    try {
-        let response = await fetch(API_ROUTES.CUSTOMER.UPDATESHORTLIST,
-            {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
-                credentials: "include"
-            }
-        );
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        response = await response.json();
-        return data;
-    }
-    catch (error) {
-        console.log("SERVER ERROR: ", error)
-        return null;
-    }
+  try {
+    let response = await fetch(API_ROUTES.CUSTOMER.UPDATESHORTLIST,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include"
+      }
+    );
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    response = await response.json();
+    return data;
+  }
+  catch (error) {
+    console.log("SERVER ERROR: ", error)
+    return null;
+  }
 }
