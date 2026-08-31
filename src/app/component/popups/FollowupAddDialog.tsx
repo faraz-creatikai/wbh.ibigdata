@@ -96,7 +96,7 @@ const FollowupAddDialog = ({ isOpen, onClose, customerId, onArchived }: Props) =
     toast.success("Followup Added Successfully!");
 
     if (archiveOnSave && customerId) {
-      const archiveRes = await archieveCustomer(customerId);
+      const archiveRes = await archieveCustomer([customerId]);
       if (archiveRes?.success) {
         toast.success("Customer archived");
         onArchived?.(customerId);
