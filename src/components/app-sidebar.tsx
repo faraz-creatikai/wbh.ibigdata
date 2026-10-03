@@ -19,6 +19,7 @@ import {
   Settings,
   UsersIcon,
   ExternalLink,
+  PhoneCall,
 } from "lucide-react";
 
 import { NavMain } from "../components/nav-main";
@@ -56,6 +57,11 @@ const data = {
       title: "Customer Follow Up",
       url: "/followups/customer",
       icon: PlusSquare,
+    },
+    {
+      title: "customer calling",
+      url: "/customer/calling",
+      icon: PhoneCall,
     },
     {
       title: "Contact",

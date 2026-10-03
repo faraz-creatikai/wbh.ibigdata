@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BrickWallFire, Podcast, School, Cable, ShieldUser, NotebookTabs, Home } from "lucide-react";
+import { BrickWallFire, Podcast, School, Cable, ShieldUser, NotebookTabs, Home, PhoneCall } from "lucide-react";
 
 import Link from "next/link";
 import { MdClose } from "react-icons/md";
@@ -30,6 +30,11 @@ export default function MobileHamburger() {
       title: "Customer",
       url: "/customer",
       icon: <Podcast size={22} />,
+    },
+    {
+      title: "Customer Calling",
+      url: "/customer/calling",
+      icon: <PhoneCall size={22} />,
     },
     {
       title: "FollowUp",
@@ -210,10 +215,10 @@ export default function MobileHamburger() {
             >
               <div className="flex flex-col max-h-screen overflow-y-auto p-5 gap-5">
                 <div className=" self-start mb-2">
-                 <BrandLogo
-                       variant="text"
-                       className="h-12 w-40 object-contain"
-                     />
+                  <BrandLogo
+                    variant="text"
+                    className="h-12 w-40 object-contain"
+                  />
                 </div>
                 {data.map((item, index) => (
                   <Link
