@@ -48,6 +48,9 @@ import { getSalesScript } from "@/store/salescript/salesscript";
 // The customer's number / id / name are passed as query params: ?number=...&customerId=...&name=...
 const DIALER_ROUTE = "/dialer";
 
+// How many customers are rendered in the left list at a time ("Load more" adds this many)
+const PAGE_SIZE = 20;
+
 // --- TYPES ---
 interface SalesScript {
   _id: string;
@@ -636,6 +639,8 @@ export default function CustomerCallingPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchField, setSearchField] = useState<"All" | "Name" | "Campaign" | "Phone">("All");
   const [isListCollapsed, setIsListCollapsed] = useState(false);
+  // How many customers are currently rendered in the list
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   // AI call panel
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
@@ -655,6 +660,11 @@ export default function CustomerCallingPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Back to the first page whenever the search changes
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [searchQuery, searchField]);
 
   const getTelHref = (num?: string) => {
     const cleaned = (num || "").replace(/[^\d+]/g, "");
@@ -771,6 +781,14 @@ export default function CustomerCallingPage() {
     });
   }, [customers, searchQuery, searchField]);
 
+  // Only this slice is rendered in the DOM
+  const visibleCustomers = useMemo(
+    () => filteredCustomers.slice(0, visibleCount),
+    [filteredCustomers, visibleCount]
+  );
+  const hasMore = visibleCount < filteredCustomers.length;
+  const remaining = filteredCustomers.length - visibleCount;
+
   const selectedCustomer = customers.find((c: any) => (c._id || c.id) === selectedId);
 
   // --- MATCH CALL LOGS TO SELECTED CUSTOMER ---
@@ -883,7 +901,7 @@ export default function CustomerCallingPage() {
     callResult?.aiInstructions?.source ?? (promptMode === "casual" ? "generated" : "script");
 
   return (
-    <div className="h-full flex flex-col overflow-hidden max-w-[90rem] mx-auto w-full sm:bg-white rounded-2xl sm:px-2">
+    <div className="h-full min-h-0 flex flex-col overflow-hidden max-w-[90rem] mx-auto w-full sm:bg-white rounded-2xl sm:px-2">
 
       {/* TOP BAR */}
       <div className="shrink-0 sm:p-4">
@@ -895,13 +913,17 @@ export default function CustomerCallingPage() {
         </p>
       </div>
 
-      {/* MAIN SPLIT WORKSPACE */}
-      <div className="flex flex-1 overflow-hidden h-[calc(100vh-180px)] min-h-[500px] border-t border-gray-100">
+      {/*
+        MAIN SPLIT WORKSPACE
+        Fixed height (no flex-1) so it can never grow with its content. Both panels inside
+        scroll on their own. Adjust the 180px if your header above this page is taller/shorter.
+      */}
+      <div className="flex shrink-0 overflow-hidden h-[calc(100dvh-180px)] min-h-[500px] border-t border-gray-100">
 
         {/* ================= LEFT PANEL: CUSTOMER LIST ================= */}
         <div
           className={`${selectedCustomer ? "hidden" : "flex"} ${isListCollapsed ? "lg:hidden" : "lg:flex"
-            } w-full lg:w-[290px] xl:w-[320px] shrink-0 border-r border-gray-200 bg-gray-50/30 flex-col`}
+            } w-full lg:w-[290px] xl:w-[320px] shrink-0 h-full min-h-0 border-r border-gray-200 bg-gray-50/30 flex-col`}
         >
           <div className="px-4 py-4 border-b border-gray-200 bg-white shrink-0">
             <div className="relative mb-3">
@@ -932,7 +954,8 @@ export default function CustomerCallingPage() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
+          {/* The scroll container for the list: flex-1 + min-h-0 keeps it inside the panel height */}
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar">
             {isCustomersLoading ? (
               <div className="flex flex-col gap-3 p-4">
                 {[1, 2, 3, 4, 5].map((i) => (
@@ -952,7 +975,7 @@ export default function CustomerCallingPage() {
               </div>
             ) : (
               <div className="p-2 space-y-1">
-                {filteredCustomers.map((c: any) => {
+                {visibleCustomers.map((c: any) => {
                   const cId = c._id || c.id;
                   const isSelected = selectedId === cId;
                   return (
@@ -976,13 +999,23 @@ export default function CustomerCallingPage() {
                     </div>
                   );
                 })}
+
+                {hasMore && (
+                  <button
+                    onClick={() => setVisibleCount((v) => v + PAGE_SIZE)}
+                    className="w-full mt-1 py-3 text-xs font-bold text-gray-500 rounded-xl border border-dashed border-gray-200 hover:border-[var(--color-primary-light)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary-lighter)] transition-colors cursor-pointer"
+                  >
+                    Load {Math.min(PAGE_SIZE, remaining)} more
+                    <span className="font-medium text-gray-400"> ({remaining} remaining)</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
         </div>
 
         {/* ================= RIGHT PANEL ================= */}
-        <div className={`${selectedCustomer ? "flex" : "hidden lg:flex"} flex-1 min-w-0 flex-col bg-white overflow-hidden relative`}>
+        <div className={`${selectedCustomer ? "flex" : "hidden lg:flex"} flex-1 min-w-0 h-full min-h-0 flex-col bg-white overflow-hidden relative`}>
           {!selectedCustomer ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-gray-50/50">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-[var(--color-primary-lighter)] text-[var(--color-primary)] mb-4 shadow-sm">
@@ -1069,7 +1102,7 @@ export default function CustomerCallingPage() {
               </div>
 
               {/* Call history */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 bg-gray-50/50 hide-scrollbar">
+              <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-6 bg-gray-50/50 hide-scrollbar">
                 <div className="max-w-5xl mx-auto">
                   <div className="flex items-center justify-between gap-3 mb-4">
                     <div>
