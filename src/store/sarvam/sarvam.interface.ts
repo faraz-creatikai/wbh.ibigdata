@@ -3,6 +3,7 @@ export interface TriggerSarvamCallPayload {
     userPrompt: string;
     customerId: string;
     promptMode?: string; // Optional: "text" or "voice", defaults to "text"
+    voice?: string;
 }
 
 // Define the structure of the AI Instructions returned

@@ -41,6 +41,7 @@ import { toast } from "react-toastify";
 import { getCustomer } from "@/store/customer";
 import { triggerSarvamCall, syncSarvamCallLogs, fetchSarvamAudio } from "@/store/sarvam/sarvam";
 import { getSalesScript } from "@/store/salescript/salesscript";
+import VoicePicker from "@/app/component/datafields/VoicePicker";
 
 
 // --- CONFIG ---
@@ -58,7 +59,7 @@ interface SalesScript {
   Content: string;
   mode?: string;
   // metadata can be {} (manual scripts) or { tone, tips } (AI generated scripts)
-  metadata?: { tone?: string; tips?: string[]; [key: string]: any } | null;
+  metadata?: { tone?: string; tips?: string[];[key: string]: any } | null;
   Status?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -655,6 +656,7 @@ export default function CustomerCallingPage() {
   const [scriptsError, setScriptsError] = useState(false);
   const [scriptsLoaded, setScriptsLoaded] = useState(false);
   const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
+  const [voice, setVoice] = useState<string | null>(null);
 
   // --- INITIAL DATA FETCH ---
   useEffect(() => {
@@ -875,7 +877,8 @@ export default function CustomerCallingPage() {
       const res = await triggerSarvamCall({
         userPrompt: aiPrompt,
         customerId: selectedId,
-        promptMode, // "script" = used as written, "casual" = AI writes the script
+        promptMode,
+        ...(voice ? { voice } : {}), // only sent when a voice is chosen
       });
 
       if (res?.success) {
@@ -1029,7 +1032,7 @@ export default function CustomerCallingPage() {
           ) : (
             <>
               {/* Customer header + the two main call options */}
-              <div className="px-4 sm:px-6 pt-4 pb-5 border-b border-gray-100 shrink-0 bg-white shadow-[0_4px_20px_-15px_rgba(0,0,0,0.1)] z-10 relative">
+              <div className="px-4 sm:px-6 pt-4 pb-5 border-b border-gray-100 shrink-0 bg-white shadow-[0_4px_20px_-15px_rgba(0,0,0,0.1)]  relative">
                 <div className="flex items-center gap-3 mb-4">
                   <button
                     onClick={() => setSelectedId(null)}
@@ -1087,11 +1090,11 @@ export default function CustomerCallingPage() {
                     onClick={openAIModal}
                     className="group flex items-center gap-3 text-left p-3 sm:p-3.5 rounded-2xl bg-[var(--color-primary)] text-white hover:opacity-95 shadow-[0_8px_24px_-12px_rgba(var(--color-primary-rgb),0.6)] transition-all cursor-pointer"
                   >
-                   {/*  <span className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                    {/*  <span className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
                       <Sparkles size={20} />
                     </span> */}
                     <span className="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center shrink-0">
-                     <img src="/taskbot.png" alt="Calling AGent" className="w-10 h-10" />
+                      <img src="/taskbot.png" alt="Calling AGent" className="w-10 h-10" />
                     </span>
                     <span className="min-w-0">
                       <span className="block text-sm font-extrabold">AI calling Agent</span>
@@ -1209,20 +1212,22 @@ export default function CustomerCallingPage() {
 
             {/* Header */}
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/80 shrink-0">
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-3 min-w-0 w-full">
                 {/* <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-[var(--color-primary)] to-purple-600 text-white shadow-md shrink-0">
                   <Sparkles size={20} />
                 </div> */}
                 <span className="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center shrink-0">
-                     <img src="/taskbot.png" alt="Calling AGent" className="w-10 h-10" />
-                    </span>
+                  <img src="/taskbot.png" alt="Calling AGent" className="w-10 h-10" />
+                </span>
                 <div className="min-w-0">
                   <h2 className="text-lg font-extrabold text-gray-900">AI calling Agent</h2>
                   <p className="text-xs text-gray-500 font-medium truncate">
                     Calling {selectedCustomer?.customerName} ({selectedCustomer?.ContactNumber})
                   </p>
                 </div>
+                <div className=" ml-auto shrink-0 mr-2"> <VoicePicker value={voice} onChange={setVoice} disabled={isCalling} /></div>
               </div>
+              
               <button onClick={closeAIModal} className="text-gray-400 hover:text-gray-700 bg-white p-2 rounded-xl border border-gray-200 shadow-sm transition-colors cursor-pointer shrink-0">
                 <X size={20} />
               </button>
@@ -1385,6 +1390,7 @@ export default function CustomerCallingPage() {
             {/* Footer */}
             {!callResult ? (
               <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3 shrink-0">
+                
                 <button
                   onClick={closeAIModal}
                   className="px-6 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-200 bg-gray-100 rounded-xl transition-colors cursor-pointer"
