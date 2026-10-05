@@ -6,7 +6,6 @@ import {
   Search,
   Phone,
   PhoneCall,
-  Sparkles,
   User,
   Mail,
   CheckCircle2,
@@ -52,6 +51,10 @@ const DIALER_ROUTE = "/dialer";
 // How many customers are rendered in the left list at a time ("Load more" adds this many)
 const PAGE_SIZE = 20;
 
+// After an AI call starts, the log is re-synced silently at these delays (ms).
+// Sarvam only publishes a call to the log after it ends and is processed.
+const LOG_POLL_DELAYS = [30000, 90000, 180000];
+
 // --- TYPES ---
 interface SalesScript {
   _id: string;
@@ -94,10 +97,24 @@ const formatTalkTime = (seconds: number) => {
   return `${s}s`;
 };
 
+/**
+ * Sarvam timestamps look like "2026-10-05T09:11:26" with NO timezone, but they are UTC.
+ * new Date() would read that as local time and show every call 5h30m early in India,
+ * so we append "Z" when no timezone is present.
+ */
+const parseUtc = (iso?: string): Date | null => {
+  if (!iso) return null;
+  const hasZone = /[zZ]$|[+-]\d\d:?\d\d$/.test(iso);
+  const d = new Date(hasZone ? iso : `${iso}Z`);
+  return isNaN(d.getTime()) ? null : d;
+};
+
+// Last 10 digits of a phone number, so "+91 78781 72452" and "7878172452" compare equal.
+const last10 = (v?: string) => String(v ?? "").replace(/\D/g, "").slice(-10);
+
 const dayLabel = (iso?: string) => {
-  if (!iso) return "Unknown date";
-  const date = new Date(iso);
-  if (isNaN(date.getTime())) return "Unknown date";
+  const date = parseUtc(iso);
+  if (!date) return "Unknown date";
   const today = new Date();
   const yesterday = new Date();
   yesterday.setDate(today.getDate() - 1);
@@ -283,7 +300,6 @@ const LogDetailsCard = ({ log }: { log: any }) => {
   const userPrompt = log.agent_variables?.user_prompt || "";
   const durationSecs = log.duration_in_seconds || 0;
   const durationStr = formatDurationSeconds(durationSecs);
-  const dateStr = log.start_datetime;
 
   // Raw Sarvam media URL (the backend sync controller returns it as recording_url).
   // It is passed to fetchSarvamAudio(), which downloads it through our server.
@@ -300,7 +316,12 @@ const LogDetailsCard = ({ log }: { log: any }) => {
   const isCompleted = durationSecs > 0;
   const endedByLabel = endedBy.replace(/_/g, " ").toLowerCase();
   const displayStatus = isCompleted ? `Completed (${endedByLabel})` : "Failed / not answered";
-  const timeStr = dateStr ? new Date(dateStr).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "N/A";
+
+  // start_datetime is UTC without a timezone marker, so parse it as UTC
+  const parsedStart = parseUtc(log.start_datetime);
+  const timeStr = parsedStart
+    ? parsedStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : "N/A";
 
   const copyRaw = () => {
     navigator.clipboard
@@ -456,7 +477,7 @@ const LogDetailsCard = ({ log }: { log: any }) => {
                             <span className={`text-[10px] font-bold block mb-1 ${isUser ? "text-blue-400 text-right" : "text-purple-400"}`}>
                               {isUser ? "Customer" : "AI agent"}
                             </span>
-                            <span className="whitespace-pre-wrap">{msg.content}</span>
+                            <span className="whitespace-pre-wrap">{msg.content ?? msg.en_text ?? ""}</span>
                           </div>
                         </div>
                       );
@@ -658,9 +679,19 @@ export default function CustomerCallingPage() {
   const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
   const [voice, setVoice] = useState<string | null>(null);
 
+  // Pending silent log re-syncs scheduled after an AI call starts
+  const pollTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const clearPollTimers = () => {
+    pollTimersRef.current.forEach(clearTimeout);
+    pollTimersRef.current = [];
+  };
+
   // --- INITIAL DATA FETCH ---
   useEffect(() => {
     fetchData();
+    return clearPollTimers; // stop pending re-syncs when leaving the page
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Back to the first page whenever the search changes
@@ -694,19 +725,20 @@ export default function CustomerCallingPage() {
     }
   };
 
-  const refreshLogs = async () => {
-    setIsLogsLoading(true);
+  // silent = true: no skeleton flash and no toasts (used for the automatic re-syncs)
+  const refreshLogs = async (silent = false) => {
+    if (!silent) setIsLogsLoading(true);
     try {
       const logsRes = await syncSarvamCallLogs();
       if (logsRes?.success && logsRes?.logs) {
         setAllCallLogs(logsRes.logs);
-        toast.success("Call logs synced!");
+        if (!silent) toast.success("Call logs synced!");
       }
     } catch (err) {
       console.error(err);
-      toast.error("Failed to sync call logs.");
+      if (!silent) toast.error("Failed to sync call logs.");
     } finally {
-      setIsLogsLoading(false);
+      if (!silent) setIsLogsLoading(false);
     }
   };
 
@@ -793,26 +825,43 @@ export default function CustomerCallingPage() {
 
   const selectedCustomer = customers.find((c: any) => (c._id || c.id) === selectedId);
 
+  // All known customer ids, used to tell "untagged / unknown id" logs apart from logs
+  // that belong to a different known customer.
+  const knownCustomerIds = useMemo(
+    () => new Set(customers.map((c: any) => String(c._id || c.id))),
+    [customers]
+  );
+
   // --- MATCH CALL LOGS TO SELECTED CUSTOMER ---
   const customerCallLogs = useMemo(() => {
     if (!selectedCustomer || !allCallLogs.length) return [];
 
     const targetId = String(selectedCustomer._id || selectedCustomer.id);
+    const targetPhone = last10(selectedCustomer.ContactNumber);
 
     const matched = allCallLogs.filter((log: any) => {
-      // Exact customer_id inside agent_variables
-      const logCustId = String(log.agent_variables?.customer_id);
+      const rawLogCustId = log.agent_variables?.customer_id;
+      const logCustId = rawLogCustId ? String(rawLogCustId) : "";
+
+      // 1. Exact customer_id match
       if (logCustId === targetId) return true;
 
-      // Fallback brute string match just in case
-      return JSON.stringify(log).includes(targetId);
+      // 2. Phone fallback. Only for logs with no customer_id, or whose customer_id no
+      //    longer belongs to any customer. Logs tagged with a different known customer
+      //    stay with that customer.
+      if (targetPhone && (!logCustId || !knownCustomerIds.has(logCustId))) {
+        return last10(log.user_contact) === targetPhone;
+      }
+
+      return false;
     });
 
     // Newest first
     return [...matched].sort(
-      (a, b) => new Date(b.start_datetime || 0).getTime() - new Date(a.start_datetime || 0).getTime()
+      (a, b) =>
+        (parseUtc(b.start_datetime)?.getTime() ?? 0) - (parseUtc(a.start_datetime)?.getTime() ?? 0)
     );
-  }, [allCallLogs, selectedCustomer]);
+  }, [allCallLogs, selectedCustomer, knownCustomerIds]);
 
   const callStats = useMemo(() => {
     const answered = customerCallLogs.filter((l: any) => (l.duration_in_seconds || 0) > 0);
@@ -884,7 +933,11 @@ export default function CustomerCallingPage() {
       if (res?.success) {
         setCallResult(res);
         toast.success("AI call started!");
-        setTimeout(refreshLogs, 6000);
+
+        // The call is still running, and Sarvam only lists it after it ends.
+        // Re-sync quietly a few times so it appears without a manual refresh.
+        clearPollTimers();
+        pollTimersRef.current = LOG_POLL_DELAYS.map((ms) => setTimeout(() => refreshLogs(true), ms));
       } else {
         toast.error(res?.message || "Failed to start call");
       }
@@ -1090,9 +1143,6 @@ export default function CustomerCallingPage() {
                     onClick={openAIModal}
                     className="group flex items-center gap-3 text-left p-3 sm:p-3.5 rounded-2xl bg-[var(--color-primary)] text-white hover:opacity-95 shadow-[0_8px_24px_-12px_rgba(var(--color-primary-rgb),0.6)] transition-all cursor-pointer"
                   >
-                    {/*  <span className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                      <Sparkles size={20} />
-                    </span> */}
                     <span className="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center shrink-0">
                       <img src="/taskbot.png" alt="Calling AGent" className="w-10 h-10" />
                     </span>
@@ -1117,7 +1167,7 @@ export default function CustomerCallingPage() {
                     </div>
 
                     <button
-                      onClick={refreshLogs}
+                      onClick={() => refreshLogs()}
                       disabled={isLogsLoading}
                       className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-[var(--color-primary)] transition-colors cursor-pointer shrink-0"
                     >
@@ -1213,9 +1263,6 @@ export default function CustomerCallingPage() {
             {/* Header */}
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/80 shrink-0">
               <div className="flex items-center gap-3 min-w-0 w-full">
-                {/* <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-[var(--color-primary)] to-purple-600 text-white shadow-md shrink-0">
-                  <Sparkles size={20} />
-                </div> */}
                 <span className="w-11 h-11 rounded-full bg-white/15 flex items-center justify-center shrink-0">
                   <img src="/taskbot.png" alt="Calling AGent" className="w-10 h-10" />
                 </span>
@@ -1227,7 +1274,7 @@ export default function CustomerCallingPage() {
                 </div>
                 <div className=" ml-auto shrink-0 mr-2"> <VoicePicker value={voice} onChange={setVoice} disabled={isCalling} /></div>
               </div>
-              
+
               <button onClick={closeAIModal} className="text-gray-400 hover:text-gray-700 bg-white p-2 rounded-xl border border-gray-200 shadow-sm transition-colors cursor-pointer shrink-0">
                 <X size={20} />
               </button>
@@ -1390,7 +1437,7 @@ export default function CustomerCallingPage() {
             {/* Footer */}
             {!callResult ? (
               <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3 shrink-0">
-                
+
                 <button
                   onClick={closeAIModal}
                   className="px-6 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-200 bg-gray-100 rounded-xl transition-colors cursor-pointer"
