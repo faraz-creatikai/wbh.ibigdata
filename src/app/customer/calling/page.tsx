@@ -1018,7 +1018,7 @@ export default function CustomerCallingPage() {
         </div>
 
         {/* ================= RIGHT PANEL ================= */}
-        <div className={`${selectedCustomer ? "flex" : "hidden lg:flex"} flex-1 min-w-0 h-full min-h-0 flex-col bg-white overflow-hidden relative`}>
+        <div className={`${selectedCustomer ? "flex" : "hidden lg:flex"} flex-1 min-w-0 h-full min-h-0 flex-col bg-gray-100 overflow-hidden relative`}>
           {!selectedCustomer ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-gray-50/50">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-[var(--color-primary-lighter)] text-[var(--color-primary)] mb-4 shadow-sm">
@@ -1074,7 +1074,7 @@ export default function CustomerCallingPage() {
                         toast.error("This customer has no contact number.");
                       }
                     }}
-                    className="group flex items-center gap-3 text-left p-3 sm:p-3.5 rounded-2xl border border-gray-200 bg-white hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer"
+                    className="group flex items-center gap-3 text-left p-3 sm:p-3.5 rounded-2xl border border-gray-200 bg-gray-100 hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer"
                   >
                     <span className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors">
                       <PhoneCall size={20} />

@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   X,
-  Phone,
   PhoneCall,
   PhoneOutgoing,
   ChevronRight,
@@ -20,6 +18,7 @@ import { toast } from "react-toastify";
 
 import { triggerSarvamCall } from "@/store/sarvam/sarvam";
 import { getSalesScript } from "@/store/salescript/salesscript";
+import VoicePicker from "@/app/component/datafields/VoicePicker";
 
 /* ------------------------------------------------------------------ */
 /* TYPES                                                               */
@@ -91,12 +90,7 @@ const TRANSITION_MS = 320;
 /* COMPONENT                                                           */
 /* ------------------------------------------------------------------ */
 
-export default function CallDialog({
-  target,
-  onClose,
-  onCallStarted,
-}: CallDialogProps) {
-  const router = useRouter();
+export default function CallDialog({ target, onClose, onCallStarted }: CallDialogProps) {
   const open = !!target;
 
   const [step, setStep] = useState<"choose" | "ai">("choose");
@@ -104,6 +98,7 @@ export default function CallDialog({
   // AI panel state
   const [prompt, setPrompt] = useState("");
   const [mode, setMode] = useState<PromptMode>("casual");
+  const [voice, setVoice] = useState<string | null>(null);
   const [isCalling, setIsCalling] = useState(false);
   const [result, setResult] = useState<any | null>(null);
 
@@ -128,6 +123,7 @@ export default function CallDialog({
     setStep("choose");
     setPrompt("");
     setMode("casual");
+    setVoice(null);
     setResult(null);
     setSelectedScriptId(null);
     setScriptQuery("");
@@ -214,6 +210,7 @@ export default function CallDialog({
         userPrompt: prompt,
         customerId: target.customerId,
         promptMode: mode,
+        ...(voice ? { voice } : {}), // only sent when a voice is chosen
       });
       if (res?.success) {
         setResult(res);
@@ -238,7 +235,7 @@ export default function CallDialog({
   /* ---------------- render ---------------- */
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-gray-900/55 backdrop-blur-[2px] sm:items-center sm:p-6 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-gray-900/55 backdrop-blur-[2px] sm:items-center sm:p-4 animate-in fade-in duration-200"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget && !isCalling) onClose();
       }}
@@ -247,29 +244,26 @@ export default function CallDialog({
         role="dialog"
         aria-modal="true"
         aria-label={`Call ${target.name || target.phone}`}
-        className="relative flex h-[min(88dvh,640px)] w-full flex-col overflow-hidden rounded-t-[28px] bg-white shadow-2xl sm:h-[600px] sm:max-w-xl sm:rounded-[28px] animate-in slide-in-from-bottom-10 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300"
+        className="relative flex h-[96dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:h-[min(92dvh,780px)] sm:max-w-3xl sm:rounded-3xl animate-in slide-in-from-bottom-10 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300"
       >
-        {/* Grab handle (mobile only, purely visual) */}
-        <div className="flex justify-center pt-2.5 sm:hidden" aria-hidden>
-          <span className="h-1 w-10 rounded-full bg-gray-200" />
-        </div>
-
         {/* Shared header: who we're calling */}
-        <header className="flex shrink-0 items-center gap-3 px-5 pb-4 pt-3 sm:pt-5">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-lighter)] text-base font-extrabold text-[var(--color-primary)]">
+        <header className="flex shrink-0 items-center gap-2.5 border-b border-gray-100 px-3 py-2.5 sm:gap-3 sm:px-5 sm:py-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-lighter)] text-sm font-extrabold text-[var(--color-primary)] sm:h-12 sm:w-12 sm:text-base">
             {initialsOf(target.name)}
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-lg font-extrabold leading-tight text-gray-900">
+            <h2 className="truncate text-base font-extrabold leading-tight text-gray-900 sm:text-lg">
               {target.name || "Unknown customer"}
             </h2>
-            <p className="truncate text-sm font-medium tabular-nums text-gray-500">{target.phone || "No number"}</p>
+            <p className="truncate text-xs font-medium tabular-nums text-gray-500 sm:text-sm">
+              {target.phone || "No number"}
+            </p>
           </div>
           <button
             onClick={onClose}
             disabled={isCalling}
             aria-label="Close"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-800 disabled:opacity-50 cursor-pointer"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-800 disabled:opacity-50 cursor-pointer"
           >
             <X size={18} />
           </button>
@@ -285,49 +279,60 @@ export default function CallDialog({
             }}
           >
             {/* ============ PANEL 1: choose how to call ============ */}
-            <div ref={choosePanelRef} className="flex h-full w-1/2 flex-col px-5 pb-6">
-              <p className="mb-4 text-sm text-gray-500">How do you want to call {firstName}?</p>
+            <div ref={choosePanelRef} className="flex h-full w-1/2 flex-col px-3 pb-3 pt-3 sm:px-5 sm:pb-5 sm:pt-4">
+              <p className="mb-2 text-sm text-gray-500 sm:mb-3">How do you want to call {firstName}?</p>
 
-              <div className="flex flex-1 flex-col gap-3 sm:grid sm:flex-none sm:grid-cols-2 sm:gap-4">
+              {/* Mobile: two compact rows. Desktop: two big cards. */}
+              <div className="flex flex-col gap-2 sm:grid sm:flex-1 sm:grid-cols-2 sm:gap-4">
                 {/* Manual */}
                 <a
-  href={getTelHref(target.phone)}
-  onClick={(e) => {
-    if (!target.phone) {
-      e.preventDefault();
-      toast.error("This customer has no contact number.");
-      return;
-    }
-    setTimeout(onClose, 200); // let the phone dialer open first, then close the dialog
-  }}
-  className="group flex flex-1 ... cursor-pointer"
->
-                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 transition-colors group-hover:bg-emerald-100">
-                    <PhoneCall size={26} />
+                  href={getTelHref(target.phone)}
+                  onClick={(e) => {
+                    if (!target.phone) {
+                      e.preventDefault();
+                      toast.error("This customer has no contact number.");
+                      return;
+                    }
+                    setTimeout(onClose, 200); // let the phone dialer open first, then close the dialog
+                  }}
+                  className="group flex items-center gap-3 rounded-2xl bg-emerald-600 p-3 text-left text-white shadow-md transition-all hover:bg-emerald-700 active:scale-[0.985] sm:flex-col sm:items-stretch sm:justify-between sm:rounded-3xl sm:p-5 cursor-pointer"
+                >
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 sm:h-14 sm:w-14 sm:rounded-2xl">
+                    <PhoneCall size={22} />
                   </span>
-                  <span className="mt-6 flex items-end justify-between gap-2">
-                    <span>
-                      <span className="block text-lg font-extrabold text-gray-900">Manual call</span>
-                      <span className="mt-0.5 block text-sm text-gray-500">Open the dialer and talk to {firstName} yourself.</span>
+                  <span className="flex min-w-0 flex-1 items-end justify-between gap-2">
+                    <span className="min-w-0">
+                      <span className="block text-base font-extrabold sm:text-lg">Manual call</span>
+                      <span className="mt-0.5 block text-xs text-white/80 sm:text-sm">
+                        Open the dialer and talk to {firstName} yourself.
+                      </span>
                     </span>
-                    <ChevronRight size={20} className="mb-1 shrink-0 text-gray-300 transition-transform group-hover:translate-x-0.5" />
+                    <ChevronRight
+                      size={20}
+                      className="mb-1 hidden shrink-0 text-white/60 transition-transform group-hover:translate-x-0.5 sm:block"
+                    />
                   </span>
                 </a>
 
                 {/* AI */}
                 <button
                   onClick={handleOpenAI}
-                  className="group flex flex-1 flex-col justify-between rounded-3xl bg-[var(--color-primary)] p-5 text-left text-white shadow-lg transition-all active:scale-[0.985] hover:opacity-95 sm:min-h-[220px] cursor-pointer"
+                  className="group flex items-center gap-3 rounded-2xl bg-[var(--color-primary)] p-3 text-left text-white shadow-md transition-all hover:opacity-95 active:scale-[0.985] sm:flex-col sm:items-stretch sm:justify-between sm:rounded-3xl sm:p-5 cursor-pointer"
                 >
-                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
-                    <img src="/taskbot.png" alt="" className="h-10 w-10" />
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 sm:h-14 sm:w-14 sm:rounded-2xl">
+                    <img src="/taskbot.png" alt="" className="h-8 w-8 sm:h-10 sm:w-10" />
                   </span>
-                  <span className="mt-6 flex items-end justify-between gap-2">
-                    <span>
-                      <span className="block text-lg font-extrabold">AI calling agent</span>
-                      <span className="mt-0.5 block text-sm text-white/75">Send an agent with a saved script or a short goal.</span>
+                  <span className="flex min-w-0 flex-1 items-end justify-between gap-2">
+                    <span className="min-w-0">
+                      <span className="block text-base font-extrabold sm:text-lg">AI calling agent</span>
+                      <span className="mt-0.5 block text-xs text-white/75 sm:text-sm">
+                        Send an agent with a saved script or a short goal.
+                      </span>
                     </span>
-                    <ChevronRight size={20} className="mb-1 shrink-0 text-white/60 transition-transform group-hover:translate-x-0.5" />
+                    <ChevronRight
+                      size={20}
+                      className="mb-1 hidden shrink-0 text-white/60 transition-transform group-hover:translate-x-0.5 sm:block"
+                    />
                   </span>
                 </button>
               </div>
@@ -337,17 +342,17 @@ export default function CallDialog({
             <div ref={aiPanelRef} className="flex h-full w-1/2 flex-col">
               {result ? (
                 /* Success view */
-                <div className="flex flex-1 flex-col items-center overflow-y-auto px-5 pb-4 pt-4 text-center">
-                  <span className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                    <CheckCircle2 size={32} />
+                <div className="flex flex-1 flex-col items-center overflow-y-auto px-3 pb-3 pt-4 text-center sm:px-5">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                    <CheckCircle2 size={28} />
                   </span>
-                  <h3 className="mt-4 text-xl font-extrabold text-gray-900">Calling {firstName} now</h3>
+                  <h3 className="mt-3 text-lg font-extrabold text-gray-900 sm:text-xl">Calling {firstName} now</h3>
                   <p className="mt-1 max-w-xs text-sm text-gray-500">
                     The agent is dialing. The call log and summary will show up once the call ends.
                   </p>
                   {result.aiInstructions && (
-                    <div className="mt-5 w-full rounded-2xl bg-gray-50 p-4 text-left">
-                      <p className="mb-1.5 text-xs font-bold text-gray-400">
+                    <div className="mt-4 w-full rounded-2xl bg-gray-50 p-3 text-left sm:p-4">
+                      <p className="mb-1 text-xs font-bold text-gray-400">
                         {resultSource === "generated" ? "Script the AI wrote" : "Your script"}
                       </p>
                       {result.aiInstructions.aiAnswer && (
@@ -358,10 +363,10 @@ export default function CallDialog({
                       </p>
                     </div>
                   )}
-                  <div className="mt-auto w-full pt-5">
+                  <div className="mt-auto w-full pt-4">
                     <button
                       onClick={onClose}
-                      className="w-full rounded-2xl bg-[var(--color-primary)] py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90 cursor-pointer"
+                      className="w-full rounded-xl bg-[var(--color-primary)] py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 cursor-pointer"
                     >
                       Done
                     </button>
@@ -369,17 +374,21 @@ export default function CallDialog({
                 </div>
               ) : (
                 <>
-                  <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
+                  {/* Pinned top row: Back + voice picker (outside the scroll area so its menu isn't clipped) */}
+                  <div className="flex shrink-0 items-center justify-between gap-2 px-3 pb-1 pt-2 sm:px-5 sm:pt-3">
                     <button
                       onClick={() => setStep("choose")}
                       disabled={isCalling}
-                      className="-ml-2 mb-3 inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-bold text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 cursor-pointer"
+                      className="-ml-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-bold text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 cursor-pointer"
                     >
                       <ArrowLeft size={16} /> Back
                     </button>
+                    <VoicePicker value={voice} onChange={setVoice} disabled={isCalling} />
+                  </div>
 
+                  <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3 sm:px-5">
                     {/* Saved scripts: swipeable row */}
-                    <div className="mb-2 flex items-center justify-between gap-3">
+                    <div className="mb-1.5 flex items-center justify-between gap-3">
                       <h3 className="flex items-center gap-1.5 text-sm font-bold text-gray-800">
                         <ScrollText size={15} className="text-gray-400" /> Saved scripts
                       </h3>
@@ -396,20 +405,20 @@ export default function CallDialog({
                       )}
                     </div>
 
-                    <div className="-mx-5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    <div className="-mx-3 flex shrink-0 snap-x snap-mandatory gap-2 overflow-x-auto px-3 pb-1.5 sm:-mx-5 sm:px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                       {scriptsLoading ? (
                         [1, 2, 3].map((i) => (
-                          <div key={i} className="h-[92px] w-[68%] shrink-0 animate-pulse rounded-2xl bg-gray-100 sm:w-48" />
+                          <div key={i} className="h-[76px] w-[62%] shrink-0 animate-pulse rounded-xl bg-gray-100 sm:w-52" />
                         ))
                       ) : scriptsError ? (
                         <button
                           onClick={loadScripts}
-                          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-gray-300 py-5 text-sm font-bold text-[var(--color-primary)] cursor-pointer"
+                          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 py-4 text-sm font-bold text-[var(--color-primary)] cursor-pointer"
                         >
                           <RefreshCcw size={14} /> Couldn't load scripts. Try again
                         </button>
                       ) : visibleScripts.length === 0 ? (
-                        <p className="w-full rounded-2xl border border-dashed border-gray-300 py-5 text-center text-sm text-gray-500">
+                        <p className="w-full rounded-xl border border-dashed border-gray-300 py-4 text-center text-sm text-gray-500">
                           {scripts.length === 0 ? "No saved scripts yet. Write instructions below." : "No scripts match your search."}
                         </p>
                       ) : (
@@ -419,18 +428,18 @@ export default function CallDialog({
                             <button
                               key={s._id}
                               onClick={() => handleSelectScript(s)}
-                              className={`relative flex h-[92px] w-[68%] shrink-0 snap-start flex-col rounded-2xl border p-3 text-left transition-all sm:w-48 cursor-pointer ${
+                              className={`relative flex h-[76px] w-[62%] shrink-0 snap-start flex-col rounded-xl border p-2.5 text-left transition-all sm:w-52 cursor-pointer ${
                                 active
                                   ? "border-[var(--color-primary)] bg-[var(--color-primary-lighter)]"
                                   : "border-gray-200 bg-white hover:border-gray-300"
                               }`}
                             >
                               <span className="line-clamp-1 pr-5 text-sm font-bold text-gray-900">{s.Name}</span>
-                              <span className="mt-1 line-clamp-2 text-xs leading-snug text-gray-500">
+                              <span className="mt-0.5 line-clamp-2 text-xs leading-snug text-gray-500">
                                 {s.text.replace(/\s+/g, " ") || "No content"}
                               </span>
                               {active && (
-                                <CheckCircle2 size={16} className="absolute right-2.5 top-3 text-[var(--color-primary)]" />
+                                <CheckCircle2 size={16} className="absolute right-2 top-2.5 text-[var(--color-primary)]" />
                               )}
                             </button>
                           );
@@ -439,7 +448,7 @@ export default function CallDialog({
                     </div>
 
                     {selectedScript && Array.isArray(tips) && tips.length > 0 && (
-                      <ul className="mt-2 space-y-1 rounded-xl bg-amber-50 p-3">
+                      <ul className="mt-1.5 shrink-0 space-y-1 rounded-xl bg-amber-50 p-2.5">
                         {tips.map((tip, i) => (
                           <li key={i} className="flex items-start gap-2 text-xs leading-relaxed text-amber-900">
                             <Lightbulb size={12} className="mt-0.5 shrink-0 text-amber-500" /> {tip}
@@ -448,13 +457,15 @@ export default function CallDialog({
                       </ul>
                     )}
 
-                    {/* Mode + instructions */}
-                    <div className="mt-4">
-                      <div className="mb-2 flex items-center justify-between gap-2">
+                    {/* Mode + instructions (textarea grows to fill the remaining height) */}
+                    <div className="mt-3 flex min-h-0 flex-1 flex-col">
+                      <div className="mb-1.5 flex items-center justify-between gap-2">
                         <label htmlFor="call-dialog-prompt" className="text-sm font-bold text-gray-800">
                           Agent instructions
                           {isScriptEdited && (
-                            <span className="ml-2 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">Edited</span>
+                            <span className="ml-2 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                              Edited
+                            </span>
                           )}
                         </label>
                         {prompt && (
@@ -471,14 +482,18 @@ export default function CallDialog({
                         )}
                       </div>
 
-                      <div role="radiogroup" aria-label="How should the instructions be used?" className="mb-3 grid grid-cols-2 rounded-xl bg-gray-100 p-1 text-xs font-bold">
+                      <div
+                        role="radiogroup"
+                        aria-label="How should the instructions be used?"
+                        className="mb-2 grid shrink-0 grid-cols-2 rounded-xl bg-gray-100 p-1 text-xs font-bold"
+                      >
                         {MODE_OPTIONS.map((opt) => (
                           <button
                             key={opt.id}
                             role="radio"
                             aria-checked={mode === opt.id}
                             onClick={() => setMode(opt.id)}
-                            className={`rounded-lg py-2 transition-all cursor-pointer ${
+                            className={`rounded-lg py-1.5 transition-all cursor-pointer ${
                               mode === opt.id ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-800"
                             }`}
                           >
@@ -491,21 +506,20 @@ export default function CallDialog({
                         id="call-dialog-prompt"
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
-                        rows={6}
                         placeholder={
                           mode === "casual"
                             ? "e.g. Ask if they are still interested in the 3BHK property we showed last week"
                             : "Paste or write the full script the agent should follow"
                         }
-                        className="min-h-[140px] w-full resize-none rounded-2xl border border-gray-200 bg-gray-50 p-4 text-base leading-relaxed outline-none transition-all focus:border-[var(--color-primary)] focus:bg-white focus:ring-2 focus:ring-[var(--color-primary-light)] sm:text-sm"
+                        className="min-h-[120px] w-full flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 p-3 text-base leading-relaxed outline-none transition-all focus:border-[var(--color-primary)] focus:bg-white focus:ring-2 focus:ring-[var(--color-primary-light)] sm:min-h-[160px] sm:text-sm"
                       />
-                      <p className="mt-1.5 text-xs text-gray-500">
+                      <p className="mt-1 shrink-0 text-xs text-gray-500">
                         {mode === "casual"
                           ? "The AI will write a call script from this goal and the customer's history."
                           : "The agent follows this text as written, with the customer's name filled in."}
                       </p>
 
-                      <div className="mt-3 flex flex-wrap gap-2">
+                      <div className="mt-2 flex shrink-0 flex-wrap gap-1.5">
                         {QUICK_GOALS.map((g) => (
                           <button
                             key={g}
@@ -520,11 +534,11 @@ export default function CallDialog({
                   </div>
 
                   {/* Pinned action bar */}
-                  <div className="shrink-0 border-t border-gray-100 bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+                  <div className="shrink-0 border-t border-gray-100 bg-white px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2.5 sm:px-5">
                     <button
                       onClick={handleStartCall}
                       disabled={isCalling || !prompt.trim()}
-                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gray-900 py-3.5 text-sm font-bold text-white shadow-md transition-all hover:bg-black disabled:opacity-40 cursor-pointer"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 py-3 text-sm font-bold text-white shadow-md transition-all hover:bg-black disabled:opacity-40 cursor-pointer"
                     >
                       {isCalling ? (
                         <>
