@@ -51,8 +51,8 @@ const DIALER_ROUTE = "/dialer";
 // How many customers are rendered in the left list at a time ("Load more" adds this many)
 const PAGE_SIZE = 20;
 
-// After an AI call starts, the log is re-synced silently at these delays (ms).
-// Sarvam only publishes a call to the log after it ends and is processed.
+// After an AI call starts, the selected customer's log is re-fetched silently at these
+// delays (ms). Sarvam only publishes a call to the log after it ends and is processed.
 const LOG_POLL_DELAYS = [30000, 90000, 180000];
 
 // --- TYPES ---
@@ -108,9 +108,6 @@ const parseUtc = (iso?: string): Date | null => {
   const d = new Date(hasZone ? iso : `${iso}Z`);
   return isNaN(d.getTime()) ? null : d;
 };
-
-// Last 10 digits of a phone number, so "+91 78781 72452" and "7878172452" compare equal.
-const last10 = (v?: string) => String(v ?? "").replace(/\D/g, "").slice(-10);
 
 const dayLabel = (iso?: string) => {
   const date = parseUtc(iso);
@@ -651,10 +648,15 @@ export default function CustomerCallingPage() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [isCustomersLoading, setIsCustomersLoading] = useState(true);
 
-  // Call logs
-  const [allCallLogs, setAllCallLogs] = useState<any[]>([]);
-  const [isLogsLoading, setIsLogsLoading] = useState(true);
+  // Call logs of the CURRENTLY SELECTED customer only
+  const [customerCallLogs, setCustomerCallLogs] = useState<any[]>([]);
+  const [isLogsLoading, setIsLogsLoading] = useState(false);
+  // Which customer the logs above belong to (stops a stale list from flashing on switch)
+  const [logsLoadedFor, setLogsLoadedFor] = useState<string | null>(null);
   const [logFilter, setLogFilter] = useState<"all" | "answered" | "missed">("all");
+  // Always holds the latest selected customer id, so a slow response for a previously
+  // selected customer can be ignored instead of overwriting the current one.
+  const selectedIdRef = useRef<string | null>(null);
 
   // Selection & search
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -679,7 +681,7 @@ export default function CustomerCallingPage() {
   const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
   const [voice, setVoice] = useState<string | null>(null);
 
-  // Pending silent log re-syncs scheduled after an AI call starts
+  // Pending silent log re-fetches scheduled after an AI call starts
   const pollTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const clearPollTimers = () => {
@@ -687,10 +689,10 @@ export default function CustomerCallingPage() {
     pollTimersRef.current = [];
   };
 
-  // --- INITIAL DATA FETCH ---
+  // --- INITIAL DATA FETCH (customers only; logs load when a customer is selected) ---
   useEffect(() => {
     fetchData();
-    return clearPollTimers; // stop pending re-syncs when leaving the page
+    return clearPollTimers; // stop pending re-fetches when leaving the page
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -706,41 +708,62 @@ export default function CustomerCallingPage() {
 
   const fetchData = async () => {
     setIsCustomersLoading(true);
-    setIsLogsLoading(true);
-
     try {
-      const [customersRes, logsRes] = await Promise.all([getCustomer(), syncSarvamCallLogs()]);
-
+      const customersRes = await getCustomer();
       if (customersRes) setCustomers(customersRes);
-
-      if (logsRes?.success && logsRes?.logs) {
-        setAllCallLogs(logsRes.logs);
-      }
     } catch (err) {
       console.error(err);
-      toast.error("Failed to load initial data.");
+      toast.error("Failed to load customers.");
     } finally {
       setIsCustomersLoading(false);
-      setIsLogsLoading(false);
     }
   };
 
-  // silent = true: no skeleton flash and no toasts (used for the automatic re-syncs)
-  const refreshLogs = async (silent = false) => {
+  // --- CALL LOGS (one customer at a time) ---
+  // silent = true: no skeleton flash and no toasts (used for the automatic re-fetches)
+  const loadLogs = async (customerId: string, phone?: string, silent = false) => {
     if (!silent) setIsLogsLoading(true);
     try {
-      const logsRes = await syncSarvamCallLogs();
-      if (logsRes?.success && logsRes?.logs) {
-        setAllCallLogs(logsRes.logs);
+      const res = await syncSarvamCallLogs({ customerId, phone });
+
+      // The user switched to another customer while this was loading: drop the result
+      if (selectedIdRef.current !== customerId) return;
+
+      if (res?.success && Array.isArray(res.logs)) {
+        const sorted = [...res.logs].sort(
+          (a, b) =>
+            (parseUtc(b.start_datetime)?.getTime() ?? 0) - (parseUtc(a.start_datetime)?.getTime() ?? 0)
+        );
+        setCustomerCallLogs(sorted);
         if (!silent) toast.success("Call logs synced!");
+      } else if (!silent) {
+        toast.error("Failed to sync call logs.");
       }
     } catch (err) {
       console.error(err);
       if (!silent) toast.error("Failed to sync call logs.");
     } finally {
-      if (!silent) setIsLogsLoading(false);
+      if (selectedIdRef.current === customerId) {
+        setLogsLoadedFor(customerId);
+        if (!silent) setIsLogsLoading(false);
+      }
     }
   };
+
+  // Load the logs whenever a different customer is selected
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+    setCustomerCallLogs([]);
+    setLogsLoadedFor(null);
+    clearPollTimers(); // a pending poll belongs to the previous customer
+    if (!selectedId) {
+      setIsLogsLoading(false);
+      return;
+    }
+    const c = customers.find((x: any) => (x._id || x.id) === selectedId);
+    loadLogs(String(selectedId), c?.ContactNumber);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
   // --- SALES SCRIPTS ---
   const loadScripts = async () => {
@@ -825,43 +848,9 @@ export default function CustomerCallingPage() {
 
   const selectedCustomer = customers.find((c: any) => (c._id || c.id) === selectedId);
 
-  // All known customer ids, used to tell "untagged / unknown id" logs apart from logs
-  // that belong to a different known customer.
-  const knownCustomerIds = useMemo(
-    () => new Set(customers.map((c: any) => String(c._id || c.id))),
-    [customers]
-  );
-
-  // --- MATCH CALL LOGS TO SELECTED CUSTOMER ---
-  const customerCallLogs = useMemo(() => {
-    if (!selectedCustomer || !allCallLogs.length) return [];
-
-    const targetId = String(selectedCustomer._id || selectedCustomer.id);
-    const targetPhone = last10(selectedCustomer.ContactNumber);
-
-    const matched = allCallLogs.filter((log: any) => {
-      const rawLogCustId = log.agent_variables?.customer_id;
-      const logCustId = rawLogCustId ? String(rawLogCustId) : "";
-
-      // 1. Exact customer_id match
-      if (logCustId === targetId) return true;
-
-      // 2. Phone fallback. Only for logs with no customer_id, or whose customer_id no
-      //    longer belongs to any customer. Logs tagged with a different known customer
-      //    stay with that customer.
-      if (targetPhone && (!logCustId || !knownCustomerIds.has(logCustId))) {
-        return last10(log.user_contact) === targetPhone;
-      }
-
-      return false;
-    });
-
-    // Newest first
-    return [...matched].sort(
-      (a, b) =>
-        (parseUtc(b.start_datetime)?.getTime() ?? 0) - (parseUtc(a.start_datetime)?.getTime() ?? 0)
-    );
-  }, [allCallLogs, selectedCustomer, knownCustomerIds]);
+  // Show the skeleton while loading, and also in the brief moment right after selecting
+  // a customer before their logs have been requested.
+  const showLogsLoading = isLogsLoading || (!!selectedId && logsLoadedFor !== selectedId);
 
   const callStats = useMemo(() => {
     const answered = customerCallLogs.filter((l: any) => (l.duration_in_seconds || 0) > 0);
@@ -935,9 +924,14 @@ export default function CustomerCallingPage() {
         toast.success("AI call started!");
 
         // The call is still running, and Sarvam only lists it after it ends.
-        // Re-sync quietly a few times so it appears without a manual refresh.
+        // Re-fetch this customer's logs quietly a few times so the call appears
+        // without a manual refresh.
+        const cid = String(selectedId);
+        const phone = selectedCustomer?.ContactNumber;
         clearPollTimers();
-        pollTimersRef.current = LOG_POLL_DELAYS.map((ms) => setTimeout(() => refreshLogs(true), ms));
+        pollTimersRef.current = LOG_POLL_DELAYS.map((ms) =>
+          setTimeout(() => loadLogs(cid, phone, true), ms)
+        );
       } else {
         toast.error(res?.message || "Failed to start call");
       }
@@ -1167,15 +1161,15 @@ export default function CustomerCallingPage() {
                     </div>
 
                     <button
-                      onClick={() => refreshLogs()}
-                      disabled={isLogsLoading}
-                      className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-[var(--color-primary)] transition-colors cursor-pointer shrink-0"
+                      onClick={() => selectedId && loadLogs(String(selectedId), selectedCustomer?.ContactNumber)}
+                      disabled={showLogsLoading}
+                      className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-[var(--color-primary)] transition-colors cursor-pointer shrink-0 disabled:opacity-60"
                     >
-                      <RefreshCcw size={14} className={isLogsLoading ? "animate-spin" : ""} /> Sync logs
+                      <RefreshCcw size={14} className={showLogsLoading ? "animate-spin" : ""} /> Sync logs
                     </button>
                   </div>
 
-                  {isLogsLoading ? (
+                  {showLogsLoading ? (
                     <div className="flex flex-col gap-4">
                       {[1, 2, 3].map((i) => (
                         <div key={i} className="animate-pulse h-28 bg-white border border-gray-200 rounded-2xl w-full"></div>

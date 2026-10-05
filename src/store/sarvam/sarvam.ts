@@ -36,22 +36,32 @@ export const triggerSarvamCall = async (
 };
 
 
+
 /**
- * Syncs latest Sarvam call logs from Sarvam Analytics
- * into the backend database.
+ * Fetches Sarvam call logs.
+ * Pass customerId and/or phone to get only that customer's logs.
+ * With no params it returns everything, same as before.
  */
-export const syncSarvamCallLogs = async (): Promise<any | null> => {
+export const syncSarvamCallLogs = async (
+    params?: { customerId?: string; phone?: string }
+): Promise<any | null> => {
     try {
-        const response = await fetch(
-            API_ROUTES.SARVAM.SYNC_CALL_LOGS,
-            {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                credentials: "include",
-            }
-        );
+        const qs = new URLSearchParams();
+        if (params?.customerId) qs.set("customerId", params.customerId);
+        if (params?.phone) qs.set("phone", params.phone);
+
+        const query = qs.toString();
+        const url = query
+            ? `${API_ROUTES.SARVAM.SYNC_CALL_LOGS}?${query}`
+            : API_ROUTES.SARVAM.SYNC_CALL_LOGS;
+
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            credentials: "include",
+        });
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
@@ -74,7 +84,6 @@ export const syncSarvamCallLogs = async (): Promise<any | null> => {
         return null;
     }
 };
-
 
 export const fetchSarvamAudio = async (recordingUrl: string): Promise<Blob> => {
     const res = await fetch(
