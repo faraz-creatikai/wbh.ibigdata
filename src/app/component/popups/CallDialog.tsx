@@ -19,6 +19,7 @@ import { toast } from "react-toastify";
 import { triggerSarvamCall } from "@/store/sarvam/sarvam";
 import { getSalesScript } from "@/store/salescript/salesscript";
 import VoicePicker from "@/app/component/datafields/VoicePicker";
+import CallingAgentPicker from "../datafields/CallingAgentPicker";
 
 /* ------------------------------------------------------------------ */
 /* TYPES                                                               */
@@ -383,7 +384,8 @@ export default function CallDialog({ target, onClose, onCallStarted }: CallDialo
                     >
                       <ArrowLeft size={16} /> Back
                     </button>
-                    <VoicePicker value={voice} onChange={setVoice} disabled={isCalling} />
+                     <CallingAgentPicker />
+                 {/*    <VoicePicker value={voice} onChange={setVoice} disabled={isCalling} /> */}
                   </div>
 
                   <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3 sm:px-5">

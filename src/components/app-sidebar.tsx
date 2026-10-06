@@ -322,6 +322,10 @@ const data = {
           url:"/configuration/ai"
         },
         {
+          title: "Sarvam",
+          url: "/configuration/sarvam",
+        },
+        {
           title: "Tabbly",
           url: "/configuration/tabbly",
         },
