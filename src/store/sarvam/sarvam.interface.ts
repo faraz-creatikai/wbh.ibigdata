@@ -3,7 +3,7 @@ export interface TriggerSarvamCallPayload {
     userPrompt: string;
     customerId: string;
     promptMode?: string; // Optional: "text" or "voice", defaults to "text"
-    voice?: string;
+    voice?: string; 
 }
 
 // Define the structure of the AI Instructions returned
@@ -23,4 +23,36 @@ export interface TriggerSarvamCallResponse {
         status?: string;
         [key: string]: any; // Catch-all for extra Sarvam response fields
     };
+}
+
+
+
+// --- Interfaces for Config ---
+export interface CallingAgentConfigPayload {
+    name :string;
+    description: string;
+    apiKey: string;
+    orgId: string;
+    workspaceId: string;
+    appId: string;
+    appVersion?: number;
+    connectionId: string;
+    callerNumber: string;
+    isActive?: boolean;
+}
+
+export interface CallingAgentConfigResponse {
+    id: string;
+    name: string;
+    description: string;
+    apiKey: string;
+    orgId: string;
+    workspaceId: string;
+    appId: string;
+    appVersion: number;
+    connectionId: string;
+    callerNumber: string;
+    isActive: boolean;
+    adminId: string;
+    createdAt: string;
 }
