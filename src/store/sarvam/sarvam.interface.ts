@@ -31,6 +31,7 @@ export interface TriggerSarvamCallResponse {
 export interface CallingAgentConfigPayload {
     name :string;
     description: string;
+    transferNumber?: string;
     apiKey: string;
     orgId: string;
     workspaceId: string;
@@ -45,6 +46,7 @@ export interface CallingAgentConfigResponse {
     id: string;
     name: string;
     description: string;
+    transferNumber?: string;
     apiKey: string;
     orgId: string;
     workspaceId: string;
