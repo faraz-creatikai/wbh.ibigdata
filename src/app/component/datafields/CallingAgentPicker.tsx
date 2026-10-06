@@ -78,7 +78,7 @@ export default function CallingAgentPicker() {
     if (configs.length === 0) {
         return (
             <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-100 rounded-xl text-xs font-bold text-red-600">
-                <Bot size={14} /> No Agents Configured
+                {/* <Bot size={14} /> */} <img src="/taskbot.png" alt="Agent" className="w-6 h-6" /> No Agents Configured
             </div>
         );
     }
@@ -93,7 +93,7 @@ export default function CallingAgentPicker() {
             >
                 <div className="flex items-center gap-2 min-w-0">
                     <div className="w-7 h-7 rounded-full bg-[var(--color-primary-lighter)] text-[var(--color-primary)] flex items-center justify-center shrink-0">
-                        <Bot size={14} />
+                       {/*  <Bot size={14} /> */}<img src="/taskbot.png" alt="Agent" className="w-6 h-6"  />
                     </div>
                     <div className="flex flex-col items-start text-left min-w-0">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide leading-none mb-0.5">Active Agent</span>
@@ -125,7 +125,8 @@ export default function CallingAgentPicker() {
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
                                     config.isActive ? "bg-[var(--color-primary)] text-white" : "bg-gray-100 text-gray-500"
                                 }`}>
-                                    <Bot size={14} />
+                                    {/* <Bot size={14} /> */}
+                                    <img src="/taskbot.png" alt="Agent" className="w-7 h-7"  />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex justify-between items-center mb-0.5">
