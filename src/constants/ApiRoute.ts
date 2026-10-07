@@ -146,6 +146,7 @@ export const API_ROUTES = {
     CONFIG: `${BASE_URL}/sarvam/config`,
     CONFIG_SET_ACTIVE: (id: string) => `${BASE_URL}/sarvam/config/${id}/active`,
 
+    CALL_REPORT: `${BASE_URL}/sarvam/call-report`,
     
     // If you plan to add endpoints to get call logs later, you can add them here:
     // GET_CALL_LOGS: `${BASE_URL}/sarvam/logs`,

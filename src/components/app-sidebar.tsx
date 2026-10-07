@@ -251,6 +251,10 @@ const data = {
       icon: LineChart,
       items:[
         {
+          title: "Sarvam Report",
+          url: "/reports/sarvam",
+        },
+        {
           title: "Calling Report",
           url: "/reports/call-report",
         },
@@ -401,6 +405,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           if (
             subItem.title === "Customer Fields" &&
             admin?.role !== "administrator"
+          ) {
+            return false;
+          }
+          return true;
+        }),
+      };
+    }
+
+    if (item.title === "Reports") {
+      return {
+        ...item,
+        items: item.items?.filter((subItem) => {
+          // Hide "Sarvam Report" if not admin or city_admin
+          if (
+            subItem.title === "Sarvam Report" &&
+            (admin?.role !== "administrator" && admin?.role !== "city_admin")
           ) {
             return false;
           }

@@ -57,6 +57,11 @@ const PAGE_SIZE = 20;
 // delays (ms). Sarvam only publishes a call to the log after it ends and is processed.
 const LOG_POLL_DELAYS = [30000, 90000, 180000];
 
+// Extra space (px) to leave under the page, on top of the padding the parent layouts
+// already add (that padding is measured automatically). Raise this if you have something
+// fixed to the bottom of the screen, such as a mobile bottom navigation bar.
+const BOTTOM_GAP = 0;
+
 // --- TYPES ---
 interface SalesScript {
   _id: string;
@@ -668,6 +673,16 @@ export default function CustomerCallingPage() {
   // How many customers are currently rendered in the list
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
+  // --- LAYOUT ---
+  // The page is a fixed-height "app shell": header on top, two panes below, and each pane
+  // scrolls on its own. rootHeight = viewport height minus whatever the app layout puts
+  // above/below this page (measured, so there is no magic number to maintain).
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [rootHeight, setRootHeight] = useState<number | null>(null);
+  const listScrollRef = useRef<HTMLDivElement>(null);
+  const listScrollTopRef = useRef(0); // remembers the list position while it is hidden on mobile
+  const historyScrollRef = useRef<HTMLDivElement>(null);
+
   // AI call panel
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
@@ -690,6 +705,35 @@ export default function CustomerCallingPage() {
     pollTimersRef.current.forEach(clearTimeout);
     pollTimersRef.current = [];
   };
+
+  // --- FIT THE PAGE TO THE SCREEN ---
+  useEffect(() => {
+    const fit = () => {
+      const el = rootRef.current;
+      if (!el) return;
+
+      // Space the app layout uses above this page (its header, top padding, etc.)
+      const top = el.getBoundingClientRect().top + window.scrollY;
+
+      // Padding the parent layouts add below this page
+      let below = BOTTOM_GAP;
+      let node: HTMLElement | null = el.parentElement;
+      while (node && node !== document.body) {
+        below += parseFloat(getComputedStyle(node).paddingBottom) || 0;
+        node = node.parentElement;
+      }
+
+      setRootHeight(Math.max(420, Math.floor(window.innerHeight - top - below)));
+    };
+
+    fit();
+    window.addEventListener("resize", fit);
+    window.addEventListener("orientationchange", fit);
+    return () => {
+      window.removeEventListener("resize", fit);
+      window.removeEventListener("orientationchange", fit);
+    };
+  }, []);
 
   // --- INITIAL DATA FETCH (customers only; logs load when a customer is selected) ---
   useEffect(() => {
@@ -758,6 +802,7 @@ export default function CustomerCallingPage() {
     setCustomerCallLogs([]);
     setLogsLoadedFor(null);
     clearPollTimers(); // a pending poll belongs to the previous customer
+    historyScrollRef.current?.scrollTo({ top: 0 }); // new customer -> start at the top
     if (!selectedId) {
       setIsLogsLoading(false);
       return;
@@ -766,6 +811,19 @@ export default function CustomerCallingPage() {
     loadLogs(String(selectedId), c?.ContactNumber);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
+
+  // On mobile the list is hidden while a customer is open. Hiding an element resets its
+  // scroll position, so put the user back where they were when they come back.
+  useEffect(() => {
+    if (selectedId === null && listScrollRef.current) {
+      listScrollRef.current.scrollTop = listScrollTopRef.current;
+    }
+  }, [selectedId]);
+
+  const handleSelectCustomer = (id: string) => {
+    listScrollTopRef.current = listScrollRef.current?.scrollTop ?? 0;
+    setSelectedId(id);
+  };
 
   // --- SALES SCRIPTS ---
   const loadScripts = async () => {
@@ -952,12 +1010,19 @@ export default function CustomerCallingPage() {
     callResult?.aiInstructions?.source ?? (promptMode === "casual" ? "generated" : "script");
 
   return (
-    // ROOT: no fixed height and no overflow-hidden, so the page scrolls naturally
-    // (overflow-hidden here would also break the sticky left panel).
-    <div className="min-h-full flex flex-col max-w-[90rem] mx-auto w-full sm:bg-white rounded-2xl sm:px-2">
+    // ROOT: a fixed-height shell (measured above). Nothing here scrolls except the two panes
+    // inside, so the top bar / customer header always stay visible and the page itself never
+    // needs to scroll. The class height is only a fallback for the first paint.
+    <div
+      ref={rootRef}
+      style={rootHeight ? { height: rootHeight } : undefined}
+      className="h-[calc(100dvh-7rem)] flex flex-col max-w-[90rem] mx-auto w-full sm:bg-white rounded-2xl sm:px-2 overflow-hidden"
+    >
 
-      {/* TOP BAR WITH NEW AGENT PICKER */}
-      <div className="shrink-0 px-1 sm:p-4 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+      {/* TOP BAR. On phones it is hidden while a customer is open, to give the content the room. */}
+      <div
+        className={`${selectedCustomer ? "hidden lg:flex" : "flex"} shrink-0 flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 px-1 pb-3 sm:px-4 sm:py-3`}
+      >
         <div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-[var(--color-primary)] flex items-center gap-2">
             <PhoneCall className="text-[var(--color-primary)]" size={26} /> Customer Calling
@@ -967,9 +1032,9 @@ export default function CustomerCallingPage() {
           </p>
         </div>
 
-        <div className=" shrink-0 self-start sm:self-center  flex flex-wrap gap-2 items-center ">
+        <div className="shrink-0 self-start sm:self-center flex flex-wrap gap-2 items-center">
           <CallingAgentPicker />
-          <Link href="/configuration/sarvam" className=" text-sm cursor-pointer bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg hover:bg-[var(--color-primary-dark)] ">
+          <Link href="/configuration/sarvam" className="text-sm cursor-pointer bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg hover:bg-[var(--color-primary-dark)]">
             View Config
           </Link>
         </div>
@@ -977,18 +1042,18 @@ export default function CustomerCallingPage() {
 
       {/*
         MAIN SPLIT WORKSPACE
-        No fixed height. Only the LEFT customer list is pinned (sticky + fixed height + its own
-        scroll). The right side grows with its content and the page scrolls.
-        Adjust the 120px below if your layout header is taller/shorter, and change lg:top-0
-        to match your header height if it is sticky (e.g. lg:top-16).
+        flex-1 + min-h-0 = it takes exactly the space left under the top bar.
+        Both panes are the same height and scroll independently:
+          - left: the customer list
+          - right: the call history (its customer header stays pinned above it)
+        On phones only one pane shows at a time (list OR customer).
       */}
-      <div className="flex flex-col lg:flex-row lg:items-start border-t border-gray-100">
+      <div className="flex flex-1 min-h-0 flex-col lg:flex-row border-t border-gray-100">
 
         {/* ================= LEFT PANEL: CUSTOMER LIST ================= */}
         <div
           className={`${selectedCustomer ? "hidden" : "flex"} ${isListCollapsed ? "lg:hidden" : "lg:flex"
-            } w-full lg:w-[290px] xl:w-[320px] shrink-0 flex-col bg-gray-50/30
-            lg:border-r lg:border-gray-200 lg:sticky lg:top-0 lg:h-[calc(100dvh-120px)] lg:min-h-[420px]`}
+            } flex-1 min-h-0 lg:flex-none w-full lg:w-[290px] xl:w-[320px] shrink-0 flex-col bg-gray-50/30 lg:border-r lg:border-gray-200`}
         >
           <div className="px-4 py-4 border-b border-gray-200 bg-white shrink-0">
             <div className="relative mb-3">
@@ -1019,8 +1084,8 @@ export default function CustomerCallingPage() {
             </div>
           </div>
 
-          {/* The scroll container for the list: flex-1 + min-h-0 keeps it inside the panel height on desktop */}
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar">
+          {/* The list's own scroll area (desktop and mobile) */}
+          <div ref={listScrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar">
             {isCustomersLoading ? (
               <div className="flex flex-col gap-3 p-4">
                 {[1, 2, 3, 4, 5].map((i) => (
@@ -1046,7 +1111,7 @@ export default function CustomerCallingPage() {
                   return (
                     <div
                       key={cId}
-                      onClick={() => setSelectedId(cId)}
+                      onClick={() => handleSelectCustomer(cId)}
                       className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all border ${isSelected
                         ? "bg-[var(--color-primary-lighter)] border-[var(--color-primary-light)] shadow-sm"
                         : "bg-white border-transparent hover:border-gray-200"
@@ -1080,9 +1145,9 @@ export default function CustomerCallingPage() {
         </div>
 
         {/* ================= RIGHT PANEL ================= */}
-        <div className={`${selectedCustomer ? "flex" : "hidden lg:flex"} flex-1 min-w-0 flex-col bg-gray-100 relative`}>
+        <div className={`${selectedCustomer ? "flex" : "hidden lg:flex"} flex-1 min-w-0 min-h-0 flex-col bg-gray-100`}>
           {!selectedCustomer ? (
-            <div className="flex flex-col items-center justify-center min-h-[calc(100dvh-120px)] text-center p-8 bg-gray-50/50">
+            <div className="flex flex-1 flex-col items-center justify-center text-center p-8 bg-gray-50/50">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-[var(--color-primary-lighter)] text-[var(--color-primary)] mb-4 shadow-sm">
                 <Phone size={32} />
               </div>
@@ -1093,9 +1158,13 @@ export default function CustomerCallingPage() {
             </div>
           ) : (
             <>
-              {/* Customer header + the two main call options */}
-              <div className="px-3 sm:px-6 pt-3 sm:pt-4 pb-3 sm:pb-5 border-b border-gray-100 shrink-0 bg-white shadow-[0_4px_20px_-15px_rgba(0,0,0,0.1)] relative">
-                <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+              {/*
+                CUSTOMER HEADER: always pinned (it sits outside the scrolling history).
+                Desktop: one compact row (customer on the left, call buttons on the right).
+                Phone: slim customer row with the two buttons under it.
+              */}
+              <div className="shrink-0 bg-white border-b border-gray-100 shadow-[0_4px_20px_-15px_rgba(0,0,0,0.1)] px-3 sm:px-6 py-2.5 sm:py-3 flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                   <button
                     onClick={() => setSelectedId(null)}
                     className="lg:hidden p-2 -ml-2 rounded-lg text-gray-500 hover:bg-gray-100 cursor-pointer"
@@ -1112,9 +1181,9 @@ export default function CustomerCallingPage() {
                     {isListCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
                   </button>
 
-                  <Avatar name={selectedCustomer.customerName} className="w-10 h-10 sm:w-12 sm:h-12 text-sm sm:text-base" />
+                  <Avatar name={selectedCustomer.customerName} className="w-10 h-10 sm:w-11 sm:h-11 text-sm sm:text-base" />
                   <div className="min-w-0">
-                    <h2 className="text-xl sm:text-2xl font-black text-gray-900 leading-tight truncate">
+                    <h2 className="text-lg sm:text-xl font-black text-gray-900 leading-tight truncate">
                       {selectedCustomer.customerName}
                     </h2>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm font-medium text-gray-500 mt-0.5">
@@ -1126,7 +1195,7 @@ export default function CustomerCallingPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:flex lg:shrink-0">
                   {/* MANUAL CALL */}
                   <a
                     href={getTelHref(selectedCustomer.ContactNumber)}
@@ -1136,36 +1205,39 @@ export default function CustomerCallingPage() {
                         toast.error("This customer has no contact number.");
                       }
                     }}
-                    className="group flex items-center gap-3 text-left p-2.5 sm:p-3.5 rounded-2xl border border-gray-200 bg-gray-100 hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer"
+                    className="group flex items-center gap-3 text-left p-2 sm:p-2.5 rounded-2xl border border-gray-200 bg-gray-100 hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer"
                   >
-                    <span className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors">
+                    <span className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors">
                       <PhoneCall size={20} />
                     </span>
-                    <span className="min-w-0">
+                    <span className="min-w-0 lg:pr-2">
                       <span className="block text-sm font-extrabold text-gray-900">Manual call</span>
-                      <span className="hidden sm:block text-xs text-gray-500 truncate">Open the dialer and call {firstName} yourself</span>
+                      <span className="hidden sm:block lg:hidden xl:block text-xs text-gray-500 truncate">Open the dialer and call {firstName} yourself</span>
                     </span>
                   </a>
 
                   {/* AI CALL */}
                   <button
                     onClick={openAIModal}
-                    className="group flex items-center gap-3 text-left p-2.5 sm:p-3.5 rounded-2xl bg-[var(--color-primary)] text-white hover:opacity-95 shadow-[0_8px_24px_-12px_rgba(var(--color-primary-rgb),0.6)] transition-all cursor-pointer"
+                    className="group flex items-center gap-3 text-left p-2 sm:p-2.5 rounded-2xl bg-[var(--color-primary)] text-white hover:opacity-95 shadow-[0_8px_24px_-12px_rgba(var(--color-primary-rgb),0.6)] transition-all cursor-pointer"
                   >
-                    <span className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/15 flex items-center justify-center shrink-0">
-                      <img src="/taskbot.png" alt="Calling AGent" className="w-8 h-8 sm:w-10 sm:h-10" />
+                    <span className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/15 flex items-center justify-center shrink-0">
+                      <img src="/taskbot.png" alt="Calling AGent" className="w-8 h-8 sm:w-9 sm:h-9" />
                     </span>
-                    <span className="min-w-0">
+                    <span className="min-w-0 lg:pr-2">
                       <span className="block text-sm font-extrabold">AI calling Agent</span>
-                      <span className="hidden sm:block text-xs text-white/75 truncate">Send an AI agent with a script or custom goal</span>
+                      <span className="hidden sm:block lg:hidden xl:block text-xs text-white/75 truncate">Send an AI agent with a script or custom goal</span>
                     </span>
                   </button>
                 </div>
               </div>
 
-              {/* Call history: no nested scroll, it uses the full page height */}
-              <div className="flex-1 p-3 sm:p-6 bg-gray-50/50">
-                <div className="max-w-5xl mx-auto">
+              {/* Call history: THIS is the scrolling area of the right side */}
+              <div
+                ref={historyScrollRef}
+                className="flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar p-3 sm:p-6 bg-gray-50/50"
+              >
+                <div className="max-w-5xl mx-auto pb-4">
                   <div className="flex items-center justify-between gap-3 mb-4">
                     <div>
                       <div className="flex items-center gap-2">

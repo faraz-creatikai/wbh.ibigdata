@@ -2,6 +2,8 @@ import { API_ROUTES } from "@/constants/ApiRoute";
 import {
     CallingAgentConfigPayload,
     CallingAgentConfigResponse,
+    SarvamCallReportParams,
+    SarvamCallReportResponse,
     TriggerSarvamCallPayload,
     TriggerSarvamCallResponse
 } from "./sarvam.interface";
@@ -213,3 +215,44 @@ export const setActiveCallingConfig = async (id: string): Promise<CallingAgentCo
         return null;
     }
 };
+
+
+
+
+// sarvam call report api : 
+
+export const getSarvamCallReport = async (
+    params?: SarvamCallReportParams
+): Promise<SarvamCallReportResponse | null> => {
+    try {
+        const qs = new URLSearchParams();
+        Object.entries(params ?? {}).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== "") qs.set(key, String(value));
+        });
+ 
+        const query = qs.toString();
+        const url = query
+            ? `${API_ROUTES.SARVAM.CALL_REPORT}?${query}`
+            : API_ROUTES.SARVAM.CALL_REPORT;
+ 
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            credentials: "include",
+        });
+ 
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+ 
+        const data: SarvamCallReportResponse = await response.json();
+        return data;
+    } catch (error) {
+        console.error("SARVAM CALL REPORT ERROR:", error);
+        return null;
+    }
+};
+ 
