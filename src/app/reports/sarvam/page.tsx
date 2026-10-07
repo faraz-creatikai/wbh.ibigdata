@@ -39,6 +39,7 @@ import type {
   SarvamReportHour,
   SarvamReportStatus,
 } from "@/store/sarvam/sarvam.interface";
+import CallingAgentPicker from "@/app/component/datafields/CallingAgentPicker";
 
 // --- CONFIG ---
 // Extra space (px) to leave under the page. Raise it if something is fixed to the bottom of
@@ -668,13 +669,20 @@ export default function CallReportPage() {
             </p>
           </div>
 
-          <button
-            onClick={handleRefresh}
-            disabled={isFetching || rangeInvalid}
-            className="flex items-center gap-1.5 text-xs font-bold text-gray-600 bg-white border border-gray-200 rounded-xl px-3 py-2 hover:text-[var(--color-primary)] hover:border-[var(--color-primary-light)] transition-colors cursor-pointer shrink-0 disabled:opacity-60"
-          >
-            <RefreshCcw size={14} className={isFetching ? "animate-spin" : ""} /> Refresh
-          </button>
+         <div className="flex items-center gap-2 shrink-0">
+            <CallingAgentPicker onSwitch={() => {
+              setPage(1);
+              handleRefresh();
+            }} />
+            
+            <button
+              onClick={handleRefresh}
+              disabled={isFetching || rangeInvalid}
+              className="flex items-center justify-center gap-1.5 text-xs font-bold text-gray-600 bg-white border border-gray-200 rounded-xl px-3 hover:text-[var(--color-primary)] hover:border-[var(--color-primary-light)] transition-colors cursor-pointer shrink-0 disabled:opacity-60 h-[38px]"
+            >
+              <RefreshCcw size={14} className={isFetching ? "animate-spin" : ""} /> Refresh
+            </button>
+          </div>
         </div>
 
         {/* Date range */}

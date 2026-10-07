@@ -7,7 +7,7 @@ import { toast } from "react-toastify";
 import { getCallingConfigs, setActiveCallingConfig } from "@/store/sarvam/sarvam"; 
 import { CallingAgentConfigResponse } from "@/store/sarvam/sarvam.interface";
 
-export default function CallingAgentPicker() {
+export default function CallingAgentPicker({ onSwitch }: { onSwitch?: () => void }) {
     const [configs, setConfigs] = useState<CallingAgentConfigResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isOpen, setIsOpen] = useState(false);
@@ -56,6 +56,7 @@ export default function CallingAgentPicker() {
             if (success) {
                 toast.success("Active AI Agent switched successfully!");
                 await loadConfigs(); // Reload to get updated active status
+                if (onSwitch) onSwitch(); // TRIGGER FULL PAGE REFRESH IN PARENT
             } else {
                 toast.error("Failed to switch active agent.");
             }
