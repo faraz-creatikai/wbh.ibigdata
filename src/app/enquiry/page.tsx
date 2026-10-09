@@ -19,6 +19,8 @@ import { getReferences } from "@/store/masters/references/references";
 import { getPrice } from "@/store/masters/price/price";
 import { getCustomerFields } from "@/store/masters/customerfields/customerfields";
 import dayjs from "dayjs";
+import { DEFAULT_COUNTRY_CODE } from "../utils/countryCodes";
+import PhoneInputField from "../component/datafields/PhoneInputField";
 
 /* ────────────────────────────────────────────────────────── */
 /*  Types                                                      */
@@ -77,7 +79,7 @@ export default function CustomerWebForm() {
     const [sitePlanPreview, setSitePlanPreview] = useState<string>("");
     const [errors, setErrors] = useState<ErrorInterface>({});
     const [consent, setConsent] = useState(false);
-
+    const [countryCode, setCountryCode] = useState<string>(DEFAULT_COUNTRY_CODE);
     /* ── Load custom fields ── */
     useEffect(() => {
         (async () => {
@@ -250,7 +252,16 @@ export default function CustomerWebForm() {
         if (customerData.CustomerType) formData.append("CustomerType", customerData.CustomerType.name);
         if (customerData.customerName) formData.append("customerName", customerData.customerName);
         if (customerData.CustomerSubtype) formData.append("CustomerSubType", customerData.CustomerSubtype?.name);
-        if (customerData.ContactNumber) formData.append("ContactNumber", trimCountryCodeHelper(customerData.ContactNumber));
+        if (customerData.ContactNumber) {
+            formData.append(
+                "ContactNumber",
+                trimCountryCodeHelper(
+                    customerData.ContactNumber,
+                    countryCode
+                )
+            );
+        }
+        formData.append("CountryCode", countryCode);
         if (customerData.City) formData.append("City", customerData.City.name);
         if (customerData.Location) formData.append("Location", customerData.Location?.name);
         if (customerData.SubLocation) formData.append("SubLocation", customerData.SubLocation?.name);
@@ -475,16 +486,24 @@ export default function CustomerWebForm() {
                                             />
                                         </FormField>
 
-                                        <FormField label="Contact Number *" error={errors.ContactNumber}>
-                                            <div className="flex">
-                                                <span className="flex items-center px-3 rounded-l-xl border border-r-0 text-sm font-medium border-gray-200 bg-gray-50" style={{ color: "var(--color-primary)" }}>+91</span>
-                                                <input
-                                                    type="tel" name="ContactNumber" placeholder="10-digit number" maxLength={10}
-                                                    value={customerData.ContactNumber} onChange={handleInputChange}
-                                                    className={`${inputClass(!!errors.ContactNumber)} rounded-l-none`}
-                                                />
-                                            </div>
-                                        </FormField>
+                                        <PhoneInputField
+                                            label={"Contact Number *"}
+                                            numberValue={customerData.ContactNumber}
+                                            countryCode={countryCode}
+                                            onNumberChange={(val) => {
+                                                setCustomerData((prev) => ({ ...prev, ContactNumber: val }));
+                                                setErrors((prev) => ({ ...prev, ContactNumber: "" }));
+
+                                            }}
+                                            onCountryChange={(code) => {
+                                                setCountryCode(code);
+                                                setErrors((prev) => ({ ...prev, ContactNumber: "" }));
+                                                if (customerData.ContactNumber) {
+
+                                                }
+                                            }}
+                                            error={errors.ContactNumber}
+                                        />
 
                                         <FormField label="Email Address" error={errors.Email}>
                                             <input
