@@ -29,6 +29,7 @@ import toast from "react-hot-toast";
 import { getCustomerById } from "@/store/customer";
 import { useCustomerFieldLabel } from "@/context/customer/CustomerFieldLabelContext";
 import PopupMenu from "./PopupMenu";
+import { COUNTRY_CODES, DEFAULT_COUNTRY_CODE, isoToFlagEmoji } from "@/app/utils/countryCodes";
 
 /* ============================================================
    TYPES
@@ -50,6 +51,7 @@ interface CustomerDetailData {
   LeadType?: string;
   customerName?: string;
   ContactNumber?: string;
+  CountryCode?: string;
   City?: RefObj;
   Location?: RefObj;
   SubLocation?: RefObj;
@@ -97,6 +99,7 @@ interface QuickStat {
   icon: React.ReactNode;
   href?: string;
   copyValue?: string;
+  prefix?: React.ReactNode;
 }
 
 interface LightboxState {
@@ -334,45 +337,65 @@ export default function CustomerViewDialog({ isOpen, onClose, customerId, onEdit
     }
   };
 
+  const countryInfo =
+    COUNTRY_CODES.find((c) => c.code === (data?.CountryCode || DEFAULT_COUNTRY_CODE)) ||
+    COUNTRY_CODES.find((c) => c.code === DEFAULT_COUNTRY_CODE)!;
+
+  // Formatting strings properly without spaces for correct copying/calling
+  const cleanCountryCode = (countryInfo.code || "").replace(/\s/g, "");
+  const cleanPhone = (data?.ContactNumber || "").replace(/\s/g, "");
+  const fullPhoneForCopy = `+${cleanCountryCode}${cleanPhone}`;
+
   const quickStats: QuickStat[] = data
     ? (
-        [
-          hasValue(data.ContactNumber) && {
-            key: "contact",
-            label: getLabel("ContactNumber", "Contact No"),
-            value: data.ContactNumber!,
-            href: `tel:${data.ContactNumber}`,
-            icon: <Phone size={16} />,
-            copyValue: data.ContactNumber!,
-          },
-          hasValue(data.Email) && {
-            key: "email",
-            label: getLabel("Email", "Email"),
-            value: data.Email!,
-            href: `mailto:${data.Email}`,
-            icon: <Mail size={16} />,
-            copyValue: data.Email!,
-          },
-          hasValue(data.Price) && {
-            key: "price",
-            label: getLabel("Price", "Price"),
-            value: data.Price!,
-            icon: <Wallet size={16} />,
-          },
-          assignedNames && {
-            key: "assigned",
-            label: "Assigned To",
-            value: assignedNames,
-            icon: <User size={16} />,
-          },
-          hasValue(data.CustomerDate) && {
-            key: "date",
-            label: getLabel("CustomerDate", "Customer Date"),
-            value: formatDate(data.CustomerDate),
-            icon: <Calendar size={16} />,
-          },
-        ] as Array<QuickStat | false | undefined>
-      ).filter((s): s is QuickStat => Boolean(s))
+      [
+        hasValue(data.ContactNumber) && {
+          key: "contact",
+          label: getLabel("ContactNumber", "Contact No"),
+          value: data.ContactNumber!,
+          href: `tel:${fullPhoneForCopy}`,
+          icon: <Phone size={16} />,
+          copyValue: fullPhoneForCopy, // Correctly copies +918989859034
+          prefix: (
+            <span className="inline-flex items-center gap-1 mr-1 mb-[3px] text-gray-500">
+              {/* Emoji font ONLY applied to the flag */}
+              <span style={{ fontFamily: "'Noto Color Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif" }}>
+                {isoToFlagEmoji({ iso2: countryInfo.iso2 })}
+              </span>
+
+              {/* font-sans forces the normal website font for the number */}
+              <span className="font-sans tracking-normal">+{cleanCountryCode}</span>
+            </span>
+          ),
+        },
+        hasValue(data.Email) && {
+          key: "email",
+          label: getLabel("Email", "Email"),
+          value: data.Email!,
+          href: `mailto:${data.Email}`,
+          icon: <Mail size={16} />,
+          copyValue: data.Email!,
+        },
+        hasValue(data.Price) && {
+          key: "price",
+          label: getLabel("Price", "Price"),
+          value: data.Price!,
+          icon: <Wallet size={16} />,
+        },
+        assignedNames && {
+          key: "assigned",
+          label: "Assigned To",
+          value: assignedNames,
+          icon: <User size={16} />,
+        },
+        hasValue(data.CustomerDate) && {
+          key: "date",
+          label: getLabel("CustomerDate", "Customer Date"),
+          value: formatDate(data.CustomerDate),
+          icon: <Calendar size={16} />,
+        },
+      ] as Array<QuickStat | false | undefined>
+    ).filter((s): s is QuickStat => Boolean(s))
     : [];
 
   const containerWidthClass = isFullscreen
@@ -383,9 +406,8 @@ export default function CustomerViewDialog({ isOpen, onClose, customerId, onEdit
     <PopupMenu onClose={onClose} isOpen={isOpen}>
       <>
         <div
-          className={`fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-[2px] z-50 ${
-            isFullscreen ? "p-0" : "p-4"
-          } max-sm:p-0`}
+          className={`fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-[2px] z-50 ${isFullscreen ? "p-0" : "p-4"
+            } max-sm:p-0`}
         >
           <div
             className={`bg-white max-sm:dark:bg-[var(--color-childbgdark)] flex flex-col shadow-2xl transition-[width,height,border-radius] duration-200 max-sm:w-[100dvw] max-sm:h-[100dvh] max-sm:rounded-none ${containerWidthClass}`}
@@ -501,12 +523,14 @@ export default function CustomerViewDialog({ isOpen, onClose, customerId, onEdit
                                   href={stat.href}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="block truncate text-sm font-medium text-[var(--color-primary)] hover:underline"
+                                  className="flex items-center truncate text-sm font-medium text-[var(--color-primary)] hover:underline"
                                 >
-                                  {stat.value}
+                                  {stat.prefix}
+                                  <span className="truncate">{stat.value}</span>
                                 </a>
                               ) : (
-                                <p className="truncate text-sm font-medium text-gray-800 max-sm:dark:text-gray-200">
+                                <p className="flex items-center truncate text-sm font-medium text-gray-800 max-sm:dark:text-gray-200">
+                                  {stat.prefix}
                                   {stat.value}
                                 </p>
                               )}
@@ -589,68 +613,68 @@ export default function CustomerViewDialog({ isOpen, onClose, customerId, onEdit
                       hasValue(data.URL) ||
                       hasValue(data.Video) ||
                       hasValue(data.Other)) && (
-                      <SectionCard title="Lead & Business Details" icon={<Briefcase size={15} />}>
-                        <div className="grid grid-cols-3 gap-x-6 gap-y-5 max-xl:grid-cols-2 max-sm:grid-cols-1">
-                          {hasValue(data.CustomerId) && (
-                            <DetailItem label={getLabel("CustomerId", "Customer ID")} value={data.CustomerId!} />
-                          )}
-                          {hasValue(data.ClientId) && (
-                            <DetailItem label={getLabel("ClientId", "Client ID")} value={data.ClientId!} />
-                          )}
-                          {hasValue(data.ReferenceId) && (
-                            <DetailItem
-                              label={getLabel("ReferenceId", "Reference Id")}
-                              value={data.ReferenceId!}
-                            />
-                          )}
-                          {hasValue(data.LeadType) && (
-                            <DetailItem label={getLabel("LeadType", "Lead Type")} value={data.LeadType!} />
-                          )}
-                          {hasValue(data.Facillities) && (
-                            <DetailItem
-                              label={getLabel("Facillities", "Facilities")}
-                              value={data.Facillities!}
-                            />
-                          )}
-                          {hasValue(data.CustomerDate) && (
-                            <DetailItem
-                              label={getLabel("CustomerDate", "Customer Date")}
-                              value={formatDate(data.CustomerDate)}
-                              icon={<Calendar size={14} className="mt-0.5 shrink-0" />}
-                            />
-                          )}
-                          {hasValue(data.CustomerYear) && (
-                            <DetailItem
-                              label={getLabel("CustomerYear", "Customer Year")}
-                              value={data.CustomerYear!}
-                            />
-                          )}
-                          {hasValue(data.URL) && (
-                            <DetailItem
-                              label={getLabel("URL", "URL")}
-                              value={data.URL!}
-                              icon={<LinkIcon size={14} className="mt-0.5 shrink-0" />}
-                              href={data.URL}
-                            />
-                          )}
-                          {hasValue(data.Video) && (
-                            <DetailItem
-                              label={getLabel("Video", "Video")}
-                              value={data.Video!}
-                              icon={<VideoIcon size={14} className="mt-0.5 shrink-0" />}
-                              href={data.Video}
-                            />
-                          )}
-                          {hasValue(data.Other) && (
-                            <DetailItem
-                              label={getLabel("Other", "Others")}
-                              value={data.Other!}
-                              fullWidth={data.Other!.length > LONG_VALUE_THRESHOLD}
-                            />
-                          )}
-                        </div>
-                      </SectionCard>
-                    )}
+                        <SectionCard title="Lead & Business Details" icon={<Briefcase size={15} />}>
+                          <div className="grid grid-cols-3 gap-x-6 gap-y-5 max-xl:grid-cols-2 max-sm:grid-cols-1">
+                            {hasValue(data.CustomerId) && (
+                              <DetailItem label={getLabel("CustomerId", "Customer ID")} value={data.CustomerId!} />
+                            )}
+                            {hasValue(data.ClientId) && (
+                              <DetailItem label={getLabel("ClientId", "Client ID")} value={data.ClientId!} />
+                            )}
+                            {hasValue(data.ReferenceId) && (
+                              <DetailItem
+                                label={getLabel("ReferenceId", "Reference Id")}
+                                value={data.ReferenceId!}
+                              />
+                            )}
+                            {hasValue(data.LeadType) && (
+                              <DetailItem label={getLabel("LeadType", "Lead Type")} value={data.LeadType!} />
+                            )}
+                            {hasValue(data.Facillities) && (
+                              <DetailItem
+                                label={getLabel("Facillities", "Facilities")}
+                                value={data.Facillities!}
+                              />
+                            )}
+                            {hasValue(data.CustomerDate) && (
+                              <DetailItem
+                                label={getLabel("CustomerDate", "Customer Date")}
+                                value={formatDate(data.CustomerDate)}
+                                icon={<Calendar size={14} className="mt-0.5 shrink-0" />}
+                              />
+                            )}
+                            {hasValue(data.CustomerYear) && (
+                              <DetailItem
+                                label={getLabel("CustomerYear", "Customer Year")}
+                                value={data.CustomerYear!}
+                              />
+                            )}
+                            {hasValue(data.URL) && (
+                              <DetailItem
+                                label={getLabel("URL", "URL")}
+                                value={data.URL!}
+                                icon={<LinkIcon size={14} className="mt-0.5 shrink-0" />}
+                                href={data.URL}
+                              />
+                            )}
+                            {hasValue(data.Video) && (
+                              <DetailItem
+                                label={getLabel("Video", "Video")}
+                                value={data.Video!}
+                                icon={<VideoIcon size={14} className="mt-0.5 shrink-0" />}
+                                href={data.Video}
+                              />
+                            )}
+                            {hasValue(data.Other) && (
+                              <DetailItem
+                                label={getLabel("Other", "Others")}
+                                value={data.Other!}
+                                fullWidth={data.Other!.length > LONG_VALUE_THRESHOLD}
+                              />
+                            )}
+                          </div>
+                        </SectionCard>
+                      )}
 
                     {/* DESCRIPTION - long free text gets its own readable block */}
                     {hasValue(data.Description) && (
@@ -664,35 +688,35 @@ export default function CustomerViewDialog({ isOpen, onClose, customerId, onEdit
                     {/* MEDIA */}
                     {((data.CustomerImage && data.CustomerImage.length > 0) ||
                       (data.SitePlan && data.SitePlan.length > 0)) && (
-                      <SectionCard title="Media" icon={<ImageIcon size={15} />}>
-                        <div className="space-y-5">
-                          {data.CustomerImage && data.CustomerImage.length > 0 && (
-                            <div>
-                              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400 max-sm:dark:text-gray-500">
-                                {getLabel("CustomerImage", "Customer Images")}
-                              </p>
-                              <Gallery
-                                images={data.CustomerImage}
-                                altPrefix="customer"
-                                onOpen={(index) => setLightbox({ images: data.CustomerImage!, index })}
-                              />
-                            </div>
-                          )}
-                          {data.SitePlan && data.SitePlan.length > 0 && (
-                            <div>
-                              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400 max-sm:dark:text-gray-500">
-                                {getLabel("SitePlan", "Site Plan")}
-                              </p>
-                              <Gallery
-                                images={data.SitePlan}
-                                altPrefix="site-plan"
-                                onOpen={(index) => setLightbox({ images: data.SitePlan!, index })}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </SectionCard>
-                    )}
+                        <SectionCard title="Media" icon={<ImageIcon size={15} />}>
+                          <div className="space-y-5">
+                            {data.CustomerImage && data.CustomerImage.length > 0 && (
+                              <div>
+                                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400 max-sm:dark:text-gray-500">
+                                  {getLabel("CustomerImage", "Customer Images")}
+                                </p>
+                                <Gallery
+                                  images={data.CustomerImage}
+                                  altPrefix="customer"
+                                  onOpen={(index) => setLightbox({ images: data.CustomerImage!, index })}
+                                />
+                              </div>
+                            )}
+                            {data.SitePlan && data.SitePlan.length > 0 && (
+                              <div>
+                                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400 max-sm:dark:text-gray-500">
+                                  {getLabel("SitePlan", "Site Plan")}
+                                </p>
+                                <Gallery
+                                  images={data.SitePlan}
+                                  altPrefix="site-plan"
+                                  onOpen={(index) => setLightbox({ images: data.SitePlan!, index })}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </SectionCard>
+                      )}
 
                     {/* ADDITIONAL INFORMATION - dynamic custom fields */}
                     {data.CustomerFields && Object.keys(data.CustomerFields).length > 0 && (

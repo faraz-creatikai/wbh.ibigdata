@@ -4,6 +4,7 @@ export interface customerAllDataInterface {
   customerName: string;
   CustomerSubtype: { id: string; name: string };
   ContactNumber: string;
+  CountryCode?: string;
   City: { id: string; name: string };
   Location: { id: string; name: string };
   SubLocation: { id: string; name: string };
@@ -73,6 +74,7 @@ export interface customerGetDataInterface {
   isChecked?: boolean;
   LeadTemperature?: string;
   ContactNumber: string;
+  CountryCode?: string;
   AssignTo: string[];
   Date: string;
   CustomerType: string;

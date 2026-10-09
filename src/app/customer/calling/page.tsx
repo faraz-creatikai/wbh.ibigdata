@@ -43,6 +43,7 @@ import { getSalesScript } from "@/store/salescript/salesscript";
 import VoicePicker from "@/app/component/datafields/VoicePicker";
 import CallingAgentPicker from "@/app/component/datafields/CallingAgentPicker";
 import Link from "next/link";
+import { COUNTRY_CODES, DEFAULT_COUNTRY_CODE, isoToFlagEmoji } from "@/app/utils/countryCodes";
 
 
 // --- CONFIG ---
@@ -1108,6 +1109,17 @@ export default function CustomerCallingPage() {
                 {visibleCustomers.map((c: any) => {
                   const cId = c._id || c.id;
                   const isSelected = selectedId === cId;
+
+                  const countryInfo =
+                    COUNTRY_CODES.find((e) => e.code === (c?.CountryCode || DEFAULT_COUNTRY_CODE)) ||
+                    COUNTRY_CODES.find((e) => e.code === DEFAULT_COUNTRY_CODE)!;
+
+                  // Formatting strings properly without spaces for correct copying/calling
+                  const cleanCountryCode = (countryInfo.code || "").replace(/\s/g, "");
+                  const cleanPhone = (c?.ContactNumber || "").replace(/\s/g, "");
+                  const fullPhoneForCopy = `+${cleanCountryCode} ${cleanPhone}`;
+
+
                   return (
                     <div
                       key={cId}
@@ -1122,8 +1134,11 @@ export default function CustomerCallingPage() {
                         <p className={`text-sm font-bold truncate ${isSelected ? "text-[var(--color-primary-darker)]" : "text-gray-900"}`}>
                           {c.customerName || "—"}
                         </p>
-                        <p className="text-[11px] font-medium text-gray-500 truncate mt-0.5">
-                          {c.ContactNumber || c.Email || "No contact info"}
+
+                        <p className="text-[11px] font-medium text-gray-500 truncate mt-0.5 ">
+                          {fullPhoneForCopy &&
+                            isoToFlagEmoji({ iso2: countryInfo.iso2, className: " w-[15px] h-[10px] mb-[px]" })}
+                          {fullPhoneForCopy || c.Email || "No contact info"}
                         </p>
                       </div>
                     </div>

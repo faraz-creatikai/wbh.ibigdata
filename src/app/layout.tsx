@@ -1,4 +1,5 @@
 import "./globals.css";
+import "flag-icons/css/flag-icons.min.css";
 import { ReactNode } from "react";
 import { Schibsted_Grotesk } from "next/font/google";
 import ClientProviders from "./component/providers/ClientProviders";
