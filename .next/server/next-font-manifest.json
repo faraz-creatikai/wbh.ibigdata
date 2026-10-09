@@ -1,0 +1,466 @@
+{
+  "app": {
+    "[project]/src/app/_not-found/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/admin/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/aiagents/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/aiagents/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/aiagents/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/clients/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/clients/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/clients/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/company_project/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/company_project/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/company_project/enquiry/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/company_project/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/configuration/ai/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/configuration/sarvam/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/configuration/system/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/configuration/tabbly/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/configuration/whatsapp/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/contact/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/contact/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/contact/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/customer/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/customer/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/customer/archieved/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/customer/calling/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/customer/closed-deals/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/customer/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/customer/enquiry/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/customer/import/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/customer/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/dashboard/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/database_manager/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/enquiry/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/favourites/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/financial/expense_marketings/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/financial/expense_marketings/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/financial/expense_marketings/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/financial/income_marketings/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/financial/income_marketings/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/financial/income_marketings/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/followups/contact/add/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/followups/contact/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/followups/contact/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/followups/customer/add/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/followups/customer/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/followups/customer/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/imports/contact/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/imports/contact/select-imports/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/imports/customer/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/imports/customer/select-imports/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/login/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/amenities/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/amenities/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/amenities/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/builder-sliders/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/builder-sliders/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/builder-sliders/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/campaign/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/campaign/allcampaigns/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/campaign/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/campaign/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/city/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/city/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/city/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/contact-campaign/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/contact-campaign/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/contact-campaign/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/contact-statustype/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/contact-statustype/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/contact-statustype/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/contact-type/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/contact-type/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/contact-type/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/customer-subtype/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/customer-subtype/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/customer-subtype/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/customer-types/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/customer-types/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/customer-types/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/customerfields/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/customerfields/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/customerfields/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/expenses/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/expenses/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/expenses/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/facilities/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/facilities/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/facilities/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/functional-areas/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/functional-areas/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/functional-areas/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/incomes/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/incomes/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/incomes/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/industries/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/industries/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/industries/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/leadtype/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/leadtype/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/leadtype/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/locations/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/locations/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/locations/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/mail-templates/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/mail-templates/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/mail-templates/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/newuser-requests/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/payment-methods/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/payment-methods/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/payment-methods/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/price/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/price/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/price/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/references/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/references/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/references/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/status-type/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/status-type/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/status-type/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/sublocation/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/sublocation/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/sublocation/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/whatsapp-templates/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/whatsapp-templates/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/masters/whatsapp-templates/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/minedlead/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/notifications/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/register/client/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/register/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/reports/activity/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/reports/call-report/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/reports/contact/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/reports/customer/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/reports/sarvam/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/requirements/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/salesscript/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/salesscript/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/salesscript/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/schedules/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/schedules/edit/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/schedules/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/settings/brand/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/settings/customer/customer-fields/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/signup/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/socialmedia-manager/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/system/maintenance/access/signup/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/task/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/task/edit/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/task/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/users/add/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/users/change_password/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/users/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/users/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}

@@ -1,0 +1,10 @@
+{
+  "pages": {},
+  "app": {
+    "[project]/src/app/masters/facilities/edit/[id]/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pagesUsingSizeAdjust": false
+}
