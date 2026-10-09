@@ -492,7 +492,7 @@ export const API_ROUTES = {
 
 
   ADMIN: {
-    // 🔓 Public Routes
+    // Public Routes
     SIGNUP: `${BASE_URL}/admin/signup`,
     LOGIN: `${BASE_URL}/admin/login`,
     LOGOUT: `${BASE_URL}/admin/logout`,
@@ -503,7 +503,7 @@ export const API_ROUTES = {
       DELETE_API_KEY: (id: string) => `${BASE_URL}/admin/ai/delete-api-key/${id}`
     },
 
-    // 🔐 Protected Routes
+    // Protected Routes
     CHECK: `${BASE_URL}/admin/check`,
 
     // 👤 Admin Management
