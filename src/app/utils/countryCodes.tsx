@@ -233,7 +233,7 @@ export const COUNTRY_CODES: CountryCodeOption[] = [
   { code: "94",  iso2: "LK", name: "Sri Lanka",      minLen: 9,  maxLen: 9 },
   { code: "65",  iso2: "SG", name: "Singapore",      minLen: 8,  maxLen: 8 },
   { code: "60",  iso2: "MY", name: "Malaysia",       minLen: 9,  maxLen: 10 },
-  { code: "44",  iso2: "GB", name: "United Kingdom", minLen: 10, maxLen: 10 },
+  { code: "44",  iso2: "GB", name: "United Kingdom", minLen: 10, maxLen: 11 },
   { code: "1",   iso2: "US", name: "US / Canada",    minLen: 10, maxLen: 10 },
   { code: "61",  iso2: "AU", name: "Australia",      minLen: 9,  maxLen: 9 },
 ];

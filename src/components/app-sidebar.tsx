@@ -78,7 +78,7 @@ const data = {
       url: "/minedlead",
       icon: ExternalLink,
     },
-        {
+    {
       title: "Clients",
       url: "/clients",
       icon: UsersIcon,
@@ -104,7 +104,7 @@ const data = {
       icon: FaRobot,
     },
     {
-      title:"Sales Script",
+      title: "Sales Script",
       url: "/salesscript",
       icon: RiFilePaper2Fill
     },
@@ -119,8 +119,8 @@ const data = {
       icon: Pointer,
     },
     {
-      title:"Social Media Manager",
-      url:"/socialmedia-manager",
+      title: "Social Media Manager",
+      url: "/socialmedia-manager",
       icon: TbSocial
     },
     {
@@ -246,10 +246,10 @@ const data = {
       ],
     },
     {
-      title:" Reports",
+      title: " Reports",
       url: "#",
       icon: LineChart,
-      items:[
+      items: [
         {
           title: "Sarvam Report",
           url: "/reports/sarvam",
@@ -317,13 +317,13 @@ const data = {
       ]
     },
     {
-      title:"Configuration",
-      url:"#",
+      title: "Configuration",
+      url: "#",
       icon: GrConfigure,
-      items:[
+      items: [
         {
-          title:"AI",
-          url:"/configuration/ai"
+          title: "AI",
+          url: "/configuration/ai"
         },
         {
           title: "Sarvam",
@@ -334,14 +334,14 @@ const data = {
           url: "/configuration/tabbly",
         },
         {
-          title:"whatsapp",
-          url:"/configuration/whatsapp"
+          title: "whatsapp",
+          url: "/configuration/whatsapp"
         },
         {
-          title:"system",
-          url:"/configuration/system"
+          title: "system",
+          url: "/configuration/system"
         }
-        
+
       ]
     },
     {
@@ -360,7 +360,7 @@ const data = {
       url: "/imports/contact",
       icon: MessageSquare,
     },
-    
+
     /* 
     {
       title: "Contact Report",
@@ -385,14 +385,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     if (item.title === "Masters" && admin?.role !== "administrator") {
       return false;
     }
-    if(item.title === "Clients" && admin?.role !== "administrator"){
+    if (item.title === "Clients" && admin?.role !== "administrator") {
       return false;
     }
-    if(item.title === "Ai Agents" && admin?.role !== "administrator"){
+    if (item.title === "Ai Agents" && admin?.role !== "administrator") {
       return false;
     }
-    if(item.title === "Configuration" && admin?.role !== "administrator"){
+    if (item.title === "Configuration" && admin?.role !== "administrator") {
       return false
+    }
+    if (item.title === "customer calling" && (admin?.role !== "administrator" && admin?.role !== "city_admin")) {
+      return false;
     }
     return true;
   }).map((item) => {
@@ -433,25 +436,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   });
   return (
     <Sidebar collapsible="icon" className="" {...props}>
-     <SidebarHeader
-  className={`flex items-center py-1 justify-center ${
-    state === "collapsed"
-      ? "bg-white dark:bg-[var(--color-secondary-darker)] py-4"
-      : "bg-gray-100"
-  }`}
->
-  {state === "collapsed" ? (
-    <BrandLogo
-      variant="icon"
-      className="h-8 w-8 object-contain"
-    />
-  ) : (
-    <BrandLogo
-      variant="text"
-      className="h-12 w-40 object-contain"
-    />
-  )}
-</SidebarHeader>
+      <SidebarHeader
+        className={`flex items-center py-1 justify-center ${state === "collapsed"
+            ? "bg-white dark:bg-[var(--color-secondary-darker)] py-4"
+            : "bg-gray-100"
+          }`}
+      >
+        {state === "collapsed" ? (
+          <BrandLogo
+            variant="icon"
+            className="h-8 w-8 object-contain"
+          />
+        ) : (
+          <BrandLogo
+            variant="text"
+            className="h-12 w-40 object-contain"
+          />
+        )}
+      </SidebarHeader>
       <SidebarContent>
         <NavMain items={filteredNavItems} />
       </SidebarContent>
