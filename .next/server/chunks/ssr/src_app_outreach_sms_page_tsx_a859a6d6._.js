@@ -1,0 +1,3 @@
+module.exports=[254165,a=>{"use strict";var b=a.i(187924);a.s(["default",0,()=>(0,b.jsxs)("div",{className:"flex flex-col  items-center justify-center mt-[200px] gap-4",children:[(0,b.jsx)("h1",{className:"text-2xl font-bold text-[var(--color-primary-darker)]",children:"Coming soon"}),(0,b.jsx)("p",{className:"text-lg text-slate-600",children:"This feature is currently under development."})]})])}];
+
+//# sourceMappingURL=src_app_outreach_sms_page_tsx_a859a6d6._.js.map

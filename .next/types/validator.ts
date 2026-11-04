@@ -171,15 +171,6 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
   type __Unused = __Check
 }
 
-// Validate ../../src/app/configuration/whatsapp/page.tsx
-{
-  type __IsExpected<Specific extends AppPageConfig<"/configuration/whatsapp">> = Specific
-  const handler = {} as typeof import("../../src/app/configuration/whatsapp/page.js")
-  type __Check = __IsExpected<typeof handler>
-  // @ts-ignore
-  type __Unused = __Check
-}
-
 // Validate ../../src/app/contact/add/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/contact/add">> = Specific
@@ -229,15 +220,6 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
 {
   type __IsExpected<Specific extends AppPageConfig<"/customer/archieved">> = Specific
   const handler = {} as typeof import("../../src/app/customer/archieved/page.js")
-  type __Check = __IsExpected<typeof handler>
-  // @ts-ignore
-  type __Unused = __Check
-}
-
-// Validate ../../src/app/customer/calling/page.tsx
-{
-  type __IsExpected<Specific extends AppPageConfig<"/customer/calling">> = Specific
-  const handler = {} as typeof import("../../src/app/customer/calling/page.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
@@ -463,6 +445,15 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
 {
   type __IsExpected<Specific extends AppPageConfig<"/imports/customer/select-imports">> = Specific
   const handler = {} as typeof import("../../src/app/imports/customer/select-imports/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/inbox/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/inbox">> = Specific
+  const handler = {} as typeof import("../../src/app/inbox/page.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
@@ -1156,6 +1147,42 @@ type LayoutConfig<Route extends LayoutRoutes = LayoutRoutes> = {
 {
   type __IsExpected<Specific extends AppPageConfig<"/notifications">> = Specific
   const handler = {} as typeof import("../../src/app/notifications/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/outreach/calling/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/outreach/calling">> = Specific
+  const handler = {} as typeof import("../../src/app/outreach/calling/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/outreach/email/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/outreach/email">> = Specific
+  const handler = {} as typeof import("../../src/app/outreach/email/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/outreach/sms/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/outreach/sms">> = Specific
+  const handler = {} as typeof import("../../src/app/outreach/sms/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/outreach/whatsapp/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/outreach/whatsapp">> = Specific
+  const handler = {} as typeof import("../../src/app/outreach/whatsapp/page.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

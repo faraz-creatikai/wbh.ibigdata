@@ -418,12 +418,6 @@
       "namedRegex": "^/configuration/tabbly(?:/)?$"
     },
     {
-      "page": "/configuration/whatsapp",
-      "regex": "^/configuration/whatsapp(?:/)?$",
-      "routeKeys": {},
-      "namedRegex": "^/configuration/whatsapp(?:/)?$"
-    },
-    {
       "page": "/contact",
       "regex": "^/contact(?:/)?$",
       "routeKeys": {},
@@ -452,12 +446,6 @@
       "regex": "^/customer/archieved(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/customer/archieved(?:/)?$"
-    },
-    {
-      "page": "/customer/calling",
-      "regex": "^/customer/calling(?:/)?$",
-      "routeKeys": {},
-      "namedRegex": "^/customer/calling(?:/)?$"
     },
     {
       "page": "/customer/closed-deals",
@@ -560,6 +548,12 @@
       "regex": "^/imports/customer/select\\-imports(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/imports/customer/select\\-imports(?:/)?$"
+    },
+    {
+      "page": "/inbox",
+      "regex": "^/inbox(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/inbox(?:/)?$"
     },
     {
       "page": "/login",
@@ -884,6 +878,30 @@
       "regex": "^/notifications(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/notifications(?:/)?$"
+    },
+    {
+      "page": "/outreach/calling",
+      "regex": "^/outreach/calling(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/outreach/calling(?:/)?$"
+    },
+    {
+      "page": "/outreach/email",
+      "regex": "^/outreach/email(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/outreach/email(?:/)?$"
+    },
+    {
+      "page": "/outreach/sms",
+      "regex": "^/outreach/sms(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/outreach/sms(?:/)?$"
+    },
+    {
+      "page": "/outreach/whatsapp",
+      "regex": "^/outreach/whatsapp(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/outreach/whatsapp(?:/)?$"
     },
     {
       "page": "/register",

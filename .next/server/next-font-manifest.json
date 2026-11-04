@@ -48,9 +48,6 @@
     "[project]/src/app/configuration/tabbly/page": [
       "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
     ],
-    "[project]/src/app/configuration/whatsapp/page": [
-      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
-    ],
     "[project]/src/app/contact/add/page": [
       "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
     ],
@@ -67,9 +64,6 @@
       "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
     ],
     "[project]/src/app/customer/archieved/page": [
-      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
-    ],
-    "[project]/src/app/customer/calling/page": [
       "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
     ],
     "[project]/src/app/customer/closed-deals/page": [
@@ -145,6 +139,9 @@
       "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
     ],
     "[project]/src/app/imports/customer/select-imports/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/inbox/page": [
       "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
     ],
     "[project]/src/app/login/page": [
@@ -376,6 +373,18 @@
       "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
     ],
     "[project]/src/app/notifications/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/outreach/calling/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/outreach/email/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/outreach/sms/page": [
+      "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
+    ],
+    "[project]/src/app/outreach/whatsapp/page": [
       "static/media/9e31f8a9aad83172-s.p.d411be41.woff2"
     ],
     "[project]/src/app/page": [

@@ -1,12 +1,6 @@
-export const BASE_URL = "https://apiairbnb.ibigdata.in/api";
-//https://live-project-backend-1.onrender.com
-//https://propertyapi.aileadgenie.cloud/api
-//https://apidomain.ibigdata.in
-//https://apiedu.ibigdata.in
-//https://apiwbh.ibigdata.in
-//https://apiproperty.ibigdata.in
-//https://apitravel.ibigdata.in
-//https://appapi.estateai.in
+export const BASE_URL = "https://apiwbh.ibigdata.in/api";
+export const API_URL = "https://apiwbh.ibigdata.in";
+
 
 export const API_ROUTES = {
   CONTACT: {
@@ -147,7 +141,7 @@ export const API_ROUTES = {
     CONFIG_SET_ACTIVE: (id: string) => `${BASE_URL}/sarvam/config/${id}/active`,
 
     CALL_REPORT: `${BASE_URL}/sarvam/call-report`,
-    
+
     // If you plan to add endpoints to get call logs later, you can add them here:
     // GET_CALL_LOGS: `${BASE_URL}/sarvam/logs`,
   },
@@ -197,9 +191,15 @@ export const API_ROUTES = {
       SCHEDULE_POST: `${BASE_URL}/social-auth/schedule-facebook-post`,
       GET_SCHEDULED_POST: (params: string) => `${BASE_URL}/social-auth/scheduled-posts-data?platform=${params}`,
     },
+    WHATSAPP: {
+      // Meta WhatsApp Endpoints
+      CONNECT_META_WHATSAPP: `${BASE_URL}/social-auth/connect-meta-whatsapp`,
+      DISCONNECT_META_WHATSAPP: `${BASE_URL}/social-auth/disconnect-meta-whatsapp`,
+      CHECK_META_WHATSAPP_STATUS: `${BASE_URL}/social-auth/check-meta-whatsapp`,
+    },
     AUTOSOCIALAGENT: {
       RUN: `${BASE_URL}/social-auth/auto-social-agent`
-    }
+    },
   },
   MASTERS: {
     CAMPAIGN: {
@@ -414,7 +414,12 @@ export const API_ROUTES = {
       DELETE: (id: string) => `${BASE_URL}/v1/templates/${id}`,
       MAILALL: `${BASE_URL}/v1/messages/email`,
       FILEUPLOAD: `${BASE_URL}/v1/messages/uploads/file`,
-      SEND_EMAIL_VIA_AI: `${BASE_URL}/v1/messages/send-email-via-ai`
+      SEND_EMAIL_VIA_AI: `${BASE_URL}/v1/messages/send-email-via-ai`,
+
+      EMAIL_CONNECTION: `${BASE_URL}/v1/messages/email-connection`,               // GET (status) · POST (connect) · DELETE (disconnect)
+      EMAIL_CONNECTION_TEST: `${BASE_URL}/v1/messages/email-connection/test`,     // POST (detect + verify, saves nothing)
+      EMAIL_CONNECTION_VERIFY: `${BASE_URL}/v1/messages/email-connection/verify`, // POST (verify, saves if successful)
+      EMAIL_CONNECTION_SEND_TEST: `${BASE_URL}/v1/messages/email-connection/send-test`, // POST (send test email)`
     },
     WHATSAPP: {
       GET_ALL: `${BASE_URL}/v1/templates?type=whatsapp`,
@@ -529,4 +534,4 @@ export const API_ROUTES = {
   }
 };
 
-export const API_URL = "https://apiairbnb.ibigdata.in";
+

@@ -20,6 +20,7 @@ import {
   UsersIcon,
   ExternalLink,
   PhoneCall,
+  Megaphone,
 } from "lucide-react";
 
 import { NavMain } from "../components/nav-main";
@@ -59,11 +60,6 @@ const data = {
       icon: PlusSquare,
     },
     {
-      title: "customer calling",
-      url: "/customer/calling",
-      icon: PhoneCall,
-    },
-    {
       title: "Contact",
       url: "/contact",
       icon: User,
@@ -78,20 +74,33 @@ const data = {
       url: "/minedlead",
       icon: ExternalLink,
     },
-    {
-      title: "Clients",
-      url: "/clients",
-      icon: UsersIcon,
+     {
+      title: "Inbox",
+      url: "/inbox",
+      icon: MessageSquare,
     },
     {
-      title: "Company Project",
-      url: "/company_project",
-      icon: User,
-    },
-    {
-      title: "Company Project Enquiry",
-      url: "/company_project/enquiry",
-      icon: Info,
+      title: "Outreach Channels",
+      url: "#",
+      icon: Megaphone,
+      items: [
+        {
+          title: "Whatsapp",
+          url: "/outreach/whatsapp",
+        },
+        {
+          title: "Email",
+          url: "/outreach/email",
+        },
+        {
+          title: "Voice Calling",
+          url: "/outreach/calling",
+        },
+        {
+          title: "SMS",
+          url: "/outreach/sms",
+        }
+      ]
     },
     /* {
       title: "Customer Enquiry",
@@ -122,6 +131,21 @@ const data = {
       title: "Social Media Manager",
       url: "/socialmedia-manager",
       icon: TbSocial
+    },
+    {
+      title: "Clients",
+      url: "/clients",
+      icon: UsersIcon,
+    },
+    {
+      title: "Company Project",
+      url: "/company_project",
+      icon: User,
+    },
+    {
+      title: "Company Project Enquiry",
+      url: "/company_project/enquiry",
+      icon: Info,
     },
     {
       title: "Masters",
@@ -334,10 +358,6 @@ const data = {
           url: "/configuration/tabbly",
         },
         {
-          title: "whatsapp",
-          url: "/configuration/whatsapp"
-        },
-        {
           title: "system",
           url: "/configuration/system"
         }
@@ -438,8 +458,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="icon" className="" {...props}>
       <SidebarHeader
         className={`flex items-center py-1 justify-center ${state === "collapsed"
-            ? "bg-white dark:bg-[var(--color-secondary-darker)] py-4"
-            : "bg-gray-100"
+          ? "bg-white dark:bg-[var(--color-secondary-darker)] py-4"
+          : "bg-gray-100"
           }`}
       >
         {state === "collapsed" ? (
