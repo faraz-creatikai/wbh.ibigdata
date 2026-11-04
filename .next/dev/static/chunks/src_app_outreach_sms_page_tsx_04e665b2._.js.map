@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///D:/creatik%20ai%20projects/wbh.ibigdata/frontend/src/app/outreach/sms/page.tsx"],"sourcesContent":["\"use client\";\r\n\r\nimport React from 'react'\r\n\r\nconst page = () => {\r\n  return (\r\n    <div className='flex flex-col  items-center justify-center mt-[200px] gap-4'>\r\n        <h1 className='text-2xl font-bold text-[var(--color-primary-darker)]'>Coming soon</h1>\r\n        <p className='text-lg text-slate-600'>This feature is currently under development.</p>\r\n    </div>\r\n  )\r\n}\r\n\r\nexport default page\r\n"],"names":[],"mappings":";;;;;AAAA;;AAIA,MAAM,OAAO;IACX,qBACE,6LAAC;QAAI,WAAU;;0BACX,6LAAC;gBAAG,WAAU;0BAAwD;;;;;;0BACtE,6LAAC;gBAAE,WAAU;0BAAyB;;;;;;;;;;;;AAG9C;uCAEe"}}]
-}
