@@ -1,164 +1,172 @@
-"use client";
-
+'use client';
 /**
  * Inbox page — e.g. app/(dashboard)/inbox/page.tsx
  * Sidebar + header come from layout.tsx.
  *
- * TO ADD A FUTURE INBOX: build a component that accepts { adminId?, onUnreadChange? },
- * import it below, and put it in the `component` field of its source in CHANNELS. Nothing else changes.
+ * HOW TO ADD A NEW INBOX LATER
+ *   1. Build the component (it receives `{ adminId?: string }` and should fill its parent's height).
+ *   2. Import it below and set it as `Component` on a provider in CHANNELS.
+ *   Providers without a `Component` show a "coming soon" panel and a "Soon" badge.
  */
-import { ComponentType, useEffect, useRef, useState } from "react";
-// 👇 adjust to where you save the file
-/* import WhatsAppBaileysInbox from "@/components/inbox/WhatsAppBaileysInbox"; */
+import React, { useState } from 'react';
+import WhatsAppBaileysInbox from "@/app/component/whatsapp/baileys/WhatsappBaileysInbox"; // 👈 adjust to where you put the file
 
-type InboxProps = { adminId?: string; onUnreadChange?: (count: number) => void };
-type Source = { id: string; label: string; component?: ComponentType<InboxProps> }; // no component = "Soon"
-type Channel = { id: string; label: string; icon: string; sources: Source[] };
+type InboxProps = { adminId?: string };
+type Provider = { id: string; label: string; Component?: React.ComponentType<InboxProps> };
+type Channel = { id: string; label: string; icon: React.ReactNode; providers: Provider[] };
 
-const CHANNELS: Channel[] = [
-    {
-        id: "whatsapp",
-        label: "WhatsApp",
-        icon: "M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.7-5.4A8.5 8.5 0 1 1 21 11.5Z",
-        sources: [
-            { id: "baileys", label: "Baileys WhatsApp", component: ()=> <div className='flex flex-col  items-center justify-center mt-[200px] gap-4'>
-        <h1 className='text-2xl font-bold text-[var(--color-primary-darker)]'>Coming soon</h1>
-        <p className='text-lg text-slate-600'>This feature is currently under development.</p>
-    </div> },
-            { id: "meta", label: "Meta WhatsApp" }, // ← set `component` when the Meta inbox is ready
-        ],
-    },
-    { id: "email", label: "Email", icon: "M4 5h16v14H4zM4 7l8 6 8-6", sources: [{ id: "email", label: "Email" }] },
-    { id: "sms", label: "SMS", icon: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z", sources: [{ id: "sms", label: "SMS" }] },
-];
-
-// 👇 your logged-in admin id, only needed if the socket isn't already initialised in layout.tsx
-const ADMIN_ID: string | undefined = undefined;
-
-const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
-const Icon = ({ d, className = "h-4 w-4" }: { d: string; className?: string }) => (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d={d} />
+const Svg = ({ children }: { children: React.ReactNode }) => (
+    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        {children}
     </svg>
 );
 
+/* ───────────────── channel registry — add future inboxes here ───────────────── */
+const CHANNELS: Channel[] = [
+    {
+        id: 'whatsapp',
+        label: 'WhatsApp',
+        icon: <Svg><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.7-5.4A8.4 8.4 0 1 1 21 11.5Z" /></Svg>,
+        providers: [
+            { id: 'baileys', label: 'Baileys WhatsApp', Component: WhatsAppBaileysInbox },
+            { id: 'meta', label: 'Meta WhatsApp' }, // 👈 set Component when the Meta inbox is ready
+        ],
+    },
+    {
+        id: 'email',
+        label: 'Email',
+        icon: <Svg><path d="M4 5h16v14H4zM4 7l8 6 8-6" /></Svg>,
+        providers: [{ id: 'email', label: 'Email' }],
+    },
+    {
+        id: 'sms',
+        label: 'SMS',
+        icon: <Svg><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" /></Svg>,
+        providers: [{ id: 'sms', label: 'SMS' }],
+    },
+];
+
+const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
+const isReady = (ch: Channel) => ch.providers.some((p) => p.Component);
+
 export default function InboxPage() {
-    const firstReady = CHANNELS.flatMap((c) => c.sources.filter((s) => s.component).map((s) => `${c.id}:${s.id}`))[0];
-    const [active, setActive] = useState<string>(firstReady ?? "");
-    const [openMenu, setOpenMenu] = useState<string | null>(null);
-    const [unread, setUnread] = useState<Record<string, number>>({});
-    const barRef = useRef<HTMLDivElement>(null);
+    const [channelId, setChannelId] = useState(CHANNELS[0].id);
+    // remembers the chosen provider for each channel, e.g. { whatsapp: 'baileys' }
+    const [providerBy, setProviderBy] = useState<Record<string, string>>(
+        () => Object.fromEntries(CHANNELS.map((c) => [c.id, (c.providers.find((p) => p.Component) ?? c.providers[0]).id]))
+    );
+    const [menuFor, setMenuFor] = useState<string | null>(null);
 
-    useEffect(() => {
-        const close = (e: MouseEvent) => {
-            if (!barRef.current?.contains(e.target as Node)) setOpenMenu(null);
-        };
-        document.addEventListener("mousedown", close);
-        return () => document.removeEventListener("mousedown", close);
-    }, []);
+    const channel = CHANNELS.find((c) => c.id === channelId)!;
+    const provider = channel.providers.find((p) => p.id === providerBy[channel.id]) ?? channel.providers[0];
+    const Active = provider.Component;
 
-    const pick = (id: string) => {
-        setActive(id);
-        setOpenMenu(null);
+    const onTab = (ch: Channel) => {
+        if (ch.id === channelId && ch.providers.length > 1) setMenuFor(menuFor === ch.id ? null : ch.id);
+        else {
+            setChannelId(ch.id);
+            setMenuFor(ch.providers.length > 1 ? ch.id : null);
+        }
     };
-    const channelUnread = (c: Channel) => c.sources.reduce((n, s) => n + (unread[`${c.id}:${s.id}`] || 0), 0);
 
     return (
-        <div className="mx-auto w-full max-w-[1600px] px-4 py-5 text-slate-900 sm:px-6">
-            <header className="mb-4 flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary-lighter)] text-[var(--color-primary)]">
-                    <Icon d="M22 12h-6l-2 3h-4l-2-3H2M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.7 4H7.2a2 2 0 0 0-1.7 1.1Z" className="h-5 w-5" />
+        <div
+            className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-4 py-2 sm:px-6"
+            onKeyDown={(e) => e.key === 'Escape' && setMenuFor(null)}
+        >
+            {/* title */}
+            <header className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary-lighter)] text-[var(--color-primary)]">
+                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M22 12h-6l-2 3h-4l-2-3H2" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z" />
+                    </svg>
                 </span>
                 <div>
-                    <h1 className="text-xl font-semibold leading-tight">Inbox</h1>
-                    <p className="text-sm text-slate-600">Manage all your customer conversations from WhatsApp, Email and SMS in one place.</p>
+                    <h1 className="text-xl font-semibold leading-tight text-slate-900">Inbox</h1>
+                    <p className="text-sm text-slate-500">Manage all your customer conversations in one place.</p>
                 </div>
             </header>
 
             {/* channel tabs */}
-            <div ref={barRef} className="mb-4 flex flex-wrap items-center gap-3" role="tablist">
-                {CHANNELS.map((c) => {
-                    const ready = c.sources.filter((s) => s.component);
-                    const multi = c.sources.length > 1;
-                    const isActive = active.startsWith(`${c.id}:`);
-                    const n = channelUnread(c);
-                    const base = "inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2 ";
-
-                    if (!ready.length)
-                        return (
-                            <button key={c.id} type="button" disabled className={cx(base, "cursor-not-allowed border-slate-200 bg-white text-slate-400")}>
-                                <Icon d={c.icon} className="h-5 w-5" /> {c.label}
-                                <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">Soon</span>
-                            </button>
-                        );
-
+            <div role="tablist" aria-label="Inbox channels" className="flex flex-wrap items-center gap-2">
+                {CHANNELS.map((ch) => {
+                    const active = ch.id === channelId;
+                    const multi = ch.providers.length > 1;
                     return (
-                        <div key={c.id} className="relative">
+                        <div key={ch.id} className="relative">
                             <button
-                                type="button"
                                 role="tab"
-                                aria-selected={isActive}
-                                aria-haspopup={multi ? "menu" : undefined}
-                                aria-expanded={multi ? openMenu === c.id : undefined}
-                                onClick={() => (multi ? setOpenMenu(openMenu === c.id ? null : c.id) : pick(`${c.id}:${ready[0].id}`))}
-                                className={cx(base, isActive ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white" : "border-slate-200 bg-white text-slate-800 hover:bg-[var(--color-primary-lighter)]")}
-                            >
-                                <Icon d={c.icon} className="h-5 w-5" />
-                                {c.label}
-                                {n > 0 && (
-                                    <span className={cx("rounded-full px-1.5 py-0.5 text-[11px] font-bold", isActive ? "bg-white/25 text-white" : "bg-[var(--color-primary)] text-white")}>{n}</span>
+                                type="button"
+                                aria-selected={active}
+                                aria-haspopup={multi ? 'listbox' : undefined}
+                                aria-expanded={multi ? menuFor === ch.id : undefined}
+                                onClick={() => onTab(ch)}
+                                className={cx(
+                                    'inline-flex items-center gap-2 cursor-pointer rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors',
+                                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2',
+                                    active
+                                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
+                                        : 'border-slate-200 bg-white text-slate-700 hover:bg-[var(--color-primary-lighter)]'
                                 )}
-                                {multi && <Icon d="m6 9 6 6 6-6" className="h-4 w-4" />}
+                            >
+                                {ch.icon}
+                                {ch.label}
+                                {!isReady(ch) && (
+                                    <span className={cx('rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide', active ? 'bg-white text-[var(--color-primary-dark)]' : 'bg-slate-100 text-slate-500')}>
+                                        Soon
+                                    </span>
+                                )}
+                                {multi && (
+                                    <svg className={cx('h-4 w-4 transition-transform', menuFor === ch.id && 'rotate-180')} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <path d="m6 9 6 6 6-6" />
+                                    </svg>
+                                )}
                             </button>
 
-                            {multi && openMenu === c.id && (
-                                <div role="menu" className="absolute left-0 top-full z-30 mt-2 w-60 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
-                                    {c.sources.map((s) => {
-                                        const id = `${c.id}:${s.id}`;
-                                        return (
-                                            <button
-                                                key={s.id}
-                                                role="menuitemradio"
-                                                aria-checked={active === id}
-                                                type="button"
-                                                disabled={!s.component}
-                                                onClick={() => pick(id)}
-                                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-[var(--color-primary-lighter)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent"
-                                            >
-                                                <span className={cx("flex h-4 w-4 items-center justify-center rounded-full border", active === id ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white" : "border-slate-300")}>
-                                                    {active === id && <Icon d="M20 6 9 17l-5-5" className="h-3 w-3" />}
-                                                </span>
-                                                <span className="flex-1">{s.label}</span>
-                                                {!s.component ? (
-                                                    <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-slate-500">Soon</span>
-                                                ) : (
-                                                    (unread[id] || 0) > 0 && <span className="text-xs font-semibold text-[var(--color-primary)]">{unread[id]}</span>
-                                                )}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                            {multi && menuFor === ch.id && (
+                                <>
+                                    <div className="fixed inset-0 z-30" onClick={() => setMenuFor(null)} />
+                                    <ul role="listbox" className="absolute cursor-pointer left-0 top-full z-40 mt-2 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                                        {ch.providers.map((p) => {
+                                            const selected = providerBy[ch.id] === p.id;
+                                            const off = !p.Component;
+                                            return (
+                                                <li key={p.id} role="option" aria-selected={selected}>
+                                                    <button
+                                                        type="button"
+                                                        disabled={off}
+                                                        onClick={() => { setProviderBy((s) => ({ ...s, [ch.id]: p.id })); setChannelId(ch.id); setMenuFor(null); }}
+                                                        className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent"
+                                                    >
+                                                        <span className={cx('flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2', selected ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white' : 'border-slate-300')}>
+                                                            {selected && (
+                                                                <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                                                            )}
+                                                        </span>
+                                                        <span className="flex-1">{p.label}</span>
+                                                        {off && <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-500">Soon</span>}
+                                                    </button>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                </>
                             )}
                         </div>
                     );
                 })}
             </div>
 
-            {/* inboxes — all registered ones stay mounted (state + live counts survive tab switches) */}
-            <div className="h-[calc(100dvh-13rem)] min-h-[520px]">
-                {!firstReady && <p className="p-10 text-center text-sm text-slate-500">No inbox is connected yet.</p>}
-                {CHANNELS.flatMap((c) =>
-                    c.sources
-                        .filter((s) => s.component)
-                        .map((s) => {
-                            const id = `${c.id}:${s.id}`;
-                            const Inbox = s.component!;
-                            return (
-                                <div key={id} className={active === id ? "h-full" : "hidden"}>
-                                    <Inbox adminId={ADMIN_ID} onUnreadChange={(n) => setUnread((p) => (p[id] === n ? p : { ...p, [id]: n }))} />
-                                </div>
-                            );
-                        })
+            {/* active inbox — give it a fixed height; the component fills it */}
+            <div role="tabpanel" className=" min-h-[520px]">
+                {Active ? (
+                    <Active key={`${channel.id}-${provider.id}`} />
+                ) : (
+                    <div className="flex h-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-white text-center">
+                        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary-lighter)] text-[var(--color-primary)]">{channel.icon}</span>
+                        <p className="text-sm font-semibold text-slate-800">{provider.label} inbox is coming soon</p>
+                        <p className="max-w-xs text-xs text-slate-500">Connect it here once its inbox component is added to the registry.</p>
+                    </div>
                 )}
             </div>
         </div>
