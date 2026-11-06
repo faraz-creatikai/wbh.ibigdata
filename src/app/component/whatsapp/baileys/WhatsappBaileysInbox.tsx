@@ -9,6 +9,7 @@ import { API_URL } from '@/constants/ApiRoute';
 import { sendDirectMessageApi } from '@/store/masters/whatsapp/whatsapp';
 import { getSocket, initSocket } from '@/socket/socket';
 import WhatsAppTemplatePicker from '@/app/component/datafields/WhatsappTemplatePicker'; // 👈 adjust to your path
+import Link from 'next/link';
 
 const INBOX_API = `${API_URL}/api/v1/messages/whatsapp/inbox`; // ← keep whatever prefix is working for you
 const PAGE = 30;
@@ -204,6 +205,7 @@ export default function WhatsAppBaileysInbox({ adminId }: { adminId?: string }) 
     const [search, setSearch] = useState('');
     const [visible, setVisible] = useState(PAGE);
     const [waStatus, setWaStatus] = useState<string | null>(null);
+    const [isCheckingWa, setIsCheckingWa] = useState(true);
 
     /* composer state */
     const [text, setText] = useState('');
@@ -337,9 +339,19 @@ export default function WhatsAppBaileysInbox({ adminId }: { adminId?: string }) 
         const socket = getSocket() ?? (adminId ? initSocket(adminId) : null);
         if (!socket) return;
 
-        socket.emit('whatsapp:start_viewing', (r: any) => setWaStatus(r?.status ?? null));
+        socket.emit('whatsapp:start_viewing', (r: any) => {
+            setWaStatus(r?.status ?? null);
+            setIsCheckingWa(false);
+        });
 
-        const onStatus = (p: any) => setWaStatus(p?.status ?? null);
+        const onStatus = (p: any) => {
+            setWaStatus(p?.status ?? null);
+            setIsCheckingWa(false);
+        };
+
+        // Also stop checking if a QR or Pairing code arrives
+        socket.on('whatsapp:qr', () => setIsCheckingWa(false));
+        socket.on('whatsapp:pairing_code', () => setIsCheckingWa(false));
         const onMsg = (m: Msg) => {
             const isActive = m.phoneKey === activeRef.current;
             // first message from this number: refetch so a saved customer gets their proper name
@@ -549,6 +561,48 @@ export default function WhatsAppBaileysInbox({ adminId }: { adminId?: string }) 
     };
 
     const isMediaFile = !!file && (mediaType === 'image' || mediaType === 'video' || mediaType === 'document');
+
+    if (isCheckingWa) {
+        return (
+            <div className="flex h-[calc(100dvh-10rem)] min-h-[520px] w-full items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#25D366] border-t-transparent"></div>
+                    <p className="text-sm font-medium text-slate-500">Checking WhatsApp status...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (waStatus !== 'connected') {
+        return (
+            <div className="relative flex h-[calc(100dvh-10rem)] min-h-[520px] w-full flex-col items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+                {/* Decorative background blurs */}
+                <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#25D366]/10 blur-3xl"></div>
+                <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-[var(--color-primary)]/10 blur-3xl"></div>
+
+                <div className="relative z-10 flex flex-col items-center text-center">
+                    <div className="relative mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-tr from-[#128C7E] to-[#25D366] shadow-xl shadow-[#25D366]/30">
+                        <div className="absolute inset-0 animate-ping rounded-full bg-[#25D366]/40 duration-1000"></div>
+                        <I.Chat className="h-10 w-10 text-white" />
+                    </div>
+                    <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-slate-800">Baileys WhatsApp Not Connected</h2>
+                    <p className="mb-8 max-w-md text-[15px] leading-relaxed text-slate-500">
+                        You need to link your WhatsApp account to view messages, send broadcasts, and engage with your customers directly from this inbox.
+                    </p>
+                    <Link
+                        href="/outreach/whatsapp"
+                        className="group relative flex cursor-pointer items-center gap-3 overflow-hidden rounded-2xl bg-[#25D366] px-8 py-4 font-bold text-white shadow-lg shadow-[#25D366]/30 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-[#25D366]/40 active:translate-y-0"
+                    >
+                        <span className="relative z-10 flex items-center gap-2">
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                            Connect Device Now
+                        </span>
+                        <div className="absolute inset-0 z-0 h-full w-full translate-y-full bg-gradient-to-t from-black/15 to-transparent transition-transform duration-300 group-hover:translate-y-0"></div>
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-full max-h-[calc(100dvh-10rem)] mb-5 min-h-[520px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">

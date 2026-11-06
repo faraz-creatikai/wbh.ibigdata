@@ -420,6 +420,20 @@ export const API_ROUTES = {
       EMAIL_CONNECTION_TEST: `${BASE_URL}/v1/messages/email-connection/test`,     // POST (detect + verify, saves nothing)
       EMAIL_CONNECTION_VERIFY: `${BASE_URL}/v1/messages/email-connection/verify`, // POST (verify, saves if successful)
       EMAIL_CONNECTION_SEND_TEST: `${BASE_URL}/v1/messages/email-connection/send-test`, // POST (send test email)`
+
+
+      EMAIL_INBOX_STATUS: `${BASE_URL}/v1/messages/email/inbox/status`,
+      EMAIL_INBOX_SYNC: `${BASE_URL}/v1/messages/email/inbox/sync`,
+      EMAIL_INBOX_MESSAGES: `${BASE_URL}/v1/messages/email/inbox/messages`,                 // GET (list) · PATCH (read/star, bulk)
+      EMAIL_INBOX_MESSAGE: (id: string) => `${BASE_URL}/v1/messages/email/inbox/messages/${id}`,
+      EMAIL_INBOX_ATTACHMENT: (id: string, index: number) =>
+        `${BASE_URL}/v1/messages/email/inbox/messages/${id}/attachments/${index}`,
+
+
+      EMAIL_INBOX_SEND: `${BASE_URL}/v1/messages/email/inbox/send`,
+      EMAIL_INBOX_REPLY: `${BASE_URL}/v1/messages/email/inbox/reply`,
+      EMAIL_INBOX_BATCH: (id: string) => `${BASE_URL}/v1/messages/email/inbox/batches/${id}`,
+      EMAIL_INBOX_BATCH_CANCEL: (id: string) => `${BASE_URL}/v1/messages/email/inbox/batches/${id}/cancel`,
     },
     WHATSAPP: {
       GET_ALL: `${BASE_URL}/v1/templates?type=whatsapp`,

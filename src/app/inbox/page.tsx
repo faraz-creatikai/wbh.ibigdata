@@ -10,6 +10,7 @@
  */
 import React, { useState } from 'react';
 import WhatsAppBaileysInbox from "@/app/component/whatsapp/baileys/WhatsappBaileysInbox"; // 👈 adjust to where you put the file
+import EmailInbox from '../component/email/EmailInbox';
 
 type InboxProps = { adminId?: string };
 type Provider = { id: string; label: string; Component?: React.ComponentType<InboxProps> };
@@ -36,7 +37,7 @@ const CHANNELS: Channel[] = [
         id: 'email',
         label: 'Email',
         icon: <Svg><path d="M4 5h16v14H4zM4 7l8 6 8-6" /></Svg>,
-        providers: [{ id: 'email', label: 'Email' }],
+        providers: [{ id: 'email', label: 'Email', Component: EmailInbox }],
     },
     {
         id: 'sms',
@@ -71,7 +72,7 @@ export default function InboxPage() {
 
     return (
         <div
-            className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-4 py-2 sm:px-6"
+            className="mx-auto flex w-full max-w-[1600px] bg-white rounded-md flex-col gap-4 px-2 py-4 sm:px-6"
             onKeyDown={(e) => e.key === 'Escape' && setMenuFor(null)}
         >
             {/* title */}
@@ -100,7 +101,7 @@ export default function InboxPage() {
                                 aria-selected={active}
                                 aria-haspopup={multi ? 'listbox' : undefined}
                                 aria-expanded={multi ? menuFor === ch.id : undefined}
-                                onClick={() => onTab(ch)}
+                                onClick={() => multi ? setMenuFor(ch.id) : onTab(ch)}
                                 className={cx(
                                     'inline-flex items-center gap-2 cursor-pointer rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors',
                                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2',
