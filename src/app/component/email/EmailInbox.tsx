@@ -456,7 +456,7 @@ export default function EmailInbox({ renderReplyArea }: InboxProps) {
                         >
                             <Icon name="refresh" className={cx('h-4 w-4', syncing && 'animate-spin')} />
                         </button>
-                       {/*  <button
+                        <button
                             type="button"
                             onClick={() => setComposer({ mode: 'compose' })}
                             title="New email"
@@ -464,7 +464,7 @@ export default function EmailInbox({ renderReplyArea }: InboxProps) {
                             className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl bg-[var(--color-primary)] text-white transition-colors hover:bg-[var(--color-primary-dark)]"
                         >
                             <Icon name="edit" className="h-4 w-4" />
-                        </button> */}
+                        </button>
                     </div>
 
                     <div className="relative">
@@ -680,7 +680,7 @@ export default function EmailInbox({ renderReplyArea }: InboxProps) {
                                 <Icon name="back" className="h-5 w-5" />
                             </button>
                             <h2 className="min-w-0 flex-1 truncate text-base font-semibold text-slate-900">{m.subject}</h2>
-                           {/*  <button
+                            <button
                                 type="button"
                                 onClick={() => setComposer({ mode: 'reply', message: m })}
                                 title="Reply"
@@ -688,7 +688,7 @@ export default function EmailInbox({ renderReplyArea }: InboxProps) {
                                 className="flex h-8 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-[var(--color-primary)] hover:bg-[var(--color-primary-lighter)]"
                             >
                                 <Icon name="reply" /> Reply
-                            </button> */}
+                            </button>
                             <button
                                 type="button"
                                 onClick={() => applyFlags([m.id], { isRead: false })}

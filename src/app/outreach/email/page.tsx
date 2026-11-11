@@ -18,28 +18,48 @@ import {
     type EmailConnectionError,
     type EmailDetected,
 } from "@/store/masters/mail/mail";
+import CampaignDialog from "@/app/component/outreach/CampaignDialog";
+import CampaignsTab from "@/app/component/outreach/CampaignTab";
+import RecentCampaigns from "@/app/component/outreach/RecentCampaign";
+import { useChannelStats, pct, channelBreakdown, type Slice } from "@/app/component/outreach/useChannelStats";
+import type { ChannelStats } from "@/store/masters/channeltracking/channeltracking";
 
 /* ───────────────── sample analytics (no API yet — replace with real data) ───────────────── */
 
-const STATS = [
-    { label: "Emails Sent", value: "8,540", badge: "↑ +16%", icon: "M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z", tint: "bg-sky-50 border-sky-100 text-sky-600" },
-    { label: "Delivered", value: "8,312", badge: "97.3%", icon: "M4 5h16v14H4zM4 7l8 6 8-6", tint: "bg-emerald-50 border-emerald-100 text-emerald-600" },
-    { label: "Opened", value: "4,126", badge: "49.6%", icon: "M3 9l9-6 9 6v11H3zM3 9l9 6 9-6", tint: "bg-violet-50 border-violet-100 text-violet-600" },
-    { label: "Clicked", value: "1,248", badge: "15.0%", icon: "M5 3l14 7-6 2-2 6z", tint: "bg-amber-50 border-amber-100 text-amber-600" },
-    { label: "Replies", value: "682", badge: "8.2%", icon: "M9 14 4 9l5-5M4 9h10a6 6 0 0 1 6 6v3", tint: "bg-rose-50 border-rose-100 text-rose-600" },
+const STAT_CARDS: { key: keyof ChannelStats; label: string; icon: string; tint: string }[] = [
+    { key: "sent", label: "Emails Sent", icon: "M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z", tint: "bg-sky-50 border-sky-100 text-sky-600" },
+    { key: "delivered", label: "Delivered", icon: "M4 5h16v14H4zM4 7l8 6 8-6", tint: "bg-emerald-50 border-emerald-100 text-emerald-600" },
+    { key: "opened", label: "Opened", icon: "M3 9l9-6 9 6v11H3zM3 9l9 6 9-6", tint: "bg-violet-50 border-violet-100 text-violet-600" },
+    { key: "replied", label: "Replies", icon: "M9 14 4 9l5-5M4 9h10a6 6 0 0 1 6 6v3", tint: "bg-rose-50 border-rose-100 text-rose-600" },
+    { key: "bounced", label: "Bounced", icon: "M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z", tint: "bg-amber-50 border-amber-100 text-amber-600" },
 ];
 
-const CAMPAIGNS = [
-    { name: "New Property Listings", recipients: "5,000", delivered: "4,886 (97.7%)", opened: "2,548 (52.1%)", clicked: "762 (15.6%)", replies: "398 (8.1%)", status: "Completed", date: "Nov 04, 2026" },
-    { name: "Investor Updates", recipients: "3,540", delivered: "3,426 (96.8%)", opened: "1,578 (46.0%)", clicked: "486 (14.2%)", replies: "284 (8.3%)", status: "Completed", date: "Nov 02, 2026" },
-];
-
-const PERFORMANCE = [
-    { label: "Delivered", value: "97.3%", dot: "bg-emerald-500" },
-    { label: "Opened", value: "49.6%", dot: "bg-violet-500" },
-    { label: "Clicked", value: "15.0%", dot: "bg-sky-500" },
-    { label: "Replied", value: "8.2%", dot: "bg-pink-500" },
-];
+const Donut = ({ segments, total }: { segments: Slice[]; total: number }) => {
+    const r = 52;
+    const c = 2 * Math.PI * r;
+    let offset = 0;
+    return (
+        <div className="relative h-36 w-36 shrink-0">
+            <svg viewBox="0 0 128 128" className="h-full w-full -rotate-90" aria-hidden="true">
+                <circle cx="64" cy="64" r={r} fill="none" stroke="#e2e8f0" strokeWidth="14" />
+                {total > 0 &&
+                    segments.filter((s) => s.value > 0).map((s) => {
+                        const len = (s.value / total) * c;
+                        const el = (
+                            <circle key={s.label} cx="64" cy="64" r={r} fill="none" stroke={s.color} strokeWidth="14"
+                                strokeDasharray={`${len} ${c - len}`} strokeDashoffset={-offset} />
+                        );
+                        offset += len;
+                        return el;
+                    })}
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xl font-semibold">{total.toLocaleString()}</span>
+                <span className="text-[11px] text-slate-500">Total Triggered</span>
+            </div>
+        </div>
+    );
+};
 
 const STEPS = ["Choose your email provider", "Connect and verify email", "Start sending campaigns"];
 const BENEFITS = [
@@ -196,53 +216,9 @@ const Illustration = () => (
     </svg>
 );
 
-const CampaignsTable = () => (
-    <div className="overflow-x-auto rounded-lg">
-        <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="bg-slate-50 text-xs text-slate-600">
-                <tr>
-                    {["Campaign Name", "Recipients", "Delivered", "Opened", "Clicked", "Replies", "Status", "Date"].map((h) => (
-                        <th key={h} className="px-3 py-2.5 font-medium">{h}</th>
-                    ))}
-                </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-                {CAMPAIGNS.map((c) => (
-                    <tr key={c.name}>
-                        <td className="px-3 py-3 font-medium text-slate-900">{c.name}</td>
-                        <td className="px-3 py-3">{c.recipients}</td>
-                        <td className="px-3 py-3">{c.delivered}</td>
-                        <td className="px-3 py-3">{c.opened}</td>
-                        <td className="px-3 py-3">{c.clicked}</td>
-                        <td className="px-3 py-3">{c.replies}</td>
-                        <td className="px-3 py-3">
-                            <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">{c.status}</span>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-3 text-slate-600">{c.date}</td>
-                    </tr>
-                ))}
-            </tbody>
-        </table>
-    </div>
-);
 
-const Donut = () => {
-    const r = 52;
-    const c = 2 * Math.PI * r;
-    return (
-        <div className="relative h-36 w-36 shrink-0">
-            <svg viewBox="0 0 128 128" className="h-full w-full -rotate-90" aria-hidden="true">
-                <circle cx="64" cy="64" r={r} fill="none" stroke="#e2e8f0" strokeWidth="14" />
-                <circle cx="64" cy="64" r={r} fill="none" stroke="#10b981" strokeWidth="14" strokeDasharray={`${c * 0.973} ${c}`} />
-                <circle cx="64" cy="64" r={r} fill="none" stroke="#ec4899" strokeWidth="14" strokeDasharray={`${c * 0.027} ${c}`} strokeDashoffset={-c * 0.973} />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xl font-semibold">8,540</span>
-                <span className="text-[11px] text-slate-500">Total Sent</span>
-            </div>
-        </div>
-    );
-};
+
+
 
 const WARN = "M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z";
 
@@ -371,6 +347,8 @@ export default function EmailChannelPage() {
     const [detected, setDetected] = useState<EmailDetected | null>(null);
     const [warnings, setWarnings] = useState<string[]>([]);
     const [notice, setNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+    const [campaignsKey, setCampaignsKey] = useState(0);
+    const [dialog, setDialog] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
 
     // result banners sit at the top of the page: bring them into view if the user has scrolled down
     useEffect(() => {
@@ -395,6 +373,8 @@ export default function EmailChannelPage() {
     const showForm = ready && formOpen;
     const showHero = ready && !connected && !formOpen;
     const showDashboard = ready && connected && !formOpen && !!connection;
+    const { stats, error: statsError, reload: reloadStats } = useChannelStats("email", { enabled: showDashboard && tab === "Overview" });
+    const view = channelBreakdown(stats, "email");
     const failed = connection?.status === "failed";
     const tip = useMemo(() => domainTip(email), [email]);
     const canSubmit = /^\S+@\S+\.\S+$/.test(email.trim()) && password.length > 0 && !busy;
@@ -762,7 +742,7 @@ export default function EmailChannelPage() {
                                 </button>
                             ))}
                         </div>
-                        <button type="button" className={btnPrimary} onClick={() => setTab("Campaigns")}>
+                        <button type="button" className={btnPrimary} onClick={() => { setTab("Campaigns"); setDialog({ open: true, id: null }) }}>
                             <Icon d="M12 5v14M5 12h14" />
                             Create Campaign
                         </button>
@@ -771,38 +751,55 @@ export default function EmailChannelPage() {
                     {/* Overview */}
                     {tab === "Overview" && (
                         <>
+                            {statsError && (
+                                <div className="space-y-2">
+                                    <Banner tone="error" title="Couldn't load email stats">{statsError}</Banner>
+                                    <button type="button" className={btnSecondary} onClick={reloadStats}>Try again</button>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-                                {STATS.map((s) => (
-                                    <div key={s.label} className={cx("flex items-center gap-3 rounded-xl border p-4", s.tint)}>
-                                        <Icon d={s.icon} className="h-7 w-7 shrink-0" />
-                                        <div className="min-w-0">
-                                            <p className="text-xs text-slate-600">{s.label}</p>
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <span className="text-xl font-semibold text-slate-900">{s.value}</span>
-                                                <span className="rounded-md bg-white/70 px-1.5 py-0.5 text-xs font-medium text-slate-700">{s.badge}</span>
+                                {STAT_CARDS.map((s) => {
+                                    const n = stats ? stats[s.key] : 0;
+                                    return (
+                                        <div key={s.key} className={cx("flex items-center gap-3 rounded-xl border p-4", s.tint)}>
+                                            <Icon d={s.icon} className="h-7 w-7 shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="text-xs text-slate-600">{s.label}</p>
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="text-xl font-semibold text-slate-900">{stats ? n.toLocaleString() : "—"}</span>
+                                                    {stats && (
+                                                        <span className="rounded-md bg-white/70 px-1.5 py-0.5 text-xs font-medium text-slate-700">{pct(n, view.triggered)}</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
+                            <p className="-mt-2 text-xs text-slate-500">
+                                Last 30 days. Percentages are a share of all emails triggered (sent + failed). Opens are approximate, because some mail apps load images automatically or block them.
+                            </p>
 
                             <div className="grid gap-4 lg:grid-cols-[1.8fr_1fr]">
-                                <section className="rounded-xl border border-slate-200 bg-white p-5">
-                                    <h2 className="mb-3 text-base font-semibold">Recent Campaigns</h2>
-                                    <CampaignsTable />
-                                </section>
+                                <RecentCampaigns
+                                    scope="email"
+                                    refreshKey={campaignsKey}
+                                    onViewAll={() => setTab("Campaigns")}
+                                    onCreate={() => setDialog({ open: true, id: null })}
+                                />
                                 <section className="rounded-xl border border-slate-200 bg-white p-5">
                                     <h2 className="text-base font-semibold">
-                                        Email Performance <span className="font-normal text-slate-600">(This Month)</span>
+                                        Email Performance <span className="font-normal text-slate-600">(Last 30 days)</span>
                                     </h2>
                                     <div className="mt-4 flex flex-wrap items-center justify-center gap-5">
-                                        <Donut />
+                                        <Donut segments={view.segments} total={view.triggered} />
                                         <ul className="space-y-2 text-sm">
-                                            {PERFORMANCE.map((p) => (
+                                            {[...view.segments, ...view.extras].map((p) => (
                                                 <li key={p.label} className="flex items-center gap-3">
-                                                    <span className={cx("h-2.5 w-2.5 rounded-full", p.dot)} />
-                                                    <span className="w-16">{p.label}</span>
-                                                    <span className="font-medium">{p.value}</span>
+                                                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.color }} />
+                                                    <span className="w-20">{p.label}</span>
+                                                    <span className="font-medium">{pct(p.value, view.triggered)}</span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -813,10 +810,12 @@ export default function EmailChannelPage() {
                     )}
 
                     {tab === "Campaigns" && (
-                        <section className="rounded-xl border border-slate-200 bg-white p-5">
-                            <h2 className="mb-3 text-base font-semibold">All Campaigns</h2>
-                            <CampaignsTable />
-                        </section>
+                        <CampaignsTab
+                            scope="email"
+                            refreshKey={campaignsKey}
+                            onCreate={() => setDialog({ open: true, id: null })}
+                            onEdit={(id) => setDialog({ open: true, id })}
+                        />
                     )}
 
                     {(tab === "Templates" || tab === "Automations") && (
@@ -1096,6 +1095,23 @@ export default function EmailChannelPage() {
                     </p>
                 </ConfirmDialog>
             )}
+
+            <CampaignDialog
+                open={dialog.open}
+                scope="email"              // "whatsapp" inside BaileysWorkspace / MetaWorkspace campaigns tab
+                campaignId={dialog.id}     // set for edit
+                onClose={() => setDialog({ open: false, id: null })}
+                onSaved={(campaign, { removedCustomers, mode }) => {
+                    setCampaignsKey((k) => k + 1);
+                    setTab("Campaigns");
+                    setNotice({
+                        tone: "success",
+                        text:
+                            `Campaign “${campaign.name}” ${mode}.` +
+                            (removedCustomers > 0 ? ` ${removedCustomers} customer(s) weren't available to you and were left out.` : ""),
+                    });
+                }}
+            />
         </div>
     );
 }

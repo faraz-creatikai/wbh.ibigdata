@@ -509,6 +509,34 @@ export const API_ROUTES = {
     GETRECORD: (entity: string, id: string) => `${BASE_URL}/activity/record/${entity}/${id}`,
   },
 
+  OUTREACHCAMPAIGN: {
+    // campaign CRUD
+    GET_ALL: `${BASE_URL}/outreach-campaign`,
+    GET_BY_PARAMS: (params: string) => `${BASE_URL}/outreach-campaign?${params}`,
+    GET_BY_ID: (id: string) => `${BASE_URL}/outreach-campaign/${id}`,
+    ADD: `${BASE_URL}/outreach-campaign`,
+    UPDATE: (id: string) => `${BASE_URL}/outreach-campaign/${id}`,
+    DELETE: (id: string) => `${BASE_URL}/outreach-campaign/${id}`,
+
+    // run now + reports
+    RUN: (id: string) => `${BASE_URL}/outreach-campaign/${id}/run`,
+    RUNS: (id: string, params: string = "") =>
+      `${BASE_URL}/outreach-campaign/${id}/runs${params ? `?${params}` : ""}`,
+    RUN_BY_ID: (id: string, runId: string, params: string = "") =>
+      `${BASE_URL}/outreach-campaign/${id}/runs/${runId}${params ? `?${params}` : ""}`,
+    CANCEL_RUN: (id: string, runId: string) =>
+      `${BASE_URL}/outreach-campaign/${id}/runs/${runId}/cancel`,
+
+    // schedules (alarms)
+    SCHEDULES: (id: string) => `${BASE_URL}/outreach-campaign/${id}/schedules`,
+    SCHEDULE_BY_ID: (id: string, scheduleId: string) =>
+      `${BASE_URL}/outreach-campaign/${id}/schedules/${scheduleId}`,
+  },
+
+  CHANNELTRACKING: {
+  STATS: (params: string) => `${BASE_URL}/channel-tracking/stats?${params}`,
+},
+
 
   ADMIN: {
     // Public Routes

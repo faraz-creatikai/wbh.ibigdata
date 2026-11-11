@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import CampaignsTab from "../../outreach/CampaignTab";
+import CampaignDialog from "../../outreach/CampaignDialog";
+import { Banner } from "../../outreach/CampaignUi";
+import RecentCampaigns from "../../outreach/RecentCampaign";
+import { useChannelStats, pct, channelBreakdown } from "../../outreach/useChannelStats";
+import type { ChannelStats } from "@/store/masters/channeltracking/channeltracking";
 
 /* ────────────────────────────────────────────────────────────────────
  * Baileys workspace — everything the user sees AFTER Baileys is connected.
@@ -16,29 +22,6 @@ export type BaileysAccount = {
 
 type WorkspaceTab = "overview" | "campaigns" | "templates" | "automations" | "settings";
 
-type OverviewStats = {
-    messagesSent: number;
-    messagesSentTrend?: number; // % change
-    delivered: number;
-    deliveredRate: number; // %
-    replies: number;
-    replyRate: number; // %
-    contacts: number;
-    contactsTrend?: number; // % change
-    failedRate: number; // %
-};
-
-type RecentCampaign = {
-    id: string;
-    name: string;
-    sent: number;
-    delivered: number;
-    deliveredRate: number;
-    replies: number;
-    replyRate: number;
-    status: string;
-    date: string;
-};
 
 type Props = {
     account: BaileysAccount | null;
@@ -144,161 +127,66 @@ const StatCard = ({
     </div>
 );
 
-const StatsRow = ({ stats }: { stats: OverviewStats | null }) => {
-    const trend = (n?: number) => (n === undefined ? undefined : `${n >= 0 ? "↑ +" : "↓ "}${n}%`);
+const StatsRow = ({ stats }: { stats: ChannelStats | null }) => {
+    const triggered = stats ? stats.sent + stats.failed : 0;
+    const badge = (n: number) => (stats ? pct(n, triggered) : undefined);
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <StatCard
-                label="Messages Sent"
-                value={stats ? fmt(stats.messagesSent) : "—"}
-                badge={stats ? trend(stats.messagesSentTrend) : undefined}
-                icon={<SendIcon className="h-5 w-5" />}
-                tint="bg-[var(--color-primary-lighter)]/70 border-[var(--color-primary-light)]/60"
-                iconCls="text-[var(--color-primary)]"
-            />
-            <StatCard
-                label="Delivered"
-                value={stats ? fmt(stats.delivered) : "—"}
-                badge={stats ? `${stats.deliveredRate}%` : undefined}
-                icon={<DoubleCheckIcon className="h-5 w-5" />}
-                tint="bg-[#ECFDF3] border-[#CFF3DD]"
-                iconCls="text-[#16A34A]"
-            />
-            <StatCard
-                label="Replies"
-                value={stats ? fmt(stats.replies) : "—"}
-                badge={stats ? `${stats.replyRate}%` : undefined}
-                icon={<ReplyIcon className="h-5 w-5" />}
-                tint="bg-[#F5F0FF] border-[#E4DAFF]"
-                iconCls="text-[#7C3AED]"
-            />
-            <StatCard
-                label="Contacts"
-                value={stats ? fmt(stats.contacts) : "—"}
-                badge={stats ? trend(stats.contactsTrend) : undefined}
-                icon={<UsersIcon className="h-5 w-5" />}
-                tint="bg-[#FFF6EA] border-[#FFE3BF]"
-                iconCls="text-[#F59E0B]"
-            />
+            <StatCard label="Messages Sent" value={stats ? fmt(stats.sent) : "—"} badge={badge(stats?.sent ?? 0)}
+                icon={<SendIcon className="h-5 w-5" />} tint="bg-[var(--color-primary-lighter)]/70 border-[var(--color-primary-light)]/60" iconCls="text-[var(--color-primary)]" />
+            <StatCard label="Delivered" value={stats ? fmt(stats.delivered) : "—"} badge={badge(stats?.delivered ?? 0)}
+                icon={<DoubleCheckIcon className="h-5 w-5" />} tint="bg-[#ECFDF3] border-[#CFF3DD]" iconCls="text-[#16A34A]" />
+            <StatCard label="Read" value={stats ? fmt(stats.opened) : "—"} badge={badge(stats?.opened ?? 0)}
+                icon={<DoubleCheckIcon className="h-5 w-5" />} tint="bg-[#EEF6FF] border-[#D3E6FF]" iconCls="text-[#2563EB]" />
+            <StatCard label="Replies" value={stats ? fmt(stats.replied) : "—"} badge={badge(stats?.replied ?? 0)}
+                icon={<ReplyIcon className="h-5 w-5" />} tint="bg-[#F5F0FF] border-[#E4DAFF]" iconCls="text-[#7C3AED]" />
         </div>
     );
 };
 
-const RecentCampaigns = ({ campaigns }: { campaigns: RecentCampaign[] }) => (
-    <div className={`${cardCls} p-5 min-w-0`}>
-        <h3 className="text-sm font-bold text-gray-900 dark:text-[var(--color-txtlight)]">Recent Campaigns</h3>
-        <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[620px] text-left text-xs">
-                <thead>
-                    <tr className="bg-[var(--color-primary-lighter)]/50 dark:bg-[var(--color-childbgdark)] text-gray-600 dark:text-[var(--color-txtlight)]/70">
-                        {["Campaign Name", "Channel", "Sent", "Delivered", "Replies", "Status", "Date"].map((h) => (
-                            <th key={h} className="px-3 py-2.5 font-semibold first:rounded-l-lg last:rounded-r-lg">
-                                {h}
-                            </th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody className="text-gray-800 dark:text-[var(--color-txtlight)]">
-                    {campaigns.length === 0 ? (
-                        <tr>
-                            <td colSpan={7} className="px-3 py-10 text-center text-gray-400">
-                                No campaigns yet — create your first campaign to see it here.
-                            </td>
-                        </tr>
-                    ) : (
-                        campaigns.map((c) => (
-                            <tr key={c.id} className="border-b border-gray-100 dark:border-[var(--color-childbgdark)] last:border-0">
-                                <td className="px-3 py-3 font-semibold">{c.name}</td>
-                                <td className="px-3 py-3">
-                                    <span className="flex items-center gap-1.5">
-                                        <WhatsAppIcon className="h-4 w-4 text-[#25D366]" />
-                                        Baileys
-                                    </span>
-                                </td>
-                                <td className="px-3 py-3">{fmt(c.sent)}</td>
-                                <td className="px-3 py-3">
-                                    {fmt(c.delivered)} ({c.deliveredRate}%)
-                                </td>
-                                <td className="px-3 py-3">
-                                    {fmt(c.replies)} ({c.replyRate}%)
-                                </td>
-                                <td className="px-3 py-3">
-                                    <span className="rounded-md bg-[#DCF8C6] px-2 py-0.5 text-[10px] font-semibold text-[#075E54]">{c.status}</span>
-                                </td>
-                                <td className="px-3 py-3 whitespace-nowrap">{c.date}</td>
-                            </tr>
-                        ))
-                    )}
-                </tbody>
-            </table>
-        </div>
-    </div>
-);
-
-const ChannelUsage = ({ stats }: { stats: OverviewStats | null }) => {
+const ChannelUsage = ({ stats }: { stats: ChannelStats | null }) => {
     const R = 46;
     const C = 2 * Math.PI * R;
-    const parts = stats
-        ? [
-              { label: "Delivered", value: stats.deliveredRate, color: "#16A34A", dot: "bg-[#16A34A]" },
-              { label: "Replied", value: stats.replyRate, color: "#8B5CF6", dot: "bg-[#8B5CF6]" },
-              { label: "Failed", value: stats.failedRate, color: "#D1D5DB", dot: "bg-gray-300" },
-          ]
-        : [];
-    const total = parts.reduce((sum, p) => sum + p.value, 0) || 1;
+    const { triggered, segments, extras } = channelBreakdown(stats, "whatsapp_baileys");
     let offset = 0;
 
     return (
         <div className={`${cardCls} p-5`}>
-            <h3 className="text-sm font-bold text-gray-900 dark:text-[var(--color-txtlight)]">Channel Usage (This Month)</h3>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-[var(--color-txtlight)]">Channel Usage (Last 30 days)</h3>
             <div className="mt-4 flex items-center gap-5">
                 <div className="relative h-[120px] w-[120px] shrink-0">
                     <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
                         <circle cx="60" cy="60" r={R} fill="none" stroke="#E5E7EB" strokeWidth="12" className="dark:opacity-20" />
-                        {parts.map((p) => {
-                            const len = (p.value / total) * C;
-                            const el = (
-                                <circle
-                                    key={p.label}
-                                    cx="60"
-                                    cy="60"
-                                    r={R}
-                                    fill="none"
-                                    stroke={p.color}
-                                    strokeWidth="12"
-                                    strokeDasharray={`${len} ${C - len}`}
-                                    strokeDashoffset={-offset}
-                                />
-                            );
-                            offset += len;
-                            return el;
-                        })}
+                        {triggered > 0 &&
+                            segments.filter((p) => p.value > 0).map((p) => {
+                                const len = (p.value / triggered) * C;
+                                const el = (
+                                    <circle key={p.label} cx="60" cy="60" r={R} fill="none" stroke={p.color} strokeWidth="12"
+                                        strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-offset} />
+                                );
+                                offset += len;
+                                return el;
+                            })}
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                        <p className="text-base font-extrabold text-gray-900 dark:text-[var(--color-txtlight)]">{stats ? fmt(stats.messagesSent) : "—"}</p>
-                        <p className="text-[9px] text-gray-500">Total Messages</p>
+                        <p className="text-base font-extrabold text-gray-900 dark:text-[var(--color-txtlight)]">{stats ? fmt(triggered) : "—"}</p>
+                        <p className="text-[9px] text-gray-500">Total Triggered</p>
                     </div>
                 </div>
 
                 <ul className="flex-1 space-y-2 text-xs text-gray-700 dark:text-[var(--color-txtlight)]/80">
-                    {(parts.length
-                        ? parts
-                        : [
-                              { label: "Delivered", value: null, dot: "bg-[#16A34A]" },
-                              { label: "Replied", value: null, dot: "bg-[#8B5CF6]" },
-                              { label: "Failed", value: null, dot: "bg-gray-300" },
-                          ]
-                    ).map((p) => (
+                    {[...segments, ...extras].map((p) => (
                         <li key={p.label} className="flex items-center justify-between gap-2">
                             <span className="flex items-center gap-2">
-                                <span className={`h-2 w-2 rounded-full ${p.dot}`} />
+                                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
                                 {p.label}
                             </span>
-                            <b>{p.value === null ? "—" : `${p.value}%`}</b>
+                            <b>{stats ? pct(p.value, triggered) : "—"}</b>
                         </li>
                     ))}
                 </ul>
             </div>
+            <p className="mt-3 text-[10px] text-gray-400">Read and delivery need the recipient's phone to report them.</p>
         </div>
     );
 };
@@ -370,6 +258,15 @@ const TABS: { id: WorkspaceTab; label: string }[] = [
 
 export default function BaileysWorkspace({ account, isDisconnecting, onDisconnect, settingsSignal }: Props) {
     const [tab, setTab] = useState<WorkspaceTab>("overview");
+    const [notice, setNotice] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+    const [campaignsKey, setCampaignsKey] = useState(0);
+    const [dialog, setDialog] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+
+    useEffect(() => {
+        if (!notice) return;
+        const id = setTimeout(() => setNotice(null), 7000);
+        return () => clearTimeout(id);
+    }, [notice]);
 
     // Jump to Settings when the parent bumps the signal (ignore the value we mounted with)
     const lastSignal = useRef(settingsSignal);
@@ -380,9 +277,10 @@ export default function BaileysWorkspace({ account, isDisconnecting, onDisconnec
         }
     }, [settingsSignal]);
 
+
+
     // TODO: load Baileys stats + recent campaigns from your API and replace these.
-    const stats: OverviewStats | null = null;
-    const campaigns: RecentCampaign[] = [];
+    const { stats } = useChannelStats("whatsapp_baileys", { enabled: tab === "overview" });
 
     return (
         <div className="space-y-5">
@@ -392,11 +290,10 @@ export default function BaileysWorkspace({ account, isDisconnecting, onDisconnec
                         <button
                             key={t.id}
                             onClick={() => setTab(t.id)}
-                            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all cursor-pointer ${
-                                tab === t.id
-                                    ? "bg-[#E7F7EE] text-[#128C7E] dark:bg-[#128C7E]/20 dark:text-[#25D366]"
-                                    : "text-gray-600 hover:bg-[var(--color-primary-lighter)]/60 dark:text-[var(--color-txtlight)]/70 dark:hover:bg-[var(--color-childbgdark)]"
-                            }`}
+                            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all cursor-pointer ${tab === t.id
+                                ? "bg-[#E7F7EE] text-[#128C7E] dark:bg-[#128C7E]/20 dark:text-[#25D366]"
+                                : "text-gray-600 hover:bg-[var(--color-primary-lighter)]/60 dark:text-[var(--color-txtlight)]/70 dark:hover:bg-[var(--color-childbgdark)]"
+                                }`}
                         >
                             {t.label}
                         </button>
@@ -404,7 +301,7 @@ export default function BaileysWorkspace({ account, isDisconnecting, onDisconnec
                 </div>
 
                 <button
-                    onClick={() => setTab("campaigns")}
+                    onClick={() => { setTab("campaigns"); setDialog({ open: true, id: null }) }}
                     className="flex items-center gap-2 rounded-xl bg-[#128C7E] hover:bg-[#0F7A6E] px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#128C7E]/25 transition-all cursor-pointer"
                 >
                     <PlusIcon className="h-4 w-4" />
@@ -412,20 +309,42 @@ export default function BaileysWorkspace({ account, isDisconnecting, onDisconnec
                 </button>
             </div>
 
+            {notice && (
+                <div className="flex items-start gap-3">
+                    <div className="flex-1">
+                        <Banner tone={notice.tone}>{notice.text}</Banner>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setNotice(null)}
+                        className="cursor-pointer pt-2 text-xs font-medium text-slate-500 hover:text-slate-800"
+                    >
+                        Dismiss
+                    </button>
+                </div>
+            )}
+
             {tab === "overview" && (
                 <div className="space-y-5">
                     <StatsRow stats={stats} />
                     <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-5 items-start">
-                        <RecentCampaigns campaigns={campaigns} />
+                        <RecentCampaigns
+                            scope="whatsapp"
+                            refreshKey={campaignsKey}
+                            onViewAll={() => setTab("campaigns")}
+                            onCreate={() => setDialog({ open: true, id: null })}
+                        />
                         <ChannelUsage stats={stats} />
                     </div>
                 </div>
             )}
 
             {tab === "campaigns" && (
-                <EmptyState
-                    title="Campaigns for Baileys"
-                    text="Baileys campaign tools aren't wired up yet. Build them here — this file only affects the Baileys side."
+                <CampaignsTab
+                    scope="whatsapp"
+                    refreshKey={campaignsKey}
+                    onCreate={() => setDialog({ open: true, id: null })}
+                    onEdit={(id) => setDialog({ open: true, id })}
                 />
             )}
 
@@ -439,6 +358,23 @@ export default function BaileysWorkspace({ account, isDisconnecting, onDisconnec
             {tab === "automations" && <EmptyState title="Automations coming soon" text="Automated follow-ups and triggers will show up here." />}
 
             {tab === "settings" && <SettingsPanel account={account} isDisconnecting={isDisconnecting} onDisconnect={onDisconnect} />}
+
+            <CampaignDialog
+                open={dialog.open}
+                scope="whatsapp"              // "whatsapp" inside BaileysWorkspace / MetaWorkspace campaigns tab
+                campaignId={dialog.id}     // set for edit
+                onClose={() => setDialog({ open: false, id: null })}
+                onSaved={(campaign, { removedCustomers, mode }) => {
+                    setCampaignsKey((k) => k + 1);
+                    setTab("campaigns");
+                    setNotice({
+                        tone: "success",
+                        text:
+                            `Campaign “${campaign.name}” ${mode}.` +
+                            (removedCustomers > 0 ? ` ${removedCustomers} customer(s) weren't available to you and were left out.` : ""),
+                    });
+                }}
+            />
         </div>
     );
 }
