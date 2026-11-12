@@ -35,7 +35,7 @@ export default function PanelShell({ title, subtitle, onClose, locked, children 
   return (
     <div className="fixed inset-0 z-[100] flex justify-end">
       <div className="absolute inset-0 bg-slate-900/50" onClick={() => !locked && onClose()} aria-hidden="true" />
-      <div role="dialog" aria-modal="true" aria-label={title} className="relative flex h-full w-full max-w-3xl flex-col bg-white shadow-xl">
+      <div role="dialog" aria-modal="true" aria-label={title} className="relative flex h-full w-full max-w-4xl flex-col bg-white shadow-xl">
         <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 sm:px-6">
           <div className="min-w-0">
             <h2 className="truncate text-lg font-semibold text-slate-900">{title}</h2>

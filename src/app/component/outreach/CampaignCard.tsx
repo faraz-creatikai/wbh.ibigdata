@@ -8,7 +8,7 @@
  * picks a running campaign back up (it loads the latest run on mount).
  */
 import { useEffect, useRef, useState } from "react";
-import { cancelCampaignRun, getCampaignRun, getCampaignRuns, runCampaign } from "@/store/masters/outreachcampaign/outreachcampaign";
+import { cancelCampaignRun, deleteCampaign, getCampaignRun, getCampaignRuns, runCampaign } from "@/store/masters/outreachcampaign/outreachcampaign";
 import {
   CAMPAIGN_CHANNELS,
   type CampaignChannel,
@@ -27,6 +27,7 @@ export type Notice = { tone: "success" | "error" | "warn" | "info"; text: string
 interface Props {
   campaign: CampaignListItem;
   onEdit: (id: string) => void;
+  /** called after the campaign was deleted (this card confirms and calls the API) — the parent should just refresh the list */
   onDelete: (c: CampaignListItem) => void;
   onTogglePause: (c: CampaignListItem) => Promise<void>;
   /** called when a run you started here finishes, so the list can refresh counts and "last run" */
@@ -83,6 +84,75 @@ const totals = (r: CampaignRun) =>
     { sent: 0, failed: 0, skipped: 0 }
   );
 
+/* ───────────── delete dialog ───────────── */
+
+function DeleteDialog({ campaign, busy, error, onConfirm, onCancel }: {
+  campaign: CampaignListItem;
+  busy: boolean;
+  error: string | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const runs = campaign._count.runs;
+  const schedules = campaign._count.schedules;
+  const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+
+  useEffect(() => { cancelRef.current?.focus(); }, []); // the safe choice is focused first
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/40" onClick={onCancel} aria-hidden="true" />
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby={`delete-title-${campaign.id}`}
+        aria-describedby={`delete-desc-${campaign.id}`}
+        className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+      >
+        <div className="flex items-start gap-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+            <Icon d={ICONS.trash} className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <h2 id={`delete-title-${campaign.id}`} className="text-base font-semibold text-slate-900">Delete this campaign?</h2>
+            <p id={`delete-desc-${campaign.id}`} className="mt-1 text-sm text-slate-600">
+              <span className="break-words font-medium text-slate-900">“{campaign.name}”</span> will be permanently deleted. This can’t be undone.
+            </p>
+          </div>
+        </div>
+
+        <ul className="mt-4 space-y-1 rounded-lg bg-slate-50 px-3.5 py-2.5 text-sm text-slate-600">
+          {(runs > 0 || schedules > 0) && (
+            <li>It currently has {[schedules > 0 && plural(schedules, "schedule"), runs > 0 && plural(runs, "run")].filter(Boolean).join(" and ")}.</li>
+          )}
+          <li>Messages it has already sent are not affected.</li>
+        </ul>
+
+        {error && <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+
+        <div className="mt-6 flex justify-end gap-2">
+          <button ref={cancelRef} type="button" className={btnSecondary} onClick={onCancel} disabled={busy}>Cancel</button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+            className={cx("inline-flex cursor-pointer items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60", focusRing)}
+          >
+            {busy ? <Spinner /> : <Icon d={ICONS.trash} />}
+            {busy ? "Deleting…" : "Delete campaign"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ───────────── component ───────────── */
 
 export default function CampaignCard({ campaign, onEdit, onDelete, onTogglePause, onRunFinished, onNotice, onSchedulesChanged }: Props) {
@@ -94,6 +164,9 @@ export default function CampaignCard({ campaign, onEdit, onDelete, onTogglePause
   const [runError, setRunError] = useState<string | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const runRef = useRef(run);
   runRef.current = run;
@@ -202,6 +275,18 @@ export default function CampaignCard({ campaign, onEdit, onDelete, onTogglePause
     setCancelBusy(false);
     if (r.ok) setRun(r.data.run);
     else onNotice({ tone: "error", text: r.error.message });
+  };
+
+  const doDelete = async () => {
+    setDeleteBusy(true);
+    setDeleteError(null);
+    const r = await deleteCampaign(campaign.id);
+    setDeleteBusy(false);
+    if (r.ok) {
+      setConfirmDelete(false);
+      onNotice({ tone: "success", text: `“${campaign.name}” was deleted.` });
+      onDelete(campaign);
+    } else setDeleteError(r.error.message);
   };
 
   const togglePause = async () => {
@@ -331,7 +416,7 @@ export default function CampaignCard({ campaign, onEdit, onDelete, onTogglePause
                   <button type="button" onClick={() => { setMenuOpen(false); setPanel("runs"); }} className="flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-left hover:bg-slate-50">
                     <Icon d={ICONS.filter} /> Run history &amp; logs
                   </button>
-                  <button type="button" disabled={live} onClick={() => { setMenuOpen(false); onDelete(campaign); }} className="flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-left text-red-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
+                  <button type="button" disabled={live} onClick={() => { setMenuOpen(false); setDeleteError(null); setConfirmDelete(true); }} className="flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-left text-red-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
                     <Icon d={ICONS.trash} /> Delete
                   </button>
                   {live && <p className="border-t border-slate-100 px-4 py-2 text-xs text-slate-500">Available when the run ends.</p>}
@@ -427,6 +512,16 @@ export default function CampaignCard({ campaign, onEdit, onDelete, onTogglePause
           )}
         </p>
         <div className="flex gap-2">
+          <button
+            type="button"
+            aria-label={`Delete ${campaign.name}`}
+            title={live ? "Available when the run ends" : "Delete campaign"}
+            disabled={live}
+            onClick={() => { setDeleteError(null); setConfirmDelete(true); }}
+            className={cx("flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50", focusRing)}
+          >
+            <Icon d={ICONS.trash} className="h-4 w-4" />
+          </button>
           <button type="button" className={btnSecondary} onClick={() => setPanel("schedules")}>
             <Icon d={CLOCK} /> Schedule
           </button>
@@ -468,6 +563,9 @@ export default function CampaignCard({ campaign, onEdit, onDelete, onTogglePause
           {comingSoon.length > 0 && <p>{comingSoon.map((c) => SHORT[c]).join(" and ")} will be skipped because they aren’t available yet.</p>}
           {paused && <p>This campaign is paused, so the scheduler ignores it, but a manual run still works.</p>}
         </ConfirmModal>
+      )}
+      {confirmDelete && (
+        <DeleteDialog campaign={campaign} busy={deleteBusy} error={deleteError} onConfirm={doDelete} onCancel={() => !deleteBusy && setConfirmDelete(false)} />
       )}
       {panel === "schedules" && (
         <CampaignSchedulesPanel campaign={campaign} onClose={() => setPanel(null)} onChanged={onSchedulesChanged} />

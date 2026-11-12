@@ -518,7 +518,7 @@ export default function EmailChannelPage() {
 
     /* ───────── render ───────── */
     return (
-        <div className="mx-auto w-full max-w-6xl px-4 py-6 text-slate-900 sm:px-6">
+        <div className="mx-auto w-full  px-2 py-4 bg-white rounded-md text-slate-900 sm:px-4">
             {/* breadcrumb + channel settings */}
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <nav className="flex items-center gap-2 text-sm" aria-label="Breadcrumb">
@@ -781,18 +781,20 @@ export default function EmailChannelPage() {
                                 Last 30 days. Percentages are a share of all emails triggered (sent + failed). Opens are approximate, because some mail apps load images automatically or block them.
                             </p>
 
-                            <div className="grid gap-4 lg:grid-cols-[1.8fr_1fr]">
+                           
                                 <RecentCampaigns
                                     scope="email"
                                     refreshKey={campaignsKey}
                                     onViewAll={() => setTab("Campaigns")}
                                     onCreate={() => setDialog({ open: true, id: null })}
                                 />
-                                <section className="rounded-xl border border-slate-200 bg-white p-5">
+                               
+                      
+                             <section className="rounded-xl border border-slate-200 bg-white p-5 max-w-[500px] ">
                                     <h2 className="text-base font-semibold">
                                         Email Performance <span className="font-normal text-slate-600">(Last 30 days)</span>
                                     </h2>
-                                    <div className="mt-4 flex flex-wrap items-center justify-center gap-5">
+                                    <div className="mt-4 flex flex-wrap items-center justify-between gap-5">
                                         <Donut segments={view.segments} total={view.triggered} />
                                         <ul className="space-y-2 text-sm">
                                             {[...view.segments, ...view.extras].map((p) => (
@@ -805,7 +807,6 @@ export default function EmailChannelPage() {
                                         </ul>
                                     </div>
                                 </section>
-                            </div>
                         </>
                     )}
 

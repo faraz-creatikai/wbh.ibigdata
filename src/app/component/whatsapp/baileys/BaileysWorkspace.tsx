@@ -327,15 +327,19 @@ export default function BaileysWorkspace({ account, isDisconnecting, onDisconnec
             {tab === "overview" && (
                 <div className="space-y-5">
                     <StatsRow stats={stats} />
-                    <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-5 items-start">
-                        <RecentCampaigns
+                     <RecentCampaigns
                             scope="whatsapp"
                             refreshKey={campaignsKey}
                             onViewAll={() => setTab("campaigns")}
                             onCreate={() => setDialog({ open: true, id: null })}
                         />
-                        <ChannelUsage stats={stats} />
-                    </div>
+                  {/*   <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-5 items-start">
+                       
+                      
+                    </div> */}
+                     <div className=" max-w-[400px]">
+                         <ChannelUsage stats={stats} />
+                     </div>
                 </div>
             )}
 

@@ -1114,7 +1114,7 @@ export default function WhatsAppConnectionPage() {
 
     return (
         <MasterProtectedRoute>
-            <div className="w-full max-w-7xl mx-auto space-y-5">
+            <div className="w-full bg-white rounded-md px-2 py-4 sm:px-4 max-w-7xl mx-auto space-y-5">
                 {/* Channel tabs + settings shortcut — hidden until a platform is picked */}
                 {!showHero && (
                     <div className="flex flex-wrap items-center justify-between gap-3">
