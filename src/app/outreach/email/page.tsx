@@ -81,6 +81,7 @@ const ERROR_TITLES: Record<string, string> = {
     INVALID_DOMAIN: "That email domain doesn't exist",
     TLS_CERT_MISMATCH: "The server's security certificate doesn't match",
     UNREACHABLE: "Couldn't reach a mail server",
+    IMAP_FAILED: "Couldn't sign in to the inbox (IMAP)",
 };
 
 const ATTEMPT_LABELS: Record<string, string> = {
@@ -341,7 +342,7 @@ export default function EmailChannelPage() {
     const [fromName, setFromName] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showAdvanced, setShowAdvanced] = useState(false);
-    const [adv, setAdv] = useState({ smtpHost: "", smtpPort: "587", smtpUser: "", imapHost: "", imapPort: "993" });
+    const [adv, setAdv] = useState({ smtpHost: "", smtpPort: "587", smtpUser: "", imapHost: "", imapPort: "993", imapUser: "", imapPass: "" });
 
     const [error, setError] = useState<EmailConnectionError | null>(null);
     const [detected, setDetected] = useState<EmailDetected | null>(null);
@@ -388,6 +389,7 @@ export default function EmailChannelPage() {
         setNotice(null);
         setMenuOpen(false);
         setFormOpen(true);
+        setAdv((a) => ({ ...a, imapPass: "" }));
     };
 
     const closeForm = () => {
@@ -395,6 +397,7 @@ export default function EmailChannelPage() {
         setPassword("");
         setError(null);
         setDetected(null);
+        setAdv((a) => ({ ...a, imapPass: "" }));
     };
 
     const buildPayload = (): EmailConnectPayload => {
@@ -403,13 +406,20 @@ export default function EmailChannelPage() {
             password,
             ...(fromName.trim() ? { fromName: fromName.trim() } : {}),
         };
-        if (showAdvanced && adv.smtpHost.trim()) {
-            payload.advanced = {
-                smtpHost: adv.smtpHost.trim(),
-                smtpPort: Number(adv.smtpPort) || 587,
-                ...(adv.smtpUser.trim() ? { smtpUser: adv.smtpUser.trim() } : {}),
-                ...(adv.imapHost.trim() ? { imapHost: adv.imapHost.trim(), imapPort: Number(adv.imapPort) || 993 } : {}),
-            };
+        if (showAdvanced && (adv.smtpHost.trim() || adv.imapHost.trim())) {
+            const a: Record<string, string | number> = {};
+            if (adv.smtpHost.trim()) {
+                a.smtpHost = adv.smtpHost.trim();
+                a.smtpPort = Number(adv.smtpPort) || 587;
+                if (adv.smtpUser.trim()) a.smtpUser = adv.smtpUser.trim();
+            }
+            if (adv.imapHost.trim()) {
+                a.imapHost = adv.imapHost.trim();
+                a.imapPort = Number(adv.imapPort) || 993;
+                if (adv.imapUser.trim()) a.imapUser = adv.imapUser.trim();
+                if (adv.imapPass) a.imapPass = adv.imapPass;
+            }
+            payload.advanced = a as unknown as EmailConnectPayload["advanced"];
         }
         return payload;
     };
@@ -443,6 +453,7 @@ export default function EmailChannelPage() {
                 setTab("Overview");
                 setPassword("");
                 setShowAdvanced(false);
+                setAdv((a) => ({ ...a, imapPass: "" }));
             } else handleFailure(r.error);
         }
         setBusy(null);
@@ -781,32 +792,32 @@ export default function EmailChannelPage() {
                                 Last 30 days. Percentages are a share of all emails triggered (sent + failed). Opens are approximate, because some mail apps load images automatically or block them.
                             </p>
 
-                           
-                                <RecentCampaigns
-                                    scope="email"
-                                    refreshKey={campaignsKey}
-                                    onViewAll={() => setTab("Campaigns")}
-                                    onCreate={() => setDialog({ open: true, id: null })}
-                                />
-                               
-                      
-                             <section className="rounded-xl border border-slate-200 bg-white p-5 max-w-[500px] ">
-                                    <h2 className="text-base font-semibold">
-                                        Email Performance <span className="font-normal text-slate-600">(Last 30 days)</span>
-                                    </h2>
-                                    <div className="mt-4 flex flex-wrap items-center justify-between gap-5">
-                                        <Donut segments={view.segments} total={view.triggered} />
-                                        <ul className="space-y-2 text-sm">
-                                            {[...view.segments, ...view.extras].map((p) => (
-                                                <li key={p.label} className="flex items-center gap-3">
-                                                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.color }} />
-                                                    <span className="w-20">{p.label}</span>
-                                                    <span className="font-medium">{pct(p.value, view.triggered)}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                </section>
+
+                            <RecentCampaigns
+                                scope="email"
+                                refreshKey={campaignsKey}
+                                onViewAll={() => setTab("Campaigns")}
+                                onCreate={() => setDialog({ open: true, id: null })}
+                            />
+
+
+                            <section className="rounded-xl border border-slate-200 bg-white p-5 max-w-[500px] ">
+                                <h2 className="text-base font-semibold">
+                                    Email Performance <span className="font-normal text-slate-600">(Last 30 days)</span>
+                                </h2>
+                                <div className="mt-4 flex flex-wrap items-center justify-between gap-5">
+                                    <Donut segments={view.segments} total={view.triggered} />
+                                    <ul className="space-y-2 text-sm">
+                                        {[...view.segments, ...view.extras].map((p) => (
+                                            <li key={p.label} className="flex items-center gap-3">
+                                                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.color }} />
+                                                <span className="w-20">{p.label}</span>
+                                                <span className="font-medium">{pct(p.value, view.triggered)}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </section>
                         </>
                     )}
 
@@ -981,32 +992,47 @@ export default function EmailChannelPage() {
                             </button>
 
                             {showAdvanced && (
-                                <div className="mt-4 space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                                    <p className="text-sm text-slate-600">
-                                        Only needed if automatic detection can&apos;t find your server. Ask your email host for these.
-                                    </p>
-                                    <div className="grid gap-4 sm:grid-cols-3">
-                                        <div className="sm:col-span-2">
-                                            <Field id="ec-smtp-host" label="Outgoing (SMTP) server">
-                                                <input id="ec-smtp-host" className={inputCls} placeholder="smtp.yourhost.com" value={adv.smtpHost} onChange={(e) => setAdv({ ...adv, smtpHost: e.target.value })} disabled={!!busy} />
+                                <div className="mt-4 space-y-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                    <p className="text-sm text-slate-600">Everything here is optional. Leave a section empty and we detect it automatically.</p>
+
+                                    <div className="space-y-4">
+                                        <p className="text-sm font-semibold text-slate-800">Outgoing mail (SMTP)</p>
+                                        <div className="grid gap-4 sm:grid-cols-3">
+                                            <div className="sm:col-span-2">
+                                                <Field id="ec-smtp-host" label="Outgoing (SMTP) server">
+                                                    <input id="ec-smtp-host" className={inputCls} placeholder="smtp.yourhost.com" value={adv.smtpHost} onChange={(e) => setAdv({ ...adv, smtpHost: e.target.value })} disabled={!!busy} />
+                                                </Field>
+                                            </div>
+                                            <Field id="ec-smtp-port" label="Port" hint="465 = SSL, 587 = STARTTLS">
+                                                <input id="ec-smtp-port" type="number" min={1} max={65535} className={inputCls} value={adv.smtpPort} onChange={(e) => setAdv({ ...adv, smtpPort: e.target.value })} disabled={!!busy} />
                                             </Field>
                                         </div>
-                                        <Field id="ec-smtp-port" label="Port" hint="465 = SSL, 587 = STARTTLS">
-                                            <input id="ec-smtp-port" type="number" min={1} max={65535} className={inputCls} value={adv.smtpPort} onChange={(e) => setAdv({ ...adv, smtpPort: e.target.value })} disabled={!!busy} />
+                                        <Field id="ec-smtp-user" label="SMTP username" hint="Leave empty to use your email address.">
+                                            <input id="ec-smtp-user" className={inputCls} value={adv.smtpUser} onChange={(e) => setAdv({ ...adv, smtpUser: e.target.value })} disabled={!!busy} />
                                         </Field>
                                     </div>
-                                    <Field id="ec-smtp-user" label="SMTP username" hint="Leave empty to use your email address.">
-                                        <input id="ec-smtp-user" className={inputCls} value={adv.smtpUser} onChange={(e) => setAdv({ ...adv, smtpUser: e.target.value })} disabled={!!busy} />
-                                    </Field>
-                                    <div className="grid gap-4 sm:grid-cols-3">
-                                        <div className="sm:col-span-2">
-                                            <Field id="ec-imap-host" label="Incoming (IMAP) server" hint="Optional. Used to save copies in Sent.">
-                                                <input id="ec-imap-host" className={inputCls} placeholder="imap.yourhost.com" value={adv.imapHost} onChange={(e) => setAdv({ ...adv, imapHost: e.target.value })} disabled={!!busy} />
+
+                                    <div className="space-y-4 border-t border-slate-200 pt-4">
+                                        <p className="text-sm font-semibold text-slate-800">Inbox (IMAP)</p>
+                                        <p className="text-xs text-slate-500">Only fill this in to use a specific inbox server. It is used for your inbox and for saving copies in Sent.</p>
+                                        <div className="grid gap-4 sm:grid-cols-3">
+                                            <div className="sm:col-span-2">
+                                                <Field id="ec-imap-host" label="Incoming (IMAP) server">
+                                                    <input id="ec-imap-host" className={inputCls} placeholder="imap.yourhost.com" value={adv.imapHost} onChange={(e) => setAdv({ ...adv, imapHost: e.target.value })} disabled={!!busy} />
+                                                </Field>
+                                            </div>
+                                            <Field id="ec-imap-port" label="Port" hint="993 = SSL, 143 = STARTTLS">
+                                                <input id="ec-imap-port" type="number" min={1} max={65535} className={inputCls} value={adv.imapPort} onChange={(e) => setAdv({ ...adv, imapPort: e.target.value })} disabled={!!busy} />
                                             </Field>
                                         </div>
-                                        <Field id="ec-imap-port" label="Port">
-                                            <input id="ec-imap-port" type="number" min={1} max={65535} className={inputCls} value={adv.imapPort} onChange={(e) => setAdv({ ...adv, imapPort: e.target.value })} disabled={!!busy} />
-                                        </Field>
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            <Field id="ec-imap-user" label="IMAP username" hint="Leave empty to use the same as above.">
+                                                <input id="ec-imap-user" className={inputCls} autoComplete="off" value={adv.imapUser} onChange={(e) => setAdv({ ...adv, imapUser: e.target.value })} disabled={!!busy || !adv.imapHost.trim()} />
+                                            </Field>
+                                            <Field id="ec-imap-pass" label="IMAP password" hint="Leave empty to use the mailbox password above.">
+                                                <input id="ec-imap-pass" type="password" autoComplete="new-password" className={inputCls} value={adv.imapPass} onChange={(e) => setAdv({ ...adv, imapPass: e.target.value })} disabled={!!busy || !adv.imapHost.trim()} />
+                                            </Field>
+                                        </div>
                                     </div>
                                 </div>
                             )}
