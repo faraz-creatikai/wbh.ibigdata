@@ -23,6 +23,7 @@ import CampaignsTab from "@/app/component/outreach/CampaignTab";
 import RecentCampaigns from "@/app/component/outreach/RecentCampaign";
 import { useChannelStats, pct, channelBreakdown, type Slice } from "@/app/component/outreach/useChannelStats";
 import type { ChannelStats } from "@/store/masters/channeltracking/channeltracking";
+import EmailTemplates from "@/app/component/outreach/EmailTemplates";
 
 /* ───────────────── sample analytics (no API yet — replace with real data) ───────────────── */
 
@@ -830,11 +831,7 @@ export default function EmailChannelPage() {
                         />
                     )}
 
-                    {(tab === "Templates" || tab === "Automations") && (
-                        <section className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-600">
-                            {tab} will appear here.
-                        </section>
-                    )}
+                    {tab === "Templates" && <EmailTemplates />}
 
                     {/* Settings = connection details */}
                     {tab === "Settings" && (

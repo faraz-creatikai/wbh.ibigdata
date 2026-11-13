@@ -95,25 +95,28 @@ export default function CustomerFollowups() {
     });
 
     // 🔹 Fetch All Followups
-    useEffect(() => {
+    const statusFromUrl = searchParams.get("StatusType");
+
+useEffect(() => {
+    // Fetch all followups only when no status filter exists
+    if (!statusFromUrl) {
         getFollowups();
-        fetchFields();
-    }, []);
+    }
+
+    fetchFields();
+}, []);
 
     useEffect(() => {
-        const status = searchParams.get("StatusType");
+    if (!statusFromUrl) return;
 
-        if (status) {
-            // Auto set filter
-            setFilters((prev) => ({
-                ...prev,
-                StatusAssign: [status],
-            }));
+    const updatedFilters = {
+        ...filters,
+        StatusType: [statusFromUrl],
+    };
 
-            // Fetch filtered data
-            handleSelectChange("StatusType", status);
-        }
-    }, [searchParams, followupData]);
+    handleSelectChange("StatusType", statusFromUrl, updatedFilters);
+
+}, [statusFromUrl]);
 
     const getFollowups = async () => {
         setIsLoading(true);
@@ -228,6 +231,7 @@ export default function CustomerFollowups() {
     };
 
     const clearFilter = async () => {
+        router.replace("/followups/customer");
         setFilters({
             Campaign: [],
             PropertyType: [],
