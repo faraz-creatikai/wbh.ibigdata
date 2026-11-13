@@ -241,8 +241,8 @@ export function isEmailHtmlEmpty(html: string): boolean {
 }
 
 /** Old builder output (full documents / <style> blocks) can't be edited faithfully in the visual tab. */
-const isLegacyHtml = (html: string) =>
-    !!html && !/data-ete-root/.test(html) && /<style[\s>]|<html[\s>]|<!doctype|<head[\s>]/i.test(html);
+export const isLegacyHtml = (html: string) =>
+    !!html && !/data-ete-root/.test(html) && /<style[\s>]|<html[\s>]|<!doctype|<head[\s>]|<body[\s>]/i.test(html);
 
 function removeLayoutWhitespace(root: Element) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -298,16 +298,29 @@ export function fillMergeTags(html: string, tags: MergeTag[], format: (k: string
     return out;
 }
 
+
+
+
 /** Wraps a body fragment in a minimal, responsive email-style page for iframe previews. */
 export function buildEmailDocument(body: string): string {
-    if (/<html[\s>]/i.test(body)) return body; // legacy full documents render as they are
+    const raw = (body || "").trim();
+    
+    // 1. If it's already a full HTML document, return as is.
+    if (/<html[\s>]/i.test(raw)) return raw;
+    
+    // 2. If it defines its own <body> (like the Diwali template), wrap it natively without the .paper div.
+    if (/<body[\s>]/i.test(raw)) {
+        return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>${raw}</html>`;
+    }
+
+    // 3. Simple text or WYSIWYG blocks (standard editor output) get the centered paper container.
     return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
 html,body{margin:0;padding:0}
 body{background:#f1f5f9;padding:24px 12px;font-family:Arial,Helvetica,sans-serif}
 .paper{max-width:640px;margin:0 auto;background:#fff;padding:32px;border-radius:8px;box-sizing:border-box}
 img{max-width:100%;height:auto}
 @media (max-width:480px){body{padding:0;background:#fff}.paper{padding:20px;border-radius:0}}
-</style></head><body><div class="paper">${body}</div></body></html>`;
+</style></head><body><div class="paper">${raw}</div></body></html>`;
 }
 
 export function EmailPreviewFrame({
