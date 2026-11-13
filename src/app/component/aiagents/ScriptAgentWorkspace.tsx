@@ -490,7 +490,7 @@ const ScriptAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
             } else {
                 setMessages(prev => [...prev, {
                     role: 'ai',
-                    error: 'Failed to generate script. Please try again.',
+                    error: 'Model may be high demand or key is invalid. Please try again later.',
                 }])
             }
         } catch {

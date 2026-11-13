@@ -272,7 +272,7 @@ const FollowupAgentWorkspace = ({ onClose }: Props) => {
             setEmailHtmlMode(false)
             setStep('review')
         } catch {
-            setError('Something went wrong. Please try again.')
+            setError('Model may be high demand or key is invalid. Please try again later.')
         } finally {
             setIsPreviewing(false)
         }

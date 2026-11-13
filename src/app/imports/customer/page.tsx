@@ -2,7 +2,22 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Check,
+  ChevronRight,
+  Clock,
+  Copy,
+  Download,
+  FileSpreadsheet,
+  Layers,
+  ListChecks,
+  PlusCircle,
+  Table,
+  Upload,
+  Wallet,
+} from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import SingleSelect from "@/app/component/SingleSelect";
 import { useRouter } from "next/navigation";
@@ -16,7 +31,66 @@ import SaveButton from "@/app/component/buttons/SaveButton";
 import { handleFieldOptionsObject } from "@/app/utils/handleFieldOptionsObject";
 import ObjectSelect from "@/app/component/ObjectSelect";
 import { useCustomerImport } from "@/context/CustomerImportContext";
-import { FaArrowDownLong } from "react-icons/fa6";
+
+const NO_NAME_VALUE = "N/A";
+const NO_CONTACT_VALUE = "1010101010";
+
+const SUPPORTED_FORMATS = [".xlsx", ".xlsm", ".xlsb", ".xls", ".ods", ".csv"];
+const UNSUPPORTED_FORMATS = [".txt", ".json", ".pdf", ".xml"];
+
+// What the user types -> what gets saved
+const PHONE_EXAMPLES: { typed: string; saved: string; note?: string }[] = [
+  { typed: "9876543210", saved: "+91 9876543210", note: "No country code means India" },
+  { typed: "98765 43210", saved: "+91 9876543210", note: "Spaces and dashes are fine" },
+  { typed: "+971 50 123 4567", saved: "+971 501234567", note: "Other countries start with +code" },
+  { typed: "9876543210, 9123456789", saved: "+91 9876543210", note: "Several numbers: first valid one is saved" },
+  { typed: NO_CONTACT_VALUE, saved: "+91 1010101010", note: "Saved and flagged as no contact" },
+];
+
+// Short, practical tips shown under "Good to know"
+const TIPS: { icon: React.ElementType; title: string; text: string }[] = [
+  {
+    icon: Table,
+    title: "Headers in row 1",
+    text: "The first row must hold your column headers. Avoid merged cells and blank rows above your data.",
+  },
+  {
+    icon: Layers,
+    title: "Only the first sheet",
+    text: "Data on any other sheet of the file is ignored.",
+  },
+  {
+    icon: ListChecks,
+    title: "You match columns next",
+    text: "Headers can be named anything. Columns you leave unmapped are not imported.",
+  },
+  {
+    icon: PlusCircle,
+    title: "New values are created",
+    text: "Campaigns, cities and locations that don't exist yet are added automatically. Check the spelling.",
+  },
+  {
+    icon: Copy,
+    title: "Duplicates are kept",
+    text: "A number already in the system, or repeated in your file, is still imported and marked as a duplicate.",
+  },
+  {
+    icon: Wallet,
+    title: "Price",
+    text: "Use a number or words, like 50 Lakh, 1.2 Crore or 25 Thousand.",
+  },
+  {
+    icon: Calendar,
+    title: "Dates",
+    text: "Use dd-mm-yyyy, for example 25-12-2026.",
+  },
+  {
+    icon: Clock,
+    title: "Wait for the report",
+    text: "Large files take a little while. You then see every skipped or failed row with the reason, so you can fix and re-upload them.",
+  },
+];
+
 export default function CustomerImport() {
   const [importData, setImportData] = useState({
     Campaign: { id: "", name: "" },
@@ -29,6 +103,7 @@ export default function CustomerImport() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const router = useRouter();
   const { setExcelHeaders, setFile } = useCustomerImport();
+  const [showTips, setShowTips] = useState(false);
 
 
 
@@ -108,6 +183,7 @@ export default function CustomerImport() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setImportData((prev) => ({ ...prev, file: file }));
+    setErrors((prev) => ({ ...prev, file: "" }));
     setFile(file);
   };
 
@@ -165,79 +241,188 @@ export default function CustomerImport() {
 
   return (
     <>
-      <div className="flex  mx-auto w-full justify-center">
-        <div className=" min-h-fix max-md:p-0 max-w-[700px] w-[100%] mt-12   flex justify-center">
-          <Toaster position="top-right" />
-          <div className="w-full">
-            <div className="flex justify-end mb-4">
-              <BackButton
-                url="/customer"
-                text="Back"
-                icon={<ArrowLeft size={18} />}
+      <div className="mx-auto w-full max-w-7xl ">
+        <Toaster position="top-right" />
+
+
+
+        <div className="w-full rounded-3xl bg-white/90 p-6 shadow-2xl backdrop-blur-lg max-md:p-5">
+          {/* Header: title + where you are in the flow */}
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-gray-200 pb-4">
+            <h1 className="text-2xl font-extrabold text-[var(--color-secondary-darker)]">
+              Import <span className="text-[var(--color-primary)]">Customers</span>
+            </h1>
+            <Steps />
+
+            <div className="relative flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setShowTips((prev) => !prev)}
+                aria-expanded={showTips}
+                className="flex items-center gap-2 cursor-pointer rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-sm font-medium text-purple-700 transition hover:bg-purple-100"
+              >
+                <ListChecks size={16} />
+                Good to know
+                <ChevronRight
+                  size={15}
+                  className={`transition-transform duration-200 ${showTips ? "rotate-90" : ""
+                    }`}
+                />
+              </button>
+
+              {showTips && (
+                <div className="absolute right-0 top-full z-[100] mt-2 w-[650px] max-w-[calc(100vw-32px)] rounded-xl border border-gray-200 bg-white p-4 shadow-2xl">
+
+                  {/* Header */}
+                  <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3">
+                    <div>
+                      <h3 className="text-base font-bold text-gray-900">
+                        Good to know
+                      </h3>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        Helpful tips for importing your customers
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowTips(false)}
+                      className="rounded-md px-2 py-1 text-sm font-medium text-gray-500 transition hover:bg-gray-100 hover:text-gray-800"
+                    >
+                      Close
+                    </button>
+                  </div>
+
+                  {/* Tips */}
+                  <ul className="grid grid-cols-2 gap-x-5 gap-y-4">
+                    {TIPS.map(({ icon: Icon, title, text }) => (
+                      <li key={title} className="flex gap-2.5">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                          <Icon size={16} />
+                        </span>
+
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {title}
+                          </p>
+
+                          <p className="mt-0.5 text-xs leading-relaxed text-gray-600">
+                            {text}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <BackButton
+              url="/customer"
+              text="Back"
+              icon={<ArrowLeft size={18} />}
+            />
+
+
+
+          </div>
+
+          {/* Required columns */}
+          <section>
+            <div className="mb-3 flex flex-wrap items-baseline gap-x-3">
+              <h2 className="text-base font-bold text-gray-900">Required columns</h2>
+              <p className="text-sm text-gray-600">Every row in your file needs these three.</p>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
+              <RequiredCard
+                name="Campaign"
+                note="The campaign this lead belongs to. A new campaign is created automatically."
+              />
+              <RequiredCard
+                name="Customer name"
+                note="The lead's name."
+                fallbackLabel="No name available? Type"
+                fallbackValue={NO_NAME_VALUE}
+              />
+              <RequiredCard
+                name="Contact number"
+                note="A valid phone number."
+                fallbackLabel="No number available? Type"
+                fallbackValue={NO_CONTACT_VALUE}
+                fallbackHint="The lead is still imported and flagged in the report."
               />
             </div>
+          </section>
 
-            <div className="bg-white/90 backdrop-blur-lg p-10 w-full rounded-3xl shadow-2xl h-auto">
-              <h1 className="text-2xl font-extrabold text-[var(--color-secondary-darker)] mb-8 border-b pb-4">
-                Import <span className="text-[var(--color-primary)]
-">Customers</span>
-              </h1>
+          {/* Upload + phone examples */}
+          <div className="mt-6 grid gap-6 lg:grid-cols-5">
+            <section className="flex flex-col lg:col-span-2">
+              <h2 className="mb-3 text-base font-bold text-gray-900">Your file</h2>
+              <FileUpload
+                fileName={importData.file?.name}
+                onChange={handleFileChange}
+                error={errors.file}
+              />
 
-              <div className=" w-full">
-
-
-                <FileUpload
-                  label="Choose Excel File"
-                  onChange={handleFileChange}
-                  error={errors.file}
-                />
+              {/* Supported file types */}
+              <div className="mt-3 space-y-1.5 text-sm text-gray-600">
+                <p className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-medium text-gray-800">Supported:</span>
+                  {SUPPORTED_FORMATS.map((f) => (
+                    <FormatChip key={f} tone="ok">{f}</FormatChip>
+                  ))}
+                </p>
+                <p className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-medium text-gray-800">Not supported:</span>
+                  {UNSUPPORTED_FORMATS.map((f) => (
+                    <FormatChip key={f} tone="no">{f}</FormatChip>
+                  ))}
+                </p>
               </div>
 
-              <div className="flex justify-end mt-8">
-
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-[var(--color-primary)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
+                >
+                  <Download size={15} /> Download sample file
+                </button>
                 <SaveButton text="Import" onClick={handleSubmit} />
-
               </div>
-            </div>
-          </div>
-        </div>
+            </section>
 
-        {/* second */}
-        <div className=" w-[35%]">
-          <div className="bg-white border-neutral-400  p-6 rounded-lg   ml-6  hidden lg:block  relative top-11">
-            <div className="flex items-center space-x-2 mb-4">
-              <span className="text-orange-500">🔥</span>
-              <h2 className="text-xl font-bold text-[var(--color-secondary-darker)]">Product Upload Tips</h2>
-            </div>
-            <ul className="space-y-3 text-sm text-gray-700 font-semibold" >
-              <li className=" flex gap-1">
-                <p>•</p>
-                <div>
-                  Phone numbers must contain digits only. <br />
-                  Do not use special symbols such as -, /, or spaces.
-                </div>
-              </li>
-              <li className=" flex gap-1"><p>•</p>
-                <div>Only 10-digit phone numbers are allowed. <br />
-                  Do not include country codes like +91 or prefixes such as 91.</div>
-              </li>
-              <li className=" flex gap-1"><p>•</p>
-                <div>For multiple phone numbers, separate each number with a comma and a space. <br />
-                  Example: 9876543210, 9123456789</div>
-              </li>
-              <li className=" flex gap-1">
-                <p>•</p> <div> Supported file formats for upload are: <br />
-                  .xlsx, .xlsm, .xlsb, .xls, .ods, .csv</div>
-              </li>
-              <li className=" flex gap-1"><p>•</p>
-                <div>Unsupported file formats will not be accepted, including: <br />
-                  .txt, .json, .pdf, .xml, and similar formats.</div>
-              </li>
-
-            </ul>
-            <p className="text-[var(--color-secondary-darker)] text-sm font-semibold text-center mt-5">Want Demo ?</p>
-            <div onClick={handleDownload} className=" cursor-pointer bg-gradient-to-r mt-1 from-[var(--color-primary-dark)] to-[var(--color-secondary)]  hover:from-[var(--color-primary-darker)] hover:to-[var(--color-secondary-dark)]  w-fit px-3 py-2 flex flex-row gap-x-2 items-center text-white font-medium rounded-md text-xs  mx-auto"><span className=" bg-transparent border-b-2 text-white border-white "><FaArrowDownLong className="animate-bounce" /></span>Download</div>
+            <section className="lg:col-span-3">
+              <h2 className="mb-3 text-base font-bold text-gray-900">How phone numbers are read</h2>
+              <div className="overflow-x-auto rounded-xl border border-gray-200">
+                <table className="w-full min-w-[480px] text-left text-sm">
+                  <thead className="bg-gray-50 text-gray-600">
+                    <tr>
+                      <th className="px-3 py-2 font-medium">You type</th>
+                      <th className="px-3 py-2 font-medium">We save</th>
+                      <th className="px-3 py-2 font-medium">Why</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {PHONE_EXAMPLES.map((ex) => (
+                      <tr key={ex.typed}>
+                        <td className="px-3 py-2 font-mono text-[13px] text-gray-900">{ex.typed}</td>
+                        <td className="px-3 py-2 font-mono text-[13px] text-gray-900">{ex.saved}</td>
+                        <td className="px-3 py-2 text-gray-600">{ex.note}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-3 text-sm text-gray-600">
+                Set the contact column to <span className="font-semibold text-gray-800">Text</span> format in Excel.
+                Otherwise long numbers turn into <code className="rounded bg-gray-100 px-1 font-mono text-[12px]">9.19E+11</code> and lose digits.
+              </p>
+            </section>
           </div>
+
+          {/* More tips */}
 
         </div>
       </div>
@@ -245,36 +430,137 @@ export default function CustomerImport() {
   );
 }
 
-// 🟦 Input Field
-const InputField = ({ label, name, value, error, onChange }: any) => (
-  <label className="relative block w-full">
-    <input
-      type="text"
-      name={name}
-      value={value}
-      onChange={onChange}
-      placeholder=" "
-      className={`peer w-full border rounded-sm bg-transparent py-3 px-4 outline-none 
-        ${error ? "border-red-500 focus:border-red-500" : "border-gray-400 focus:border-blue-500"}`}
-    />
-    <p className={`absolute left-2 bg-white px-1 text-gray-500 text-sm transition-all duration-300
-      ${value || error ? "-top-2 text-xs text-blue-500" : "peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:text-xs peer-focus:text-blue-500"}`}>
-      {label}
-    </p>
-    {error && <span className="text-red-500 text-sm mt-1 block">{error}</span>}
-  </label>
+// ---------------------------------------------------------------
+// Pieces
+// ---------------------------------------------------------------
+
+// Upload -> match columns -> review report
+const Steps = () => {
+  const steps = ["Upload file", "Match columns", "Review report"];
+  return (
+    <ol className="flex items-center gap-2 text-sm">
+      {steps.map((label, i) => (
+        <li key={label} className="flex items-center gap-2">
+          <span
+            className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${i === 0 ? "bg-[var(--color-primary)] text-white" : "bg-gray-100 text-gray-500"
+              }`}
+          >
+            {i + 1}
+          </span>
+          <span className={i === 0 ? "font-semibold text-gray-900" : "text-gray-500 max-sm:hidden"}>{label}</span>
+          {i < steps.length - 1 && <ChevronRight size={14} className="text-gray-300" />}
+        </li>
+      ))}
+    </ol>
+  );
+};
+
+const FormatChip = ({ tone, children }: { tone: "ok" | "no"; children: React.ReactNode }) => (
+  <code
+    className={`rounded-md px-1.5 py-0.5 font-mono text-[12px] ring-1 ring-inset ${tone === "ok"
+      ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
+      : "bg-gray-100 text-gray-500 line-through ring-gray-200"
+      }`}
+  >
+    {children}
+  </code>
 );
 
-// 🟦 File Upload
-const FileUpload = ({ label, onChange, error }: any) => (
-  <div className="flex flex-col">
-    <label className="font-semibold text-gray-700 mb-2">{label}</label>
-    <input
-      type="file"
-      accept=".xlsx, .xls"
-      onChange={onChange}
-      className="border border-gray-300 cursor-pointer rounded-md p-2"
-    />
-    {error && <span className="text-red-500 text-sm mt-2">{error}</span>}
+const RequiredCard = ({
+  name,
+  note,
+  fallbackLabel,
+  fallbackValue,
+  fallbackHint,
+}: {
+  name: string;
+  note: string;
+  fallbackLabel?: string;
+  fallbackValue?: string;
+  fallbackHint?: string;
+}) => (
+  <div className="flex flex-col rounded-xl border border-gray-200 bg-white p-4">
+    <div className="flex items-center justify-between gap-2">
+      <h3 className="font-semibold text-gray-900">{name}</h3>
+      <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 ring-1 ring-inset ring-rose-200">
+        Required
+      </span>
+    </div>
+    <p className="mt-1 text-sm text-gray-600">{note}</p>
+    {fallbackValue && (
+      <div className="mt-3 border-t border-dashed border-gray-200 pt-3 text-sm text-gray-700">
+        <div className="flex flex-wrap items-center gap-2 cursor-pointer">
+          <span>{fallbackLabel}</span>
+          <CopyChip value={fallbackValue} />
+        </div>
+        {fallbackHint && <p className="mt-1.5 text-gray-600">{fallbackHint}</p>}
+      </div>
+    )}
+  </div>
+);
+
+// click the value to copy it
+const CopyChip = ({ value }: { value: string }) => {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      toast.success(`Copied ${value}`);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Could not copy. Please type it manually.");
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      aria-label={`Copy ${value}`}
+      className="inline-flex cursor-pointer cursor-pointer items-center gap-1.5 rounded-md bg-amber-50 px-2 py-0.5 font-mono text-[13px] font-semibold text-amber-800 ring-1 ring-inset ring-amber-200 hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
+    >
+      {value}
+      {copied ? <Check size={13} /> : <Copy size={13} />}
+    </button>
+  );
+};
+
+const FileUpload = ({
+  fileName,
+  onChange,
+  error,
+}: {
+  fileName?: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  error?: string;
+}) => (
+  <div className="flex flex-1 flex-col">
+    <label
+      className={`flex min-h-[170px] flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors focus-within:ring-2 focus-within:ring-blue-500 ${error
+        ? "border-red-400 bg-red-50/40"
+        : fileName
+          ? "border-emerald-300 bg-emerald-50/40"
+          : "border-gray-300 bg-gray-50/60 hover:border-[var(--color-primary)]"
+        }`}
+    >
+      <input type="file" accept=".xlsx, .xlsm, .xlsb, .xls, .ods, .csv" onChange={onChange} className="sr-only" />
+      <FileSpreadsheet size={30} className={fileName ? "text-emerald-600" : "text-gray-400"} />
+      {fileName ? (
+        <>
+          <span className="max-w-full break-all text-sm font-semibold text-gray-900">{fileName}</span>
+          <span className="text-sm text-gray-600">Click to choose a different file</span>
+        </>
+      ) : (
+        <>
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white">
+            <Upload size={15} /> Choose file
+          </span>
+          <span className="text-sm text-gray-600">Excel or CSV file</span>
+        </>
+      )}
+    </label>
+    {error && <span className="mt-1.5 text-sm text-red-500">{error}</span>}
   </div>
 );

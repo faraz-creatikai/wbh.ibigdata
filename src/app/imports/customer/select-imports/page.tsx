@@ -5,7 +5,7 @@ import Link from "next/link";
 import SingleSelect from "@/app/component/SingleSelect";
 import DateSelector from "@/app/component/DateSelector";
 import toast, { Toaster } from "react-hot-toast";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft, Copy, PhoneOff, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { addCustomer, importCustomer } from "@/store/customer";
 import { customerAllDataInterface, customerImportDataInterface } from "@/store/customer.interface";
@@ -24,6 +24,7 @@ import CustomerSubtypeAdd from "@/app/masters/customer-subtype/add/page";
 import { useCustomerImport } from "@/context/CustomerImportContext";
 import LoaderCircle from "@/app/component/LoaderCircle";
 import { getCustomerFields } from "@/store/masters/customerfields/customerfields";
+import ImportReportDialog, { ImportResponse } from "@/app/component/popups/ImportReportdialog";
 
 
 type CategorizedHeader = {
@@ -31,6 +32,8 @@ type CategorizedHeader = {
     type: "system" | "custom";
     mappedTo: string;
 };
+
+const NO_CONTACT_NUMBER = "1010101010";
 
 export default function SelectImports() {
     const [fieldMapping, setFieldMapping] = useState<Record<string, string>>({});
@@ -44,6 +47,8 @@ export default function SelectImports() {
     // so the auto-mapping effect below knows it's safe to run instead of racing the fetch.
     const [customerFieldsReady, setCustomerFieldsReady] = useState(false);
     const [categorizedHeaders, setCategorizedHeaders] = useState<CategorizedHeader[]>([]);
+    const [reportOpen, setReportOpen] = useState(false);
+    const [importResult, setImportResult] = useState<ImportResponse | null>(null);
 
     const normalize = (value: unknown) =>
         String(value ?? "")
@@ -75,40 +80,40 @@ export default function SelectImports() {
     }, []);
 
 
+    const copyNoContactNumber = async () => {
+        try {
+            await navigator.clipboard.writeText(NO_CONTACT_NUMBER);
+            toast.success(`Copied ${NO_CONTACT_NUMBER}`);
+        } catch {
+            toast.error("Could not copy. Please type it manually.");
+        }
+    };
 
 
     //Submit Form
     const handleSubmit = async () => {
-        /*          const validationErrors = validateForm();
-                 if (Object.keys(validationErrors).length > 0) {
-                     setErrors(validationErrors);
-                     return;
-                 } */
+        if (importLoader) return;
         setImportLoader(true);
 
+        try {
+            const formData = new FormData();
+            formData.append("fieldMapping", JSON.stringify(fieldMapping));
+            if (file) formData.append("file", file);
 
-        const formData = new FormData();
-        formData.append("fieldMapping", JSON.stringify(fieldMapping))
+            const result: ImportResponse | null = await importCustomer(formData);
 
-        if (file) {
-            formData.append("file", file);
-        }
-        //console.log(customerData)
-        const result = await importCustomer(formData);
+            if (!result) {
+                toast.error("Import failed. Please try again.");
+                return;
+            }
 
-        if (result) {
-            toast.success("Customer imported successfully!");
+            setImportResult(result);
+            setReportOpen(true);          // no redirect – the dialog is the result
+        } catch {
+            toast.error("Import failed. Please try again.");
+        } finally {
             setImportLoader(false);
-            router.push("/customer");
-            return;
-        } else {
-            toast.error("Failed to import customer");
         }
-
-        //  toast.error("Error importing customer");
-        // console.error("Customer import Error:", error);
-        router.push("/customer");
-        setImportLoader(false);
     };
 
 
@@ -227,6 +232,35 @@ export default function SelectImports() {
                             </h1>
                         </div>
 
+                        {/* No-contact-number tip */}
+                        <div
+                            role="note"
+                            className="mb-8 flex items-start gap-4 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 shadow-sm"
+                        >
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+                                <PhoneOff size={22} />
+                            </div>
+                            <div className="flex-1 text-sm leading-relaxed text-amber-900">
+                                <p className="text-base font-semibold">Some leads don’t have a contact number?</p>
+                                <p className="mt-1">
+                                    Every row needs a valid contact number, otherwise it is skipped. For leads with no number,
+                                    type{" "}
+                                    <code className="mx-0.5 rounded-md bg-white px-2 py-0.5 font-mono text-[13px] font-semibold text-amber-700 ring-1 ring-amber-200">
+                                        {NO_CONTACT_NUMBER}
+                                    </code>{" "}
+                                    in the contact column of your file before uploading. These leads will be imported and
+                                    marked in the report, so you can add their real numbers later.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={copyNoContactNumber}
+                                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+                            >
+                                <Copy size={14} /> Copy
+                            </button>
+                        </div>
+
                         <h2 className="text-xl font-semibold text-gray-700 mt-8">
                             Map System Fields
                         </h2>
@@ -291,6 +325,15 @@ export default function SelectImports() {
                     </form>
                 </div>
             </div>
+
+            <ImportReportDialog
+                open={reportOpen}
+                result={importResult}
+                onClose={() => {
+                    setReportOpen(false);
+                    router.push("/customer");     // redirect only when the user closes the report
+                }}
+            />
         </div>
     );
 }
@@ -381,5 +424,6 @@ const FileUpload: React.FC<{
                 ))}
             </div>
         )}
+
     </div>
 );

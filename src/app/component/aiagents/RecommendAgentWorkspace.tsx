@@ -758,7 +758,7 @@ const RecommendAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
                 }
             }
         } catch {
-            setMessages(prev => [...prev, { role: 'ai', answer: 'Something went wrong. Please try again.', recommendedCustomers: [], count: 0 }])
+            setMessages(prev => [...prev, { role: 'ai', answer: 'Model may be high demand or key is invalid. Please try again later.', recommendedCustomers: [], count: 0 }])
         }
         setIsLoading(false)
     }

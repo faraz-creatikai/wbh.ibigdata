@@ -215,7 +215,7 @@ const CallingAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
             ]) */
         
             } catch {
-            setMessages((prev: any[]) => [...prev, { role: 'ai', text: 'Something went wrong. Please try again.' }])
+            setMessages((prev: any[]) => [...prev, { role: 'ai', text: 'Model may be high demand or key is invalid. Please try again later.' }])
         }
         setIsLoading(false)
     }

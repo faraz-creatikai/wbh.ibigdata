@@ -4,6 +4,7 @@ import { API_ROUTES } from "@/constants/ApiRoute"
 import { contactAllDataInterface } from "./contact.interface";
 import { customerAllDataInterface, customerAssignInterface, customerCheckDuplicateInterface, customerDeletePayloadInterface } from "./customer.interface";
 import toast from "react-hot-toast";
+import { ImportResponse } from "@/app/component/popups/ImportReportdialog";
 
 export const getCustomer = async () => {
   try {
@@ -264,33 +265,36 @@ export const addCustomer = async (formData: FormData) => {
   }
 };
 
-export const importCustomer = async (formData: FormData) => {
+
+
+export const importCustomer = async (formData: FormData): Promise<ImportResponse | null> => {
   try {
-
-    /* for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value);
-    } */
-
-
     const response = await fetch(API_ROUTES.CUSTOMER.CUSTOMERIMPORT, {
       method: "POST",
       body: formData,
-      credentials: "include"
+      credentials: "include",
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // read the body whatever the status is (the backend sends a full report even with HTTP 400)
+    let result: any = null;
+    try {
+      result = await response.json();
+    } catch {
+      /* body was not JSON */
     }
 
-    const result = await response.json();
-    console.log(" import customer result ", result)
-    if (!result.success) {
-      toast.error(result.message ?? "Something went wrong")
-      throw new Error(result.message ?? "Something went wrong")
+    // the report dialog explains everything, so hand it back instead of throwing
+    if (result?.report) return result as ImportResponse;
+
+    if (!response.ok || !result?.success) {
+      toast.error(result?.message ?? `Import failed (HTTP ${response.status})`);
+      return null;
     }
-    return result;
+
+    return result as ImportResponse;
   } catch (error) {
     console.error("SERVER ERROR: ", error);
+    toast.error("Could not reach the server. Please try again.");
     return null;
   }
 };

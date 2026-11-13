@@ -1153,7 +1153,7 @@ const EmailCampaignAgentWorkspace = ({ isOpen }: { isOpen: boolean }) => {
 
             const res: any = await emailCustomerViaAi(payload)
             if (!res || res.success === false) {
-                setSendError('Something went wrong while sending the campaign. Please try again.')
+                setSendError('Model may be overloaded or unavailable. Please try again later.')
                 setIsSending(false)
                 return
             }
