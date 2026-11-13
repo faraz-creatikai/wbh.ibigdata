@@ -3,7 +3,16 @@
 import CustomDropdown, { DropdownOption } from "@/app/component/CustomDropdown";
 import MasterProtectedRoute from "@/app/component/MasterProtectedRoutes";
 import DeleteDialog from "@/app/component/popups/DeleteDialog";
-import { AI_PROVIDERS_CONFIG } from "@/app/data/aiModels";
+import {
+  AI_PROVIDERS_CONFIG,
+  formatPrice,
+  getSelectableModels,
+  modelLabel,
+  providerTierLabel,
+  type AiModel,
+  type AiProvider,
+  type TierFilter,
+} from "@/app/data/aiModels";
 import { DeleteAdminAiKey, getAllAiApiKeys, SaveAdminAiKey, UpdateAdminAiKey } from "@/store/auth";
 /**
  * AdminAiKeyPage
@@ -17,10 +26,13 @@ import { DeleteAdminAiKey, getAllAiApiKeys, SaveAdminAiKey, UpdateAdminAiKey } f
  *    automatically turns the previously active one off.
  *  - Existing configs can be toggled ACTIVE/INACTIVE, have their model changed,
  *    or have their key rotated, and can be removed.
+ *  - Only TEXT models can be selected (the platform sends text prompts). Legacy and
+ *    enterprise-only models are hidden, unless one is already saved on a config.
+ *  - Every model shows a Free / Paid badge, with price or free-plan limits underneath.
  *
  * Wires together:
  *  - CustomDropdown                                → provider / model selects
- *  - AI_PROVIDERS_CONFIG                           → static provider + model catalogue
+ *  - AI_PROVIDERS_CONFIG                           → static provider + model catalogue (free/paid info)
  *  - SaveAdminAiKey    (POST   .../ai/api-key)     → create
  *  - getAllAiApiKeys   (GET    .../ai/...)         → list
  *  - UpdateAdminAiKey  (PATCH  .../ai/:id)         → update model / key / status
@@ -35,20 +47,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 /* ─── Local types ─────────────────────────────────────────────────────────── */
 
-interface AiModelOption {
-  id: string;
-  name: string;
-  description: string;
-}
-
-interface AiProviderConfigItem {
-  providerId: string;
-  displayName: string;
-  icon?: string;
-  models: AiModelOption[];
-}
-
-const PROVIDERS = AI_PROVIDERS_CONFIG as AiProviderConfigItem[];
+const PROVIDERS: AiProvider[] = AI_PROVIDERS_CONFIG;
 
 type ConfigStatus = "ACTIVE" | "INACTIVE";
 
@@ -83,13 +82,15 @@ const ADMIN_AI_DELETE_FIELD_LABELS: Record<keyof AdminAiConfigDeleteData, string
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 
-const getProviderInfo = (providerId: string): AiProviderConfigItem | null =>
+const getProviderInfo = (providerId: string): AiProvider | null =>
   PROVIDERS.find(p => p.providerId === providerId) ?? null;
 
 const getModelInfo = (
-  provider: AiProviderConfigItem | null,
+  provider: AiProvider | null,
   modelId: string
-): AiModelOption | null => provider?.models.find(m => m.id === modelId) ?? null;
+): AiModel | null => provider?.models.find(m => m.id === modelId) ?? null;
+
+const toOption = (m: AiModel): DropdownOption => ({ _id: m.id, Name: modelLabel(m) });
 
 function formatRelativeTime(iso: string): string {
   const date = new Date(iso);
@@ -229,25 +230,13 @@ const XIcon = () => (
   </svg>
 );
 
-const ChevronDownIcon = ({ open }: { open: boolean }) => (
-  <svg
-    width="13"
-    height="13"
-    viewBox="0 0 24 24"
-    fill="none"
-    style={{ transition: "transform 0.18s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
-  >
-    <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 /* ─── Small shared pieces ─────────────────────────────────────────────────── */
 
 function ProviderAvatar({
   provider,
   size = 36,
 }: {
-  provider: AiProviderConfigItem | null;
+  provider: AiProvider | null;
   size?: number;
 }) {
   const [imgError, setImgError] = useState(false);
@@ -319,6 +308,104 @@ function StatusToggle({
   );
 }
 
+/* ─── Free / Paid badges + model details ─────────────────────────────────── */
+
+function TierBadge({ free }: { free: boolean }) {
+  return (
+    <span
+      className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md flex-shrink-0 ${free
+          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400"
+          : "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
+        }`}
+    >
+      {free ? "Free" : "Paid"}
+    </span>
+  );
+}
+
+function FlagBadge({ label, tone = "gray" }: { label: string; tone?: "gray" | "amber" }) {
+  return (
+    <span
+      className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md flex-shrink-0 ${tone === "amber"
+          ? "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
+          : "bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-400"
+        }`}
+    >
+      {label}
+    </span>
+  );
+}
+
+/** Description, badges, price / free limits and notes for one model. */
+function ModelMeta({ model }: { model: AiModel | null }) {
+  if (!model) return null;
+  const price = formatPrice(model);
+
+  return (
+    <div className="mt-1.5 space-y-1.5">
+      <p className="text-[11.5px] text-[var(--color-gray)] dark:text-gray-400">{model.description}</p>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        <TierBadge free={model.free} />
+        {model.preview && <FlagBadge label="Preview" />}
+        {model.legacy && <FlagBadge label="Legacy" tone="amber" />}
+        {model.enterpriseOnly && <FlagBadge label="Enterprise only" tone="amber" />}
+        {price && (
+          <span className="text-[11px] text-gray-500 dark:text-gray-400">
+            {model.free ? `Paid rate if billing is on: ${price}` : price}
+          </span>
+        )}
+      </div>
+
+      {model.free && (
+        <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
+          Free tier{model.limits ? `: ${model.limits}` : ": rate limits apply and can change"}.
+        </p>
+      )}
+      {!model.free && (
+        <p className="text-[11px] text-amber-700 dark:text-amber-400">
+          Paid model: this provider account needs billing or prepaid credits.
+        </p>
+      )}
+      {model.note && (
+        <p className="text-[11px] text-gray-500 dark:text-gray-400">{model.note}</p>
+      )}
+    </div>
+  );
+}
+
+const TIER_FILTERS: { value: TierFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "free", label: "Free" },
+  { value: "paid", label: "Paid" },
+];
+
+function TierFilterChips({
+  value,
+  onChange,
+}: {
+  value: TierFilter;
+  onChange: (v: TierFilter) => void;
+}) {
+  return (
+    <div className="inline-flex rounded-lg bg-gray-100 dark:bg-white/10 p-0.5">
+      {TIER_FILTERS.map(f => (
+        <button
+          key={f.value}
+          type="button"
+          onClick={() => onChange(f.value)}
+          className={`text-[11.5px] font-medium cursor-pointer px-2.5 py-1 rounded-md transition-colors ${value === f.value
+              ? "bg-white dark:bg-white/20 text-gray-900 dark:text-white shadow-sm"
+              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            }`}
+        >
+          {f.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /* ─── Row: a single configured provider ──────────────────────────────────── */
 
 interface ConfigRowProps {
@@ -356,20 +443,27 @@ function ConfigRow({
   const [editModelId, setEditModelId] = useState(config.model);
   const [editApiKey, setEditApiKey] = useState("");
   const [editShowKey, setEditShowKey] = useState(false);
+  const [editTier, setEditTier] = useState<TierFilter>("all");
 
   useEffect(() => {
     if (isEditing) {
       setEditModelId(config.model);
       setEditApiKey("");
       setEditShowKey(false);
+      setEditTier("all");
     }
   }, [isEditing, config.model]);
 
+  // Selectable text models (filtered by tier). The saved model is always kept so it still displays.
   const modelOptions: DropdownOption[] = useMemo(
-    () => provider?.models.map(m => ({ _id: m.id, Name: m.name })) ?? [],
-    [provider]
+    () =>
+      getSelectableModels(provider, { tier: editTier, keepIds: [config.model] })
+        .sort((a, b) => Number(b.free) - Number(a.free)) // free first
+        .map(toOption),
+    [provider, editTier, config.model]
   );
 
+  const editModelInfo = getModelInfo(provider, editModelId);
   const hasChanges = editModelId !== config.model || editApiKey.trim().length > 0;
 
   return (
@@ -385,13 +479,20 @@ function ConfigRow({
             <ProviderAvatar provider={provider} />
 
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <p className="text-[13.5px] font-semibold text-gray-900 dark:text-[var(--color-textlightdark)] truncate">
                   {provider?.displayName ?? config.provider}
                 </p>
-                <span className="text-[10.5px] font-mono px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 truncate max-w-[140px]">
+                <span className="text-[10.5px] font-mono px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 truncate max-w-[160px]">
                   {modelInfo?.name ?? config.model}
                 </span>
+                {modelInfo ? (
+                  <TierBadge free={modelInfo.free} />
+                ) : (
+                  <FlagBadge label="Unlisted model" tone="amber" />
+                )}
+                {modelInfo?.legacy && <FlagBadge label="Legacy" tone="amber" />}
+                {modelInfo && modelInfo.type !== "text" && <FlagBadge label="Not a text model" tone="amber" />}
                 {isActive && (
                   <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-[var(--color-primary-lighter)] dark:bg-[var(--color-primary)]/15 text-[var(--color-primary-darker)] dark:text-[var(--color-primary-light)] flex-shrink-0">
                     In use
@@ -456,16 +557,21 @@ function ConfigRow({
             </div>
 
             <div>
-              <label className="block text-[12px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Model
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-[12px] font-medium text-gray-700 dark:text-gray-300">
+                  Model
+                </label>
+                <TierFilterChips value={editTier} onChange={setEditTier} />
+              </div>
               <CustomDropdown
                 options={modelOptions}
                 value={editModelId}
                 onChange={opt => setEditModelId(opt?._id ?? config.model)}
                 placeholder="Select a model"
                 clearable={false}
+                noOptionsText="No models match this filter"
               />
+              <ModelMeta model={editModelInfo} />
             </div>
 
             <div>
@@ -545,19 +651,24 @@ function AddProviderPanel({
   onSaved,
   onCancel,
 }: {
-  availableProviders: AiProviderConfigItem[];
+  availableProviders: AiProvider[];
   onSaved: () => void;
   onCancel: () => void;
 }) {
   const [providerId, setProviderId] = useState<string | null>(null);
   const [modelId, setModelId] = useState<string | null>(null);
+  const [tier, setTier] = useState<TierFilter>("all");
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   const providerOptions: DropdownOption[] = useMemo(
-    () => availableProviders.map(p => ({ _id: p.providerId, Name: p.displayName })),
+    () =>
+      availableProviders.map(p => ({
+        _id: p.providerId,
+        Name: `${p.displayName} · ${providerTierLabel(p)}`,
+      })),
     [availableProviders]
   );
 
@@ -566,15 +677,30 @@ function AddProviderPanel({
     [availableProviders, providerId]
   );
 
+  const selectableModels = useMemo(
+    () =>
+      getSelectableModels(selectedProvider, { tier }).sort(
+        (a, b) => Number(b.free) - Number(a.free) // free first
+      ),
+    [selectedProvider, tier]
+  );
+
   const modelOptions: DropdownOption[] = useMemo(
-    () => selectedProvider?.models.map(m => ({ _id: m.id, Name: m.name })) ?? [],
-    [selectedProvider]
+    () => selectableModels.map(toOption),
+    [selectableModels]
   );
 
   const selectedModel = useMemo(
     () => selectedProvider?.models.find(m => m.id === modelId) ?? null,
     [selectedProvider, modelId]
   );
+
+  const handleTierChange = (next: TierFilter) => {
+    setTier(next);
+    // drop the chosen model if it no longer matches the filter
+    const stillThere = getSelectableModels(selectedProvider, { tier: next }).some(m => m.id === modelId);
+    if (!stillThere) setModelId(null);
+  };
 
   const canSave = Boolean(providerId && modelId && apiKey.trim()) && !saving;
 
@@ -630,6 +756,7 @@ function AddProviderPanel({
                 onChange={opt => {
                   setProviderId(opt?._id ?? null);
                   setModelId(null);
+                  setTier("all");
                   setErrorMsg("");
                 }}
                 placeholder="Select a provider"
@@ -640,9 +767,12 @@ function AddProviderPanel({
         </div>
 
         <div>
-          <label className="block text-[12px] font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-            Model
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-[12px] font-medium text-gray-700 dark:text-gray-300">
+              Model
+            </label>
+            {selectedProvider && <TierFilterChips value={tier} onChange={handleTierChange} />}
+          </div>
           <CustomDropdown
             options={modelOptions}
             value={modelId}
@@ -652,13 +782,15 @@ function AddProviderPanel({
             }}
             placeholder={selectedProvider ? "Select a model" : "Select a provider first"}
             disabled={!selectedProvider}
-            noOptionsText="No models available for this provider"
+            noOptionsText={
+              tier === "free"
+                ? "This provider has no free models"
+                : tier === "paid"
+                  ? "This provider has no paid models"
+                  : "No models available for this provider"
+            }
           />
-          {selectedModel && (
-            <p className="mt-1.5 text-[11.5px] text-[var(--color-gray)] dark:text-gray-400">
-              {selectedModel.description}
-            </p>
-          )}
+          <ModelMeta model={selectedModel} />
         </div>
 
         <div>
@@ -962,8 +1094,7 @@ export default function AdminAiKeyPage() {
             {activeConfig ? <CheckCircleIcon /> : <AlertCircleIcon />}
             <span>
               {activeConfig
-                ? `${activeProviderInfo?.displayName ?? activeConfig.provider} is the active provider (${activeModelInfo?.name ?? activeConfig.model
-                }).`
+                ? `${activeProviderInfo?.displayName ?? activeConfig.provider} is the active provider (${activeModelInfo?.name ?? activeConfig.model}${activeModelInfo ? `, ${activeModelInfo.free ? "free" : "paid"}` : ""}).`
                 : "No provider is currently active — turn one on below to start routing requests."}
             </span>
           </div>
