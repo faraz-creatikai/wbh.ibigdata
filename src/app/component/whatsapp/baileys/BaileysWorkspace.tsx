@@ -7,6 +7,7 @@ import { Banner } from "../../outreach/CampaignUi";
 import RecentCampaigns from "../../outreach/RecentCampaign";
 import { useChannelStats, pct, channelBreakdown } from "../../outreach/useChannelStats";
 import type { ChannelStats } from "@/store/masters/channeltracking/channeltracking";
+import WhatsappTemplates from "../../outreach/WhatsappTemplates";
 
 /* ────────────────────────────────────────────────────────────────────
  * Baileys workspace — everything the user sees AFTER Baileys is connected.
@@ -352,12 +353,7 @@ export default function BaileysWorkspace({ account, isDisconnecting, onDisconnec
                 />
             )}
 
-            {tab === "templates" && (
-                <EmptyState
-                    title="Templates are a Meta feature"
-                    text="Message templates only apply to the official Meta Cloud API. Baileys sessions send regular messages, so there's nothing to manage here."
-                />
-            )}
+            {tab === "templates" && <WhatsappTemplates />}
 
             {tab === "automations" && <EmptyState title="Automations coming soon" text="Automated follow-ups and triggers will show up here." />}
 
