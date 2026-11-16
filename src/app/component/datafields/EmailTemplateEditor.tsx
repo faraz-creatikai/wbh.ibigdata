@@ -16,7 +16,7 @@
  *   or paste a URL. Paste / drag-and-drop of image files works too.
  *
  * Also exported (handy for list cards and view dialogs):
- *   EmailPreviewFrame, buildEmailDocument, fillMergeTags, DEFAULT_MERGE_TAGS, isEmailHtmlEmpty
+ *   EmailPreviewFrame, buildEmailDocument, fillMergeTags, DEFAULT_MERGE_TAGS, isEmailHtmlEmpty, isLegacyHtml
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -242,7 +242,7 @@ export function isEmailHtmlEmpty(html: string): boolean {
 
 /** Old builder output (full documents / <style> blocks) can't be edited faithfully in the visual tab. */
 export const isLegacyHtml = (html: string) =>
-    !!html && !/data-ete-root/.test(html) && /<style[\s>]|<html[\s>]|<!doctype|<head[\s>]|<body[\s>]/i.test(html);
+    !!html && !/data-ete-root/.test(html) && /<style[\s>]|<html[\s>]|<!doctype|<head[\s>]|<body[\s>]|<link[\s>]/i.test(html);
 
 function removeLayoutWhitespace(root: Element) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -298,22 +298,38 @@ export function fillMergeTags(html: string, tags: MergeTag[], format: (k: string
     return out;
 }
 
-
-
+/**
+ * WHY PREVIEWS USED TO GROW FOREVER
+ * The preview iframe is sized to its content. Viewport units inside an iframe (`100vh`, `100dvh`,
+ * `100vb`, `100vmax`…) mean "the iframe's own size", so a hero with `min-height:100vh` is as tall as
+ * the iframe, which makes the content taller than the iframe, which grows the iframe… forever.
+ * Previews therefore pin those units to a fixed reference screen (720px). Content is also measured
+ * from <body> only: `documentElement.scrollHeight` is never smaller than the iframe's viewport,
+ * so it can only ratchet upwards. A runaway guard in EmailPreviewFrame catches anything else.
+ */
+const VH_REFERENCE = 720;
+const neutraliseViewportUnits = (html: string) =>
+    html.replace(
+        /(?<![\w.])(-?\d*\.?\d+)\s*(?:(?:d|s|l)?(?:vh|vb)|(?:d|s|l)?vmax)\b/gi,
+        (_, n) => `${+((parseFloat(n) * VH_REFERENCE) / 100).toFixed(2)}px`
+    );
 
 /** Wraps a body fragment in a minimal, responsive email-style page for iframe previews. */
 export function buildEmailDocument(body: string): string {
-    const raw = (body || "").trim();
-    
-    // 1. If it's already a full HTML document, return as is.
+    const raw = neutraliseViewportUnits((body || "").trim());
+
+    // 1. A complete document renders as it is.
     if (/<html[\s>]/i.test(raw)) return raw;
-    
-    // 2. If it defines its own <body> (like the Diwali template), wrap it natively without the .paper div.
-    if (/<body[\s>]/i.test(raw)) {
-        return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>${raw}</html>`;
+
+    // 2. Full-page designs (own <style>, <link>, <head> or <body>) are shown full-bleed, not trapped in the white "paper".
+    if (/<style[\s>]|<link[\s>]|<!doctype|<head[\s>]|<body[\s>]/i.test(raw)) {
+        const hasHead = /<head[\s>]/i.test(raw);
+        const hasBody = /<body[\s>]/i.test(raw);
+        const head = hasHead ? "" : `<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>`;
+        return `<!doctype html><html>${head}${hasBody ? "" : `<body style="margin:0;padding:0;">`}${raw}${hasBody ? "" : "</body>"}</html>`;
     }
 
-    // 3. Simple text or WYSIWYG blocks (standard editor output) get the centered paper container.
+    // 3. Editor output / simple content gets the centred paper container.
     return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
 html,body{margin:0;padding:0}
 body{background:#f1f5f9;padding:24px 12px;font-family:Arial,Helvetica,sans-serif}
@@ -322,6 +338,8 @@ img{max-width:100%;height:auto}
 @media (max-width:480px){body{padding:0;background:#fff}.paper{padding:20px;border-radius:0}}
 </style></head><body><div class="paper">${raw}</div></body></html>`;
 }
+
+const MAX_FRAME_HEIGHT = 20000; // hard stop: no template can make the preview endless
 
 export function EmailPreviewFrame({
     html,
@@ -348,14 +366,48 @@ export function EmailPreviewFrame({
     );
     const ref = useRef<HTMLIFrameElement>(null);
     const ro = useRef<ResizeObserver | null>(null);
+    const last = useRef(minHeight); // last height we applied
+    const baseline = useRef(0); // first height measured after load
+    const burst = useRef({ start: 0, count: 0 });
     const [h, setH] = useState(minHeight);
 
     useEffect(() => () => ro.current?.disconnect(), []);
 
     const onLoad = () => {
         const d = ref.current?.contentDocument;
-        if (!d) return;
-        const measure = () => setH(Math.max(minHeight, d.body.scrollHeight));
+        if (!d || !d.body) return;
+        last.current = minHeight;
+        baseline.current = 0;
+        burst.current = { start: 0, count: 0 };
+
+        const measure = () => {
+            // body only: documentElement.scrollHeight can never be smaller than the iframe itself
+            const cs = d.defaultView?.getComputedStyle(d.body);
+            const margins = cs ? (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0) : 0;
+            const next = Math.min(MAX_FRAME_HEIGHT, Math.max(minHeight, Math.ceil(d.body.scrollHeight + margins)));
+            if (Math.abs(next - last.current) < 2) return; // ignore sub-pixel jitter
+
+            if (next > last.current) {
+                // Safety net: genuine growth (images loading) is a handful of events. A runaway loop is
+                // one per frame. Past ~25 growths within a second, stop observing and fall back.
+                const now = performance.now();
+                const b = burst.current;
+                if (now - b.start > 1000) {
+                    b.start = now;
+                    b.count = 0;
+                }
+                if (++b.count > 25) {
+                    ro.current?.disconnect();
+                    last.current = Math.max(minHeight, baseline.current || minHeight);
+                    setH(last.current);
+                    return;
+                }
+            }
+            if (!baseline.current) baseline.current = next;
+            last.current = next;
+            setH(next);
+        };
+
         measure();
         ro.current?.disconnect();
         ro.current = new ResizeObserver(measure);
