@@ -379,7 +379,10 @@ export default function EmailChannelPage() {
     const view = channelBreakdown(stats, "email");
     const failed = connection?.status === "failed";
     const tip = useMemo(() => domainTip(email), [email]);
-    const canSubmit = /^\S+@\S+\.\S+$/.test(email.trim()) && password.length > 0 && !busy;
+    const [mode, setMode] = useState<"auto" | "brevo" | "custom">("auto");
+    const [brevoLogin, setBrevoLogin] = useState("");
+    const canSubmit = /^\S+@\S+\.\S+$/.test(email.trim()) && password.length > 0 && (mode !== "brevo" || !!brevoLogin.trim()) && !busy;
+
 
     const openForm = () => {
         setEmail(connection?.email ?? "");
@@ -401,29 +404,36 @@ export default function EmailChannelPage() {
         setAdv((a) => ({ ...a, imapPass: "" }));
     };
 
-    const buildPayload = (): EmailConnectPayload => {
-        const payload: EmailConnectPayload = {
-            email: email.trim(),
-            password,
-            ...(fromName.trim() ? { fromName: fromName.trim() } : {}),
-        };
-        if (showAdvanced && (adv.smtpHost.trim() || adv.imapHost.trim())) {
-            const a: Record<string, string | number> = {};
-            if (adv.smtpHost.trim()) {
-                a.smtpHost = adv.smtpHost.trim();
-                a.smtpPort = Number(adv.smtpPort) || 587;
-                if (adv.smtpUser.trim()) a.smtpUser = adv.smtpUser.trim();
-            }
-            if (adv.imapHost.trim()) {
-                a.imapHost = adv.imapHost.trim();
-                a.imapPort = Number(adv.imapPort) || 993;
-                if (adv.imapUser.trim()) a.imapUser = adv.imapUser.trim();
-                if (adv.imapPass) a.imapPass = adv.imapPass;
-            }
-            payload.advanced = a as unknown as EmailConnectPayload["advanced"];
-        }
-        return payload;
+   const buildPayload = (): EmailConnectPayload => {
+    const payload: EmailConnectPayload = {
+        email: email.trim(),
+        password,
+        ...(fromName.trim() ? { fromName: fromName.trim() } : {}),
     };
+
+    const a: Record<string, string | number> = {};
+
+    if (mode === "brevo") {
+        a.provider = "brevo";
+        a.smtpUser = brevoLogin.trim();
+    }
+
+    if ((mode === "custom" || (mode === "auto" && showAdvanced)) && adv.smtpHost.trim()) {
+        a.smtpHost = adv.smtpHost.trim();
+        a.smtpPort = Number(adv.smtpPort) || 587;
+        if (adv.smtpUser.trim()) a.smtpUser = adv.smtpUser.trim();
+    }
+
+    if ((mode !== "auto" || showAdvanced) && adv.imapHost.trim()) {
+        a.imapHost = adv.imapHost.trim();
+        a.imapPort = Number(adv.imapPort) || 993;
+        if (adv.imapUser.trim()) a.imapUser = adv.imapUser.trim();
+        if (adv.imapPass) a.imapPass = adv.imapPass;
+    }
+
+    if (Object.keys(a).length) payload.advanced = a as unknown as EmailConnectPayload["advanced"];
+    return payload;
+};
 
     const handleFailure = (e: EmailConnectionError) => {
         setError(e);
@@ -914,6 +924,16 @@ export default function EmailChannelPage() {
                             {!connected && <span className="text-sm text-slate-500">Until then, emails use the default mailbox</span>}
                         </div>
 
+                        <div className="grid gap-2 sm:grid-cols-3">
+                            {([["auto", "Gmail, Zoho, Hostinger…"], ["brevo", "Brevo"], ["custom", "Other SMTP"]] as const).map(([k, label]) => (
+                                <button key={k} type="button" onClick={() => setMode(k)} disabled={!!busy}
+                                    className={cx("rounded-lg border px-3 py-2.5 text-sm font-medium cursor-pointer",
+                                        mode === k ? "border-[var(--color-primary)] bg-[var(--color-primary-lighter)]" : "border-slate-300 hover:bg-slate-50")}>
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+
                         <div className="grid gap-5 sm:grid-cols-2">
                             <Field id="ec-email" label="Email address">
                                 <input
@@ -943,7 +963,16 @@ export default function EmailChannelPage() {
                             </Field>
                         </div>
 
-                        <Field id="ec-password" label="Mailbox password or app password">
+                        {mode === "brevo" && (
+                            <>
+                                <Field id="ec-brevo-login" label="Brevo SMTP login" hint="Looks like a1b2c3@smtp-brevo.com. Find it in Brevo → SMTP & API.">
+                                    <input id="ec-brevo-login" className={inputCls} value={brevoLogin} onChange={(e) => setBrevoLogin(e.target.value)} disabled={!!busy} />
+                                </Field>
+                                <Banner tone="warn">The email address above must be a verified Sender in Brevo, or mail will be dropped.</Banner>
+                            </>
+                        )}
+
+                        <Field id="ec-password" label={mode === "brevo" ? "Brevo SMTP key" : mode === "custom" ? "SMTP password" : "Mailbox password or app password"}>
                             <div className="relative">
                                 <input
                                     id="ec-password"

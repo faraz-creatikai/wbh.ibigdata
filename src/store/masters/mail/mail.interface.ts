@@ -203,3 +203,35 @@ export interface EmailReplyPayload {
   files?: File[];
   templateId?: string;
 }
+
+
+
+// ---------- Sent tab ----------
+export interface SentEmailSummary {
+  id: string;
+  toEmail: string;
+  subject: string;
+  snippet: string;
+  sentAt: string; // ISO
+  hasAttachments: boolean;
+  label: string | null; // campaign | inbox_compose | inbox_reply | ai_email | template_email
+}
+
+export interface SentEmailFull extends SentEmailSummary {
+  bodyHtml: string | null;
+  attachments: { filename: string }[];
+}
+
+export interface SentEmailsPage {
+  success: true;
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  messages: SentEmailSummary[];
+}
+
+export interface SentEmailDetail {
+  success: true;
+  message: SentEmailFull;
+}

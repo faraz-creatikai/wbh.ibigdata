@@ -12,6 +12,8 @@ import type {
   EmailReplyPayload,
   EmailSendOutcome,
   EmailSendResult,
+  SentEmailDetail,
+  SentEmailsPage,
 } from "./mail.interface";
 
 export const getMail = async () => {
@@ -548,3 +550,21 @@ export const getEmailSendBatch = (id: string) =>
 
 export const cancelEmailSendBatch = (id: string) =>
   emailSendRequest(API_ROUTES.MASTERS.MAIL.EMAIL_INBOX_BATCH_CANCEL(id), "POST");
+
+
+
+
+export const listSentEmails = (p: { page?: number; limit?: number; q?: string } = {}) => {
+  const s = new URLSearchParams();
+  if (p.page) s.set("page", String(p.page));
+  if (p.limit) s.set("limit", String(p.limit));
+  if (p.q) s.set("q", p.q);
+  const qs = s.toString();
+  return emailConnectionRequest<SentEmailsPage>(
+    `${API_ROUTES.MASTERS.MAIL.EMAIL_SENT}${qs ? `?${qs}` : ""}`,
+    "GET"
+  );
+};
+
+export const getSentEmail = (id: string) =>
+  emailConnectionRequest<SentEmailDetail>(API_ROUTES.MASTERS.MAIL.EMAIL_SENT_ONE(id), "GET");

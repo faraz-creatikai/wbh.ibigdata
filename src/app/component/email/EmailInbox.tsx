@@ -21,6 +21,8 @@ import {
     listEmailMessages,
     syncEmailInbox,
     updateEmailMessages,
+    getSentEmail, 
+    listSentEmails
 } from '@/store/masters/mail/mail';
 import type {
     EmailAddress,
@@ -29,6 +31,8 @@ import type {
     EmailMessageFlags,
     EmailMessageFull,
     EmailMessageSummary,
+    SentEmailFull, 
+    SentEmailSummary
 } from '@/store/masters/mail/mail.interface';
 import EmailComposeModal, { ComposeRecipient } from './EmailComposeModel';
 
@@ -384,7 +388,7 @@ export default function EmailInbox({ renderReplyArea }: InboxProps) {
     };
 
     /* ───────────── gates: loading / error / not connected ───────────── */
-    const shell = 'h-[calc(100vh-8rem)] min-h-[520px] mb-5';
+    const shell = 'h-[calc(100vh-11rem)] min-h-[520px] mb-5';
 
     if (statusLoading) {
         return (
@@ -828,6 +832,215 @@ export default function EmailInbox({ renderReplyArea }: InboxProps) {
                     loadList(1, 'replace', true);
                 }}
             />
+        </div>
+    );
+}
+
+
+
+/* ───────────────────────────── Sent tab ───────────────────────────── */
+
+const SENT_LABELS: Record<string, string> = {
+    campaign: 'Campaign',
+    inbox_compose: 'Inbox',
+    inbox_reply: 'Reply',
+    ai_email: 'AI',
+    template_email: 'Template',
+};
+
+export function SentPanel() {
+    const [rows, setRows] = useState<SentEmailSummary[]>([]);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [total, setTotal] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [q, setQ] = useState('');
+    const [dq, setDq] = useState('');
+    const [openId, setOpenId] = useState<string | null>(null);
+    const [open, setOpen] = useState<SentEmailFull | null>(null);
+    const [openLoading, setOpenLoading] = useState(false);
+    const req = useRef(0);
+
+    useEffect(() => {
+        const t = setTimeout(() => setDq(q.trim()), 350);
+        return () => clearTimeout(t);
+    }, [q]);
+
+    const load = useCallback(async (p: number, mode: 'replace' | 'append') => {
+        const id = ++req.current;
+        mode === 'append' ? setLoadingMore(true) : setLoading(true);
+        const r = await listSentEmails({ page: p, limit: PAGE_SIZE, q: dq || undefined });
+        if (id !== req.current) return;
+        if (r.ok) {
+            const d = r.data;
+            setRows((prev) => (mode === 'append' ? [...prev, ...d.messages.filter((m) => !prev.some((x) => x.id === m.id))] : d.messages));
+            setPage(d.page);
+            setTotalPages(d.totalPages);
+            setTotal(d.total);
+            setError(null);
+        } else {
+            setError(r.error.message);
+        }
+        setLoading(false);
+        setLoadingMore(false);
+    }, [dq]);
+
+    useEffect(() => { load(1, 'replace'); }, [load]);
+
+    const openRow = async (id: string) => {
+        setOpenId(id);
+        setOpen(null);
+        setOpenLoading(true);
+        const r = await getSentEmail(id);
+        if (r.ok) setOpen(r.data.message);
+        setOpenLoading(false);
+    };
+    const closeRow = () => { setOpenId(null); setOpen(null); };
+
+    return (
+        <div className="flex h-[calc(100vh-11rem)] min-h-[520px] overflow-hidden rounded-2xl border border-slate-200 bg-white mb-5">
+            {/* list */}
+            <section className={cx('flex w-full min-w-0 flex-col border-r border-slate-200 md:w-[380px] md:shrink-0', openId && 'hidden md:flex')}>
+                <div className="space-y-3 border-b border-slate-200 p-3">
+                    <h2 className="text-sm font-semibold text-slate-900">Sent</h2>
+                    <div className="relative">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Icon name="search" /></span>
+                        <input
+                            value={q}
+                            onChange={(e) => setQ(e.target.value)}
+                            placeholder="Search recipient, subject…"
+                            aria-label="Search sent emails"
+                            className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
+                        />
+                    </div>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    {loading && rows.length === 0 ? (
+                        <p className="p-6 text-center text-sm text-slate-500">Loading…</p>
+                    ) : error ? (
+                        <div className="p-6 text-center text-sm text-red-600">
+                            {error}
+                            <button type="button" onClick={() => load(1, 'replace')} className="mt-2 block w-full cursor-pointer text-xs font-semibold text-slate-700 underline">Try again</button>
+                        </div>
+                    ) : rows.length === 0 ? (
+                        <div className="px-6 py-16 text-center">
+                            <p className="text-sm font-semibold text-slate-800">{dq ? 'No matching emails' : 'No sent emails yet'}</p>
+                            <p className="mt-1 text-xs text-slate-500">Emails sent from the CRM will appear here.</p>
+                        </div>
+                    ) : (
+                        <ul className="divide-y divide-slate-100">
+                            {rows.map((r) => (
+                                <li key={r.id}>
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={() => openRow(r.id)}
+                                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && openRow(r.id)}
+                                        className={cx('cursor-pointer px-4 py-3 transition-colors', r.id === openId ? 'bg-[var(--color-primary-lighter)]' : 'hover:bg-slate-50')}
+                                    >
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="truncate text-sm font-medium text-slate-800">To: {r.toEmail}</span>
+                                            {r.label && (
+                                                <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-600">
+                                                    {SENT_LABELS[r.label] ?? r.label}
+                                                </span>
+                                            )}
+                                            <span className="ml-auto shrink-0 text-[11px] text-slate-400">{listDate(r.sentAt)}</span>
+                                        </div>
+                                        <p className="truncate text-[13px] text-slate-700">{r.subject}</p>
+                                        <div className="flex items-center gap-1.5">
+                                            <p className="min-w-0 flex-1 truncate text-xs text-slate-500">{r.snippet}</p>
+                                            {r.hasAttachments && <span className="shrink-0 text-slate-400"><Icon name="clip" className="h-3.5 w-3.5" /></span>}
+                                        </div>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                    {page < totalPages && (
+                        <div className="p-3 text-center">
+                            <button type="button" disabled={loadingMore} onClick={() => load(page + 1, 'append')}
+                                className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60">
+                                {loadingMore ? 'Loading…' : `Load more (${rows.length} of ${total})`}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </section>
+
+            {/* reading pane */}
+            <section className={cx('min-w-0 flex-1 flex-col', openId ? 'flex' : 'hidden md:flex')}>
+                {!openId ? (
+                    <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+                        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary-lighter)] text-[var(--color-primary)]"><Icon name="mail" className="h-6 w-6" /></span>
+                        <p className="text-sm font-semibold text-slate-800">Select an email to view</p>
+                    </div>
+                ) : openLoading || !open ? (
+                    <p className="p-6 text-sm text-slate-500">{openLoading ? 'Loading…' : 'Message not found.'}</p>
+                ) : (
+                    <>
+                        <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-3">
+                            <button type="button" onClick={closeRow} aria-label="Back to list"
+                                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 md:hidden">
+                                <Icon name="back" className="h-5 w-5" />
+                            </button>
+                            <h2 className="min-w-0 flex-1 truncate text-base font-semibold text-slate-900">{open.subject}</h2>
+                        </div>
+                        <div className="min-h-0 flex-1 overflow-y-auto">
+                            <div className="px-5 pt-4 text-sm">
+                                <p className="text-slate-800"><span className="text-slate-500">To:</span> {open.toEmail}</p>
+                                <p className="text-xs text-slate-400">{fullDate(open.sentAt)}</p>
+                            </div>
+                            <div className="px-5 py-4">
+                                {open.bodyHtml
+                                    ? <HtmlFrame html={open.bodyHtml} allowImages />
+                                    : <pre className="whitespace-pre-wrap break-words font-sans text-sm text-slate-800">{open.snippet}</pre>}
+                            </div>
+                            {open.attachments?.length > 0 && (
+                                <div className="border-t border-slate-100 px-5 py-4">
+                                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Attachments ({open.attachments.length})</p>
+                                    <ul className="space-y-1 text-xs text-slate-700">
+                                        {open.attachments.map((a, i) => <li key={i} className="flex items-center gap-2"><Icon name="clip" className="h-3.5 w-3.5" />{a.filename}</li>)}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
+            </section>
+        </div>
+    );
+}
+
+/* ───────────── tabs wrapper: register THIS in the inbox page ───────────── */
+
+export function EmailInboxTabs(props: InboxProps) {
+    const [box, setBox] = useState<'inbox' | 'sent'>('inbox');
+    return (
+        <div>
+            <div role="tablist" className="mb-3 flex gap-1.5">
+                {([['inbox', 'Inbox'], ['sent', 'Sent']] as const).map(([id, label]) => (
+                    <button
+                        key={id}
+                        role="tab"
+                        type="button"
+                        aria-selected={box === id}
+                        onClick={() => setBox(id)}
+                        className={cx(
+                            'cursor-pointer rounded-full border px-4 py-1.5 text-sm font-medium transition-colors',
+                            box === id
+                                ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white'
+                                : 'border-slate-200 text-slate-600 hover:bg-[var(--color-primary-lighter)]'
+                        )}
+                    >
+                        {label}
+                    </button>
+                ))}
+            </div>
+            {box === 'inbox' ? <EmailInbox {...props} /> : <SentPanel />}
         </div>
     );
 }

@@ -10,7 +10,7 @@
  */
 import React, { useState } from 'react';
 import WhatsAppBaileysInbox from "@/app/component/whatsapp/baileys/WhatsappBaileysInbox"; // 👈 adjust to where you put the file
-import EmailInbox from '../component/email/EmailInbox';
+import { EmailInboxTabs } from '../component/email/EmailInbox';
 
 type InboxProps = { adminId?: string };
 type Provider = { id: string; label: string; Component?: React.ComponentType<InboxProps> };
@@ -37,7 +37,7 @@ const CHANNELS: Channel[] = [
         id: 'email',
         label: 'Email',
         icon: <Svg><path d="M4 5h16v14H4zM4 7l8 6 8-6" /></Svg>,
-        providers: [{ id: 'email', label: 'Email', Component: EmailInbox }],
+        providers: [{ id: 'email', label: 'Email', Component: EmailInboxTabs }],
     },
     {
         id: 'sms',

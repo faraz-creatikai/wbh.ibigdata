@@ -1,5 +1,5 @@
-export const BASE_URL = "https://apiwbh.ibigdata.in/api";
-export const API_URL = "https://apiwbh.ibigdata.in";
+export const BASE_URL = "https://wbh.ibigdata.in/api";
+export const API_URL = "https://wbh.ibigdata.in";
 
 
 export const API_ROUTES = {
@@ -434,6 +434,9 @@ export const API_ROUTES = {
       EMAIL_INBOX_REPLY: `${BASE_URL}/v1/messages/email/inbox/reply`,
       EMAIL_INBOX_BATCH: (id: string) => `${BASE_URL}/v1/messages/email/inbox/batches/${id}`,
       EMAIL_INBOX_BATCH_CANCEL: (id: string) => `${BASE_URL}/v1/messages/email/inbox/batches/${id}/cancel`,
+
+      EMAIL_SENT: `${BASE_URL}/v1/messages/inbox/sent`,
+      EMAIL_SENT_ONE: (id: string) => `${BASE_URL}/v1/messages/inbox/sent/${id}`,
     },
     WHATSAPP: {
       GET_ALL: `${BASE_URL}/v1/templates?type=whatsapp`,
@@ -534,8 +537,8 @@ export const API_ROUTES = {
   },
 
   CHANNELTRACKING: {
-  STATS: (params: string) => `${BASE_URL}/channel-tracking/stats?${params}`,
-},
+    STATS: (params: string) => `${BASE_URL}/channel-tracking/stats?${params}`,
+  },
 
 
   ADMIN: {
