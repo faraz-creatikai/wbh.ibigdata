@@ -155,6 +155,9 @@ function HtmlFrame({ html, allowImages }: { html: string; allowImages: boolean }
             `<!doctype html><html><head><meta charset="utf-8">` +
             `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: ${allowImages ? 'https: http:' : ''}; style-src 'unsafe-inline'">` +
             `<base target="_blank"><style>` +
+            // stop the email from sizing itself to the iframe (this is what caused the endless growth)
+            `html,body{height:auto!important;min-height:0!important;overflow:hidden}` +
+            `[style*="vh"],[style*="100%"]{min-height:0!important}` +
             `body{margin:0;font:14px/1.6 system-ui,-apple-system,Segoe UI,sans-serif;color:#0f172a;word-wrap:break-word;overflow-wrap:anywhere}` +
             `img{max-width:100%;height:auto}table{max-width:100%}a{color:#2563eb}` +
             `blockquote{margin:0 0 0 4px;padding-left:12px;border-left:3px solid #e2e8f0;color:#475569}` +
@@ -163,8 +166,11 @@ function HtmlFrame({ html, allowImages }: { html: string; allowImages: boolean }
     );
 
     const fit = useCallback(() => {
-        const d = ref.current?.contentDocument;
-        if (d?.documentElement) setHeight(Math.max(120, d.documentElement.scrollHeight));
+        const b = ref.current?.contentDocument?.body;
+        if (!b) return;
+        // measure the BODY (its real content), not the document, which is never smaller than the iframe
+        const h = Math.min(30000, Math.max(120, Math.ceil(b.getBoundingClientRect().height)));
+        setHeight((prev) => (Math.abs(prev - h) > 2 ? h : prev)); // ignore tiny changes so it can't ping-pong
     }, []);
 
     useEffect(() => () => observer.current?.disconnect(), []);
@@ -176,14 +182,15 @@ function HtmlFrame({ html, allowImages }: { html: string; allowImages: boolean }
             sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
             srcDoc={doc}
             style={{ height }}
+            scrolling="no"
             className="w-full border-0"
             onLoad={() => {
                 fit();
-                const d = ref.current?.contentDocument;
+                const b = ref.current?.contentDocument?.body;
                 observer.current?.disconnect();
-                if (d?.documentElement && typeof ResizeObserver !== 'undefined') {
+                if (b && typeof ResizeObserver !== 'undefined') {
                     observer.current = new ResizeObserver(fit);
-                    observer.current.observe(d.documentElement);
+                    observer.current.observe(b); // observe the body, not the document element
                 }
             }}
         />
