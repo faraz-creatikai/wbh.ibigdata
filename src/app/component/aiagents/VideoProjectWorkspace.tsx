@@ -129,26 +129,23 @@ type UploadedPhoto = { fileName: string; originalName: string; url: string; labe
 type Mode = 'hinglish' | 'hindi' | 'english'
 type VoiceoverMethod = 'ai_voice' | 'uploaded_voice'
 type Step = 1 | 2 | 3 | 4 | 5
-type AIVoice = 'female_1' | 'male_1' | 'female_2' | 'male_2'
+type AIVoice = 'female' | 'male'
 type ScriptMeta = { attempts?: number; mode?: string }
 type AspectRatio = 'portrait' | 'square' | 'landscape'
 
 
 const STEPS: { id: Step; label: string; icon: React.ReactNode }[] = [
     { id: 1, label: 'Photos', icon: <UploadCloudIcon /> },
-    { id: 2, label: 'Property', icon: <HomeIcon /> },
+    { id: 2, label: 'Details', icon: <HomeIcon /> },
     { id: 3, label: 'Script', icon: <SparkleIcon /> },
     { id: 4, label: 'Voice', icon: <MicIcon /> },
     { id: 5, label: 'Preview', icon: <PlayIcon /> },
 ]
 
 const VOICE_OPTIONS: { id: AIVoice; name: string; tag: string; avatar: string }[] = [
-    { id: 'female_1', name: 'Priya', tag: 'Clear & professional', avatar: '👩' },
-    { id: 'male_1', name: 'Rahul', tag: 'Friendly & energetic', avatar: '👨' },
-    { id: 'female_2', name: 'Aarti', tag: 'Warm & inviting', avatar: '👩‍🦱' },
-    { id: 'male_2', name: 'Vikram', tag: 'Deep & authoritative', avatar: '🧔' },
+    { id: 'female', name: 'Priya', tag: 'Clear & professional', avatar: '👩' },
+    { id: 'male', name: 'Rahul', tag: 'Friendly & energetic', avatar: '👨' },
 ]
-
 /* ── small reusable bits ── */
 const Badge = ({ children, tone = 'blue' }: { children: React.ReactNode; tone?: 'blue' | 'slate' | 'green' }) => {
     const styles = {
@@ -343,18 +340,18 @@ const VideoProjectWorkspace = ({ isOpen }: { isOpen: boolean }) => {
     const [voiceFile, setVoiceFile] = useState<File | null>(null)
     const [isRendering, setIsRendering] = useState(false)
     const voiceInputRef = useRef<HTMLInputElement>(null)
-    const [aiVoice, setAiVoice] = useState<AIVoice>('female_1')
+    const [aiVoice, setAiVoice] = useState<AIVoice>('female')
     const [voiceFileDragDepth, setVoiceFileDragDepth] = useState(0)
     const [isDownloading, setIsDownloading] = useState(false)
     const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null)
     const [isRecordingConfirmed, setIsRecordingConfirmed] = useState(false)
-const [videoAspectRatio, setVideoAspectRatio] = useState<AspectRatio>('portrait')
+    const [videoAspectRatio, setVideoAspectRatio] = useState<AspectRatio>('portrait')
 
-const CSS_RATIO: Record<AspectRatio, string> = {
-    portrait: '9 / 16',
-    square: '1 / 1',
-    landscape: '16 / 9',
-}
+    const CSS_RATIO: Record<AspectRatio, string> = {
+        portrait: '9 / 16',
+        square: '1 / 1',
+        landscape: '16 / 9',
+    }
     // ── new state, near your other Step 4 state ──
     const [recordMethod, setRecordMethod] = useState<'file' | 'live'>('file')
     const [isRecording, setIsRecording] = useState(false)
@@ -418,7 +415,7 @@ const CSS_RATIO: Record<AspectRatio, string> = {
         if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
     }
 
-      const discardRecording = () => {
+    const discardRecording = () => {
         if (recordedPreviewUrl) URL.revokeObjectURL(recordedPreviewUrl)
         setRecordedBlob(null)
         setRecordedPreviewUrl(null)
@@ -431,8 +428,8 @@ const CSS_RATIO: Record<AspectRatio, string> = {
         const type = recordedBlob.type || ''
         const ext = type.includes('mp4') ? 'm4a'
             : type.includes('ogg') ? 'ogg'
-            : type.includes('wav') ? 'wav'
-            : 'webm'
+                : type.includes('wav') ? 'wav'
+                    : 'webm'
         const file = new File([recordedBlob], `voice-recording-${Date.now()}.${ext}`, { type: recordedBlob.type })
         setVoiceFile(file)
         setIsRecordingConfirmed(true) // ← keep recordedBlob/previewUrl alive, just mark as confirmed
@@ -668,7 +665,7 @@ const CSS_RATIO: Record<AspectRatio, string> = {
 
             setVideoUrl(res.videoUrl)
             setThumbnailUrl(res.thumbnailUrl ?? null)
-            setVideoAspectRatio(res.aspectRatio ?? 'portrait') 
+            setVideoAspectRatio(res.aspectRatio ?? 'portrait')
             setStep(5)
         } catch {
             setError('Could not render the video. Please try again.')
@@ -747,7 +744,7 @@ const CSS_RATIO: Record<AspectRatio, string> = {
                                     <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(0,102,204,0.1)', color: '#0066cc' }}>
                                         <UploadCloudIcon />
                                     </div>
-                                    <p className="text-[13.5px] font-bold" style={{ color: '#1e293b' }}>Upload property photos</p>
+                                    <p className="text-[13.5px] font-bold" style={{ color: '#1e293b' }}>Upload your photos</p>
                                 </div>
                                 {draftPhotos.length > 0 && <Badge>{draftPhotos.length} photo{draftPhotos.length === 1 ? '' : 's'}</Badge>}
                             </div>
@@ -831,7 +828,7 @@ const CSS_RATIO: Record<AspectRatio, string> = {
                                                         type="text"
                                                         value={photo.label}
                                                         onChange={e => updateDraftLabel(photo.id, e.target.value)}
-                                                        placeholder="e.g. hall, kitchen, master bedroom…"
+                                                        placeholder="e.g. product front, side view, close-up..."
                                                         className="w-full min-w-0 rounded-lg border pl-7 pr-2.5 py-1.5 text-[11px] outline-none"
                                                         style={{ borderColor: '#e2e8f0', background: '#f8fafc', color: '#334155' }}
                                                         onFocus={e => (e.currentTarget.style.borderColor = '#99c2ff')}
@@ -876,10 +873,10 @@ const CSS_RATIO: Record<AspectRatio, string> = {
                                 <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(0,102,204,0.1)', color: '#0066cc' }}>
                                     <HomeIcon />
                                 </div>
-                                <p className="text-[13.5px] font-bold" style={{ color: '#1e293b' }}>Property details</p>
+                                <p className="text-[13.5px] font-bold" style={{ color: '#1e293b' }}>Project details</p>
                             </div>
                             <p className="text-[11.5px] mb-4" style={{ color: '#94a3b8' }}>
-                                Describe the property — the AI uses this plus your {totalPhotos} photo labels to write the voiceover.
+                                Describe the subject of this video — the AI uses this plus your {totalPhotos} photo labels to write the voiceover.
                             </p>
 
                             {/* photo order preview strip */}
@@ -900,7 +897,7 @@ const CSS_RATIO: Record<AspectRatio, string> = {
                                     value={propertyDetails}
                                     onChange={e => setPropertyDetails(e.target.value)}
                                     rows={5}
-                                    placeholder="e.g. 3 BHK flat for rent in Ganesh Nagar, Mansarovar, Jaipur. Fully furnished, AC, modular kitchen and parking. Contact Jaipur Rental today."
+                                    placeholder="e.g. A sleek new smartwatch with a 2-day battery life, heart-rate tracking, and water resistance. Perfect for fitness enthusiasts."
                                     className="w-full rounded-xl border px-3.5 py-3 text-[12px] leading-relaxed outline-none resize-none"
                                     style={{ borderColor: '#e2e8f0', background: '#ffffff', color: '#334155' }}
                                     onFocus={e => (e.currentTarget.style.borderColor = '#99c2ff')}
@@ -1051,7 +1048,7 @@ const CSS_RATIO: Record<AspectRatio, string> = {
                                 </div>
                             )}
 
-                           {voiceoverMethod === 'uploaded_voice' && (
+                            {voiceoverMethod === 'uploaded_voice' && (
                                 <div className="mb-5">
                                     <div className="flex rounded-lg border overflow-hidden w-fit mb-3" style={{ borderColor: '#e2e8f0' }}>
                                         {([
@@ -1220,19 +1217,19 @@ const CSS_RATIO: Record<AspectRatio, string> = {
 
                             <div className="flex justify-center mb-5">
                                 <div className="p-2 rounded-[26px]" style={{ background: '#0f172a', boxShadow: '0 12px 32px rgba(15,23,42,0.18)' }}>
-    <video
-        controls
-        poster={thumbnailUrl ? resolveMediaUrl(thumbnailUrl) : undefined}
-        src={resolveMediaUrl(videoUrl)}
-        className="rounded-2xl"
-        style={{
-            maxWidth: videoAspectRatio === 'landscape' ? '480px' : '300px',
-            width: '100%',
-            aspectRatio: CSS_RATIO[videoAspectRatio],
-            background: '#000',
-        }}
-    />
-</div>
+                                    <video
+                                        controls
+                                        poster={thumbnailUrl ? resolveMediaUrl(thumbnailUrl) : undefined}
+                                        src={resolveMediaUrl(videoUrl)}
+                                        className="rounded-2xl"
+                                        style={{
+                                            maxWidth: videoAspectRatio === 'landscape' ? '480px' : '300px',
+                                            width: '100%',
+                                            aspectRatio: CSS_RATIO[videoAspectRatio],
+                                            background: '#000',
+                                        }}
+                                    />
+                                </div>
                             </div>
 
                             <div className="flex items-center justify-center gap-3">
