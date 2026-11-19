@@ -62,6 +62,35 @@ export const API_ROUTES = {
     REMOVESHORTLIST: `${BASE_URL}/customer/shortlist`,
     UPDATESHORTLIST: `${BASE_URL}/customer/shortlist`,
   },
+  JOURNEY: {
+    // Journeys
+    GET_ALL: `${BASE_URL}/journey`,
+    ADD: `${BASE_URL}/journey`,
+    ANALYTICS: `${BASE_URL}/journey/analytics`,
+
+    GET_BY_ID: (id: string) => `${BASE_URL}/journey/${id}`,
+    UPDATE: (id: string) => `${BASE_URL}/journey/${id}`,
+    UPDATE_STATUS: (id: string) => `${BASE_URL}/journey/${id}/status`,
+    DELETE: (id: string) => `${BASE_URL}/journey/${id}`,
+
+    // Test executions
+    CREATE_TEST: (id: string) => `${BASE_URL}/journey/${id}/test`,
+    RUN_TEST: (id: string, executionId: string) =>
+      `${BASE_URL}/journey/${id}/test/${executionId}/run`,
+
+    // Execution history
+    GET_EXECUTIONS: (id: string) => `${BASE_URL}/journey/${id}/executions`,
+
+    // Enrollments
+    ENROLL: (id: string) => `${BASE_URL}/journey/${id}/enroll`,
+    GET_ENROLLMENTS: (id: string) => `${BASE_URL}/journey/${id}/enrollments`,
+    GET_ENROLLMENTS_BY_PARAMS: (id: string, params: string) =>
+      `${BASE_URL}/journey/${id}/enrollments?${params}`,
+    GET_ENROLLMENT_BY_ID: (id: string, enrollmentId: string) =>
+      `${BASE_URL}/journey/${id}/enrollments/${enrollmentId}`,
+    CANCEL_ENROLLMENT: (id: string, enrollmentId: string) =>
+      `${BASE_URL}/journey/${id}/enrollments/${enrollmentId}`,
+  },
   COMPANYPROJECTS: {
     GET_ALL: `${BASE_URL}/com/pro`,
     GET_BY_ID: (id: string) => `${BASE_URL}/com/pro/${id}`,
