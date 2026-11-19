@@ -21,6 +21,7 @@ import {
   ExternalLink,
   PhoneCall,
   Megaphone,
+  Network
 } from "lucide-react";
 
 import { NavMain } from "../components/nav-main";
@@ -74,11 +75,17 @@ const data = {
       url: "/minedlead",
       icon: ExternalLink,
     },
+            {
+      title: "Journey",
+      url: "/journey",
+      icon: Network,
+    },
      {
       title: "Inbox",
       url: "/inbox",
       icon: MessageSquare,
     },
+ 
     {
       title: "Outreach Channels",
       url: "#",
