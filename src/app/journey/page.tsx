@@ -29,6 +29,7 @@ import type {
   JourneyStatusFilter,
 } from "@/types/journey";
 
+
 import { apiRequest } from "@/lib/journeyApi";
 import { getFilteredCustomer } from "@/store/customer";
 import { API_ROUTES } from "@/constants/ApiRoute";
@@ -40,7 +41,19 @@ const CONTACT_LIMIT_OPTIONS = [10, 20, 50, 100];
 // ─────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────
-
+type EnrollmentRow = {
+  id: string;
+  status: string;
+  source: string;
+  enrolledAt: string;
+  customerId: string;
+  customer?: {
+    customerName?: string;
+    Email?: string;
+    ContactNumber?: string;
+    CountryCode?: string;
+  };
+};
 interface ApiJourney {
   id: string;
   name: string;
@@ -283,6 +296,12 @@ export default function JourneyPage() {
     null
   );
 
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+const [viewJourney, setViewJourney] = useState<Journey | null>(null);
+const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
+const [enrollmentsLoading, setEnrollmentsLoading] = useState(false);
+const [enrollmentsError, setEnrollmentsError] = useState("");
+
   const [contacts, setContacts] = useState<ApiContact[]>([]);
   const [contactsLoading, setContactsLoading] = useState(false);
   const [contactsError, setContactsError] = useState<string | null>(null);
@@ -470,7 +489,41 @@ export default function JourneyPage() {
     setContactTotal(0);
     setEnrollModalOpen(true);
   };
+const loadEnrollments = async (journey: Journey) => {
+  setEnrollmentsLoading(true);
+  setEnrollmentsError("");
 
+  try {
+    const res = await fetch(API_ROUTES.JOURNEY.GET_ALL, {
+      credentials: "include",
+    });
+
+    const json = await res.json();
+    if (!res.ok) throw new Error(json?.message || "Failed to load enrollments");
+
+    const list = Array.isArray(json) ? json : json.data ?? json.journeys ?? [];
+    const found = list.find((j: { id: string }) => j.id === journey.id);
+
+    setEnrollments(found?.enrollments ?? []);
+  } catch (error) {
+    setEnrollmentsError(
+      error instanceof Error ? error.message : "Failed to load enrollments"
+    );
+  } finally {
+    setEnrollmentsLoading(false);
+  }
+};
+const handleViewJourney = (journey: Journey) => {
+  setViewJourney(journey);
+  setEnrollments([]);
+  setViewModalOpen(true);
+  loadEnrollments(journey);
+};
+
+const handleCloseView = () => {
+  setViewModalOpen(false);
+  setViewJourney(null);
+};
   const handleCloseEnroll = () => {
     if (enrolling) return;
 
@@ -848,6 +901,7 @@ export default function JourneyPage() {
               onToggleStatus={handleToggleStatus}
               onDelete={handleDelete}
               onEnroll={handleOpenEnroll}
+              onView={handleViewJourney}
             />
 
             <JourneyPagination
@@ -1265,6 +1319,118 @@ export default function JourneyPage() {
           </div>
         </div>
       )}
+      {viewModalOpen && viewJourney && (
+  <div
+    className="fixed inset-0 z-[100] flex items-center justify-center bg-[#102A36]/50 p-3 backdrop-blur-[2px] sm:p-5"
+    onMouseDown={(event) => {
+      if (event.target === event.currentTarget) handleCloseView();
+    }}
+  >
+    <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[#E5EDF0] bg-white shadow-2xl">
+      <div className="flex items-center justify-between border-b border-[#E8EFF2] px-5 py-4 sm:px-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF8F6] text-[#168B83]">
+            <Users size={20} />
+          </div>
+          <div>
+            <h2 className="text-[16px] font-bold text-[#18313B]">
+              Enrolled Contacts
+            </h2>
+            <p className="mt-0.5 text-[11px] text-[#71849A]">
+              Journey: {viewJourney.name}
+              {!enrollmentsLoading && !enrollmentsError
+                ? ` · ${enrollments.length} enrolled`
+                : ""}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleCloseView}
+          className="rounded-lg p-1.5 text-[#71849A] hover:bg-[#F3F7F9] hover:text-[#18313B]"
+          aria-label="Close enrollments popup"
+        >
+          <X size={18} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-auto px-5 py-3 sm:px-6">
+        {enrollmentsLoading ? (
+          <div className="flex items-center justify-center py-14 text-xs text-[#71849A]">
+            <Loader2 size={18} className="mr-2 animate-spin text-[#168B83]" />
+            Loading enrollments...
+          </div>
+        ) : enrollmentsError ? (
+          <div className="py-12 text-center">
+            <p className="text-xs text-red-600">{enrollmentsError}</p>
+            <button
+              type="button"
+              onClick={() => loadEnrollments(viewJourney)}
+              className="mt-3 rounded-lg border border-[#DCE6EA] px-3.5 py-1.5 text-xs font-semibold text-[#18313B] hover:bg-[#F3F7F9]"
+            >
+              Retry
+            </button>
+          </div>
+        ) : enrollments.length === 0 ? (
+          <div className="py-14 text-center text-xs text-[#71849A]">
+            No contacts are enrolled in this journey yet.
+          </div>
+        ) : (
+          <table className="w-full border-collapse text-left text-xs">
+            <thead>
+              <tr className="border-b border-[#E8EFF2] text-[11px] font-semibold uppercase tracking-wide text-[#71849A]">
+                <th className="py-2.5 pr-3">Name</th>
+                <th className="py-2.5 pr-3">Phone</th>
+                <th className="py-2.5 pr-3">Email</th>
+                <th className="py-2.5 pr-3">Source</th>
+                <th className="py-2.5 pr-3">Status</th>
+                <th className="py-2.5">Enrolled at</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#F0F4F6]">
+              {enrollments.map((item) => (
+                <tr key={item.id} className="hover:bg-[#F8FBFC]">
+                  <td className="py-2.5 pr-3 font-medium text-[#18313B]">
+                    {item.customer?.customerName || "—"}
+                  </td>
+                  <td className="py-2.5 pr-3 text-[#4A5E70]">
+                    {item.customer?.ContactNumber
+                      ? `+${item.customer.CountryCode ?? ""} ${item.customer.ContactNumber}`
+                      : "—"}
+                  </td>
+                  <td className="py-2.5 pr-3 text-[#4A5E70]">
+                    {item.customer?.Email || "—"}
+                  </td>
+                  <td className="py-2.5 pr-3 capitalize text-[#4A5E70]">
+                    {item.source.replace(/_/g, " ")}
+                  </td>
+                  <td className="py-2.5 pr-3">
+                    <span className="inline-block rounded-full bg-[#E8F8EF] px-2.5 py-0.5 text-[11px] font-medium capitalize text-[#168447]">
+                      {item.status}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap py-2.5 text-[#4A5E70]">
+                    {new Date(item.enrolledAt).toLocaleString("en-IN")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="flex justify-end border-t border-[#E8EFF2] bg-[#FAFDFD] px-5 py-3.5 sm:px-6">
+        <button
+          type="button"
+          onClick={handleCloseView}
+          className="rounded-lg border border-[#DCE6EA] bg-white px-4 py-2 text-xs font-semibold text-[#5B6E82] hover:bg-[#F3F7F9]"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import {
   Workflow,
   History,
   UserPlus,
+  Eye,
 } from "lucide-react";
 import type { Journey, JourneyChannel } from "@/types/journey";
 import JourneyActions from "@/components/journey/JourneyActions";
@@ -18,8 +19,21 @@ interface JourneyTableProps {
   onToggleStatus: (journey: Journey) => void;
   onDelete: (journey: Journey) => void;
   onEnroll: (journey: Journey) => void;
+  onView: (journey: Journey) => void; 
 }
-
+type EnrollmentRow = {
+  id: string;
+  status: string;
+  source: string;
+  enrolledAt: string;
+  customerId: string;
+  customer?: {
+    customerName?: string;
+    Email?: string;
+    ContactNumber?: string;
+    CountryCode?: string;
+  };
+};
 const channelMeta: Record<
   JourneyChannel,
   {
@@ -71,6 +85,7 @@ const statusMeta = {
 };
 
 function ChannelList({ channels }: { channels: JourneyChannel[] }) {
+  
   return (
     <div className="flex min-w-[140px] flex-wrap gap-1.5">
       {channels.map((channel) => {
@@ -98,6 +113,7 @@ export default function JourneyTable({
   onToggleStatus,
   onDelete,
   onEnroll,
+  onView,
 }: JourneyTableProps) {
   if (journeys.length === 0) {
     return (
@@ -244,7 +260,17 @@ export default function JourneyTable({
                         <UserPlus size={14} />
                         <span>Enroll</span>
                       </button>
-
+                                              {/* View Enrollments */}
+                      <button
+                        type="button"
+                        onClick={() => onView(journey)}
+                        title="View enrolled contacts"
+                        aria-label={`View enrollments for ${journey.name}`}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#DCE7EB] bg-white px-2.5 text-[11px] font-semibold text-[#168B83] transition hover:border-[#168B83] hover:bg-[#EAF8F6]"
+                      >
+                        <Eye size={14} />
+                        <span>View</span>
+                      </button>
                       {/* Execution History */}
                       <Link
                         href={`/journey/${journey.id}/executions`}
