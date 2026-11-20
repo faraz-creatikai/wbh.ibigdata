@@ -616,6 +616,17 @@ export default function JourneyPage() {
       });
 
       setSelectedContactIds(new Set());
+ // Start the worker so the new executions run right away.
+      if ((summary.executionsCreated ?? 0) > 0) {
+        fetch("https://apiwbh.ibigdata.in/api/journey/worker/run", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_JOURNEY_WORKER_TOKEN}`,
+          },
+        }).catch(() => {
+          /* the enrollment is saved even if this call fails */
+        });
+      }
 
       await fetchJourneys();
     } catch (err) {

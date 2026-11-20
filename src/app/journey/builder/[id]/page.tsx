@@ -335,7 +335,7 @@ const [showNodeSettings, setShowNodeSettings] = useState(true);
   };
 
   const handlePublish = () => {
-    const hasTrigger = nodes.some((node) => node.type === "trigger");
+    const hasTrigger = nodes.some((node) => node.type === "trigger"|| node.type === "enrolled_leads");
 
     if (!hasTrigger) {
       setToast("Add a trigger before publishing this journey.");
