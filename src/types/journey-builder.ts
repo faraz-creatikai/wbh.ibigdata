@@ -14,6 +14,7 @@ export type JourneyNodeType =
   | "condition"
   | "assign"
   | "ai_agent"
+  | "enrolled_leads"
   | "end";
 
 /* =========================================
@@ -75,6 +76,16 @@ export interface JourneyNodeConfig
   outputKey?: string;
   temperature?: number;
   maxTokens?: number;
+  // email config
+  emailTemplateId?: string;
+emailTemplateName?: string;
+emailTemplateMedia?: {
+  kind: "image" | "video" | "document";
+  url: string;
+  urls: string[];
+  fileName: string;
+  count: number;
+} | null;
 }
 
 /* =========================================

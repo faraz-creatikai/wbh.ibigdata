@@ -21,6 +21,7 @@ import {
   Square,
   PencilLine,
   PanelLeftClose,
+  UserCheck,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
@@ -53,6 +54,19 @@ const actionItems: ActionItem[] = [
     iconComponent: UserPlus,
     config: {
       triggerEvent: "new_lead_added",
+    },
+  },
+    {
+    id: "enrolled-leads",
+    title: "Enrolled Leads",
+    description: "Choose which leads enter this journey",
+    type: "enrolled_leads",
+    category: "triggers",
+    icon: "user-check",
+    color: "indigo",
+    iconComponent: UserCheck,
+    config: {
+        triggerEvent: "enrolled_leads",
     },
   },
   {
