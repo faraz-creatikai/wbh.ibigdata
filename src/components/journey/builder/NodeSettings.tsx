@@ -2,7 +2,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
+import EmailTemplatePicker, {
+  type PickedTemplate,
+} from "@/app/component/email/EmailTemplatePicker";
 import {
   Check,
   Eye,
@@ -18,6 +20,7 @@ import {
   AlertCircle,
   Bot,
   PanelRightClose,
+  UserCheck,
 } from "lucide-react";
 
 import type {
@@ -118,7 +121,12 @@ const nodeMeta: Record<
   icon: Bot,
   tone: "text-[var(--color-secondary-dark)] bg-[var(--color-secondary-light)]",
 },
-
+enrolled_leads: {
+  title: "Enrolled Leads",
+  subtitle: "Choose which leads enter this journey",
+  icon: UserCheck,
+  tone: "text-[var(--color-primary-dark)] bg-[var(--color-primary-lighter)]",
+},
   end: {
     title: "End Journey",
     subtitle: "Stop this automation path",
@@ -140,7 +148,7 @@ export default function NodeSettings({
   const [tab, setTab] = useState<"settings" | "preview">(
     "settings"
   );
-
+const [showEmailPicker, setShowEmailPicker] = useState(false);
   const [apiKey, setApiKey] = useState("");
 const [showApiKey, setShowApiKey] = useState(false);
 
@@ -210,6 +218,7 @@ const [showApiKey, setShowApiKey] = useState(false);
             its configuration here.
           </p>
         </div>
+ 
       </aside>
     );
   }
@@ -599,82 +608,164 @@ const [showApiKey, setShowApiKey] = useState(false);
               </>
             )}
 
-            {/* =================================
-                EMAIL SETTINGS
-            ================================= */}
-            {nodeType === "email" && (
-              <>
-                <div>
-                  <label className={labelClass}>
-                    Sender Name
-                  </label>
+         {/* =================================
+    EMAIL SETTINGS
+================================= */}
+{nodeType === "email" && (
+  <>
+    {/* MESSAGE TYPE SWITCH */}
+    <div>
+      <label className={labelClass}>Message Type</label>
 
-                  <input
-                    className={fieldClass}
-                    value={String(config.senderName ?? "")}
-                    onChange={(event) => {
-                      setConfig({
-                        senderName: event.target.value,
-                      });
-                    }}
-                    placeholder="Property Sales Team"
-                  />
-                </div>
+      <div className="mt-1 grid grid-cols-2 gap-1 rounded-lg bg-[#F3F6F9] p-1">
+        <button
+          type="button"
+          onClick={() => {
+            if (config.messageType === "template") {
+              // leaving template mode: clear the template data
+              setConfig({
+                messageType: "custom",
+                emailTemplateId: "",
+                emailTemplateName: "",
+                emailTemplateMedia: null,
+                subject: "",
+                message: "",
+              });
+            }
+          }}
+          className={`rounded-md py-2 text-[11px] font-semibold ${
+            config.messageType !== "template"
+              ? "bg-[var(--color-primary)] text-white shadow-sm"
+              : "text-[#536579]"
+          }`}
+        >
+          Custom Message
+        </button>
 
-                <div>
-                  <label className={labelClass}>
-                    Sender Email
-                  </label>
+        <button
+          type="button"
+          onClick={() => {
+            if (config.messageType !== "template") {
+              setConfig({
+                messageType: "template",
+                subject: "",
+                message: "",
+              });
+            }
+            setShowEmailPicker(true);
+          }}
+          className={`rounded-md py-2 text-[11px] font-semibold ${
+            config.messageType === "template"
+              ? "bg-[var(--color-primary)] text-white shadow-sm"
+              : "text-[#536579]"
+          }`}
+        >
+          Template Message
+        </button>
+      </div>
+    </div>
 
-                  <input
-                    type="email"
-                    className={fieldClass}
-                    value={String(config.senderEmail ?? "")}
-                    onChange={(event) => {
-                      setConfig({
-                        senderEmail: event.target.value,
-                      });
-                    }}
-                    placeholder="sales@example.com"
-                  />
-                </div>
+    {/* <div>
+      <label className={labelClass}>Sender Name</label>
+      <input
+        className={fieldClass}
+        value={String(config.senderName ?? "")}
+        onChange={(event) => {
+          setConfig({ senderName: event.target.value });
+        }}
+        placeholder="Property Sales Team"
+      />
+    </div> */}
 
-                <div>
-                  <label className={labelClass}>
-                    Subject
-                  </label>
+    {/* <div>
+      <label className={labelClass}>Sender Email</label>
+      <input
+        type="email"
+        className={fieldClass}
+        value={String(config.senderEmail ?? "")}
+        onChange={(event) => {
+          setConfig({ senderEmail: event.target.value });
+        }}
+        placeholder="sales@example.com"
+      />
+    </div> */}
 
-                  <input
-                    className={fieldClass}
-                    value={String(config.subject ?? "")}
-                    onChange={(event) => {
-                      setConfig({
-                        subject: event.target.value,
-                      });
-                    }}
-                    placeholder="Property details and brochure"
-                  />
-                </div>
+    {config.messageType === "template" ? (
+      /* ---------- TEMPLATE MODE ---------- */
+      <div>
+        <label className={labelClass}>
+          Email Template <span className="text-rose-500">*</span>
+        </label>
 
-                <div>
-                  <label className={labelClass}>
-                    Email Content
-                  </label>
+        {config.emailTemplateId ? (
+          <div className="mt-1 rounded-lg border border-[#DDE7F0] bg-[#F8FAFC] p-3">
+            <p className="truncate text-[12px] font-semibold text-[#17324D]">
+              {String(config.emailTemplateName ?? "")}
+            </p>
 
-                  <textarea
-                    rows={7}
-                    className={textareaClass}
-                    value={message}
-                    onChange={(event) => {
-                      setConfig({
-                        message: event.target.value,
-                      });
-                    }}
-                    placeholder="Write your email..."
-                  />
-                </div>
-              </>
+            <p className="mt-1 truncate text-[11px] text-[#536579]">
+              Subject: {String(config.subject || "(no subject)")}
+            </p>
+
+            {config.emailTemplateMedia && (
+              <p className="mt-1 text-[10px] text-[#8293A8]">
+                Attachment: {String(config.emailTemplateMedia.fileName)}
+                {config.emailTemplateMedia.count > 1
+                  ? ` +${config.emailTemplateMedia.count - 1} more`
+                  : ""}
+              </p>
             )}
+
+            <p className="mt-2 text-[10px] text-[#8293A8]">
+              Placeholders like {"{{Name}}"} are filled in for each
+              contact when the journey runs.
+            </p>
+          </div>
+        ) : (
+          <p className="mt-1 text-[11px] text-[#8293A8]">
+            No template selected yet.
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setShowEmailPicker(true)}
+          className="mt-2 w-full rounded-lg border border-[var(--color-primary)] py-2 text-[11px] font-semibold text-[var(--color-primary)] transition hover:bg-[var(--color-primary-lighter)]"
+        >
+          {config.emailTemplateId ? "Change Template" : "Choose Template"}
+        </button>
+      </div>
+    ) : (
+      /* ---------- CUSTOM MODE (same as before) ---------- */
+      <>
+        <div>
+          <label className={labelClass}>Subject</label>
+          <input
+            className={fieldClass}
+            value={String(config.subject ?? "")}
+            onChange={(event) => {
+              setConfig({ subject: event.target.value });
+            }}
+            placeholder="Property details and brochure"
+          />
+        </div>
+
+        <div>
+          <label className={labelClass}>Email Content</label>
+          <textarea
+            rows={7}
+            className={textareaClass}
+            value={message}
+            onChange={(event) => {
+              setConfig({ message: event.target.value });
+            }}
+            placeholder="Write your email..."
+          />
+        </div>
+      </>
+    )}
+  </>
+)}
 
             {/* =================================
                 SMS SETTINGS
@@ -1194,6 +1285,23 @@ const [showApiKey, setShowApiKey] = useState(false);
           Changes update the canvas immediately.
         </div>
       </div>
+             {nodeType === "email" && (
+  <EmailTemplatePicker
+    isOpen={showEmailPicker}
+    onClose={() => setShowEmailPicker(false)}
+    onPick={(t: PickedTemplate) => {
+      setConfig({
+        messageType: "template",
+        emailTemplateId: t.id,
+        emailTemplateName: t.name,
+        emailTemplateMedia: t.media,
+        subject: t.subject,
+        message: t.body, // HTML snapshot of the template
+      });
+      setShowEmailPicker(false);
+    }}
+  />
+)}
     </aside>
   );
 }

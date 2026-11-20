@@ -39,7 +39,7 @@ import ConditionNode from "./nodes/ConditionNode";
 import AssignUserNode from "./nodes/AssignUserNode";
 import AIAgentNode from "./nodes/AIAgentNode";
 import EndNode from "./nodes/EndNode";
-
+import EnrolledLeadsNode from "./nodes/enrolledLeads";
 /* =========================================
    NODE TYPES
 ========================================= */
@@ -53,6 +53,7 @@ const nodeTypes = {
   condition: ConditionNode,
   assign: AssignUserNode,
   ai_agent: AIAgentNode,
+  enrolled_leads: EnrolledLeadsNode,
   end: EndNode,
 };
 

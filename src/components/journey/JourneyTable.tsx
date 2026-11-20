@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { Journey, JourneyChannel } from "@/types/journey";
 import JourneyActions from "@/components/journey/JourneyActions";
+import RunJourneyButton from "./RunJourneyButton";
 
 interface JourneyTableProps {
   journeys: Journey[];
@@ -226,6 +227,8 @@ export default function JourneyTable({
 
                   <td className="px-4 py-3.5">
                     <div className="flex items-center justify-end gap-2">
+                                            {/* Run Journey */}
+                      <RunJourneyButton journey={journey} />
                       {/* Enroll Contacts */}
                       <button
                         type="button"
