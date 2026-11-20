@@ -10,7 +10,7 @@ interface JourneyTabsProps {
 const tabs = [
   { id: "journeys" as const, label: "My Journeys", href: "/journey", icon: ListChecks },
   { id: "builder" as const, label: "Journey Builder", href: "/journey/builder/new", icon: Workflow },
-  { id: "templates" as const, label: "Journey Templates", href: "/journey/templates", icon: Blocks },
+ /*  { id: "templates" as const, label: "Journey Templates", href: "/journey/templates", icon: Blocks }, */
 ];
 
 export default function JourneyTabs({ activeTab = "journeys" }: JourneyTabsProps) {

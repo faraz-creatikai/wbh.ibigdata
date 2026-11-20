@@ -5,8 +5,8 @@ export default function JourneyHeader() {
   return (
     <div className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
       <div>
-        <div className="mb-1 flex flex-wrap items-center gap-2">
-          <h1 className="text-[25px] font-bold tracking-tight text-crm-heading">Journey</h1>
+        <div className="mb-1 flex flex-wrap items-center gap-1 text-[var(--color-primary-darker)]">
+          <h1 className="text-[25px] font-bold tracking-tight text-crm-heading ">Journey</h1>
           <span className="rounded-full bg-crm-primary-light px-2.5 py-1 text-[10px] font-semibold text-crm-primary-dark">
             Automation
           </span>
