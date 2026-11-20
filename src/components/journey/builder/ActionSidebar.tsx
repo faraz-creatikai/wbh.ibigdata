@@ -59,7 +59,7 @@ const actionItems: ActionItem[] = [
     {
     id: "enrolled-leads",
     title: "Enrolled Leads",
-    description: "Choose which leads enter this journey",
+    description: "Starts when you enroll contacts manually",
     type: "enrolled_leads",
     category: "triggers",
     icon: "user-check",

@@ -13,6 +13,7 @@ export default function EnrolledLeadsNode({
       icon={UserCheck}
       tone="indigo"
       selected={selected}
+      showTarget={false}
     />
   );
 }
