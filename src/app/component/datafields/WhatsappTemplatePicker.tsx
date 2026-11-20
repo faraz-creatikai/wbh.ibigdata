@@ -197,12 +197,13 @@ const Preview = ({ t }: { t: Tpl }) => {
 
 /* ───────── picker ───────── */
 export default function WhatsAppTemplatePicker({
-    isOpen, onClose, targetIds, onSent,
+  isOpen, onClose, targetIds = [], onSent, onSelect,
 }: {
-    isOpen: boolean;
-    onClose: () => void;
-    targetIds: string[];
-    onSent: (notice?: string) => void; // parent clears the selection and closes the picker
+  isOpen: boolean;
+  onClose: () => void;
+  targetIds?: string[];
+  onSent?: (notice?: string) => void;
+  onSelect?: (t: { _id: string; name: string }) => void;
 }) {
     const [templates, setTemplates] = useState<Tpl[]>([]);
     const [loading, setLoading] = useState(false);
@@ -273,6 +274,7 @@ export default function WhatsAppTemplatePicker({
     const n = targetIds.length;
 
     const handleSend = async () => {
+        if (onSelect) { if (selected) onSelect({ _id: selected._id, name: selected.name }); return; }
         if (!selected || sending || !n) return;
         setSending(true); setError('');
         try {
@@ -283,9 +285,9 @@ export default function WhatsAppTemplatePicker({
             const sent = res.sent ?? 0;
             if (sent < n) {
                 const firstErr = res.results?.find((r: any) => r.status === 'failed')?.error;
-                onSent(`Template sent to ${sent} of ${n} customers.${firstErr ? ` ${firstErr}` : ''}`);
+                onSent?.(`Template sent to ${sent} of ${n} customers.${firstErr ? ` ${firstErr}` : ''}`);
             } else {
-                onSent();
+                onSent?.();
             }
         } finally {
             setSending(false);
@@ -303,8 +305,10 @@ export default function WhatsAppTemplatePicker({
                 {/* header */}
                 <div className="px-4 py-3 bg-gradient-to-r from-[#075E54] to-[#128C7E] text-white flex items-center gap-3 shrink-0">
                     <div className="min-w-0 flex-1">
-                        <p className="font-bold text-sm">Send a template</p>
-                        <p className="text-[11px] text-emerald-50/80">To {n} customer{n === 1 ? '' : 's'}</p>
+                      <p className="font-bold text-sm">{onSelect ? 'Choose a template' : 'Send a template'}</p>
+                       <p className="text-[11px] text-emerald-50/80">
+    {onSelect ? 'Choose a template for this node' : `To ${n} customer${n === 1 ? '' : 's'}`}
+</p>
                     </div>
                     <button onClick={onClose} disabled={sending} aria-label="Close" className="p-2 text-white/80 hover:text-white cursor-pointer disabled:opacity-40"><I.Close /></button>
                 </div>
@@ -411,13 +415,19 @@ export default function WhatsAppTemplatePicker({
 
                 {/* footer */}
                 <div className="shrink-0 border-t border-gray-100 p-3">
-                    <button
-                        onClick={handleSend}
-                        disabled={!selected || sending || !n}
-                        className="w-full py-2.5 rounded-xl cursor-pointer text-sm font-bold text-white flex items-center justify-center gap-2 transition-all disabled:opacity-40 bg-gradient-to-r from-[#128C7E] to-[#25D366] hover:shadow-lg hover:shadow-emerald-500/30 active:scale-[0.98]"
-                    >
-                        {sending ? <><I.Spinner /> Sending…</> : <><I.Send /> Send to {n} customer{n === 1 ? '' : 's'}</>}
-                    </button>
+                   <button
+    onClick={handleSend}
+    disabled={!selected || sending || (!onSelect && !n)}
+    className="w-full py-2.5 rounded-xl cursor-pointer text-sm font-bold text-white flex items-center justify-center gap-2 transition-all disabled:opacity-40 bg-gradient-to-r from-[#128C7E] to-[#25D366] hover:shadow-lg hover:shadow-emerald-500/30 active:scale-[0.98]"
+>
+    {onSelect ? (
+        'Use this template'
+    ) : sending ? (
+        <><I.Spinner /> Sending…</>
+    ) : (
+        <><I.Send /> Send to {n} customer{n === 1 ? '' : 's'}</>
+    )}
+</button>
                     {sending && n > 1 && (
                         <p className="text-[11px] text-gray-500 mt-1.5 text-center">Sending one by one with a short delay. Messages appear in each chat as they go out.</p>
                     )}

@@ -29,6 +29,7 @@ import type {
   JourneyNodeData,
   JourneyNodeType,
 } from "@/types/journey-builder";
+import WhatsAppTemplatePicker from "@/app/component/datafields/WhatsappTemplatePicker";
 
 /* =========================================
    TYPES
@@ -38,7 +39,7 @@ interface NodeSettingsProps {
   node: JourneyFlowNode | null;
   onChange: (patch: Partial<JourneyNodeData>) => void;
   onClose: () => void;
-   onClosePanel: () => void;
+  onClosePanel: () => void;
 }
 
 /* =========================================
@@ -116,17 +117,17 @@ const nodeMeta: Record<
     tone: "text-amber-600 bg-amber-50",
   },
   ai_agent: {
-  title: "AI Agent",
-  subtitle: "Analyze contacts using AI",
-  icon: Bot,
-  tone: "text-[var(--color-secondary-dark)] bg-[var(--color-secondary-light)]",
-},
-enrolled_leads: {
-  title: "Enrolled Leads",
-  subtitle: "Choose which leads enter this journey",
-  icon: UserCheck,
-  tone: "text-[var(--color-primary-dark)] bg-[var(--color-primary-lighter)]",
-},
+    title: "AI Agent",
+    subtitle: "Analyze contacts using AI",
+    icon: Bot,
+    tone: "text-[var(--color-secondary-dark)] bg-[var(--color-secondary-light)]",
+  },
+  enrolled_leads: {
+    title: "Enrolled Leads",
+    subtitle: "Choose which leads enter this journey",
+    icon: UserCheck,
+    tone: "text-[var(--color-primary-dark)] bg-[var(--color-primary-lighter)]",
+  },
   end: {
     title: "End Journey",
     subtitle: "Stop this automation path",
@@ -143,14 +144,15 @@ export default function NodeSettings({
   node,
   onChange,
   onClose,
-   onClosePanel,
+  onClosePanel,
 }: NodeSettingsProps) {
   const [tab, setTab] = useState<"settings" | "preview">(
     "settings"
   );
-const [showEmailPicker, setShowEmailPicker] = useState(false);
+  const [showEmailPicker, setShowEmailPicker] = useState(false);
   const [apiKey, setApiKey] = useState("");
-const [showApiKey, setShowApiKey] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   // Return to Settings whenever a different node is selected.
   useEffect(() => {
@@ -218,7 +220,7 @@ const [showApiKey, setShowApiKey] = useState(false);
             its configuration here.
           </p>
         </div>
- 
+
       </aside>
     );
   }
@@ -265,15 +267,15 @@ const [showApiKey, setShowApiKey] = useState(false);
           </p>
         </div>
 
-      <button
-  type="button"
-  onClick={onClosePanel}
-  aria-label="Hide settings panel"
-  title="Hide settings panel"
-  className="flex h-8 w-8 items-center justify-center rounded-lg text-[#8293A8] transition hover:bg-[#F1F5F9] hover:text-[#344258]"
->
-  <PanelRightClose size={16} />
-</button>
+        <button
+          type="button"
+          onClick={onClosePanel}
+          aria-label="Hide settings panel"
+          title="Hide settings panel"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-[#8293A8] transition hover:bg-[#F1F5F9] hover:text-[#344258]"
+        >
+          <PanelRightClose size={16} />
+        </button>
       </div>
 
       {/* NODE INFORMATION */}
@@ -303,11 +305,10 @@ const [showApiKey, setShowApiKey] = useState(false);
           <button
             type="button"
             onClick={() => setTab("settings")}
-            className={`rounded-md py-2 text-[11px] font-semibold ${
-              tab === "settings"
+            className={`rounded-md py-2 text-[11px] font-semibold ${tab === "settings"
                 ? "bg-[var(--color-primary)] text-white shadow-sm"
                 : "text-[#536579]"
-            }`}
+              }`}
           >
             Settings
           </button>
@@ -315,11 +316,10 @@ const [showApiKey, setShowApiKey] = useState(false);
           <button
             type="button"
             onClick={() => setTab("preview")}
-            className={`rounded-md py-2 text-[11px] font-semibold ${
-              tab === "preview"
+            className={`rounded-md py-2 text-[11px] font-semibold ${tab === "preview"
                 ? "bg-[var(--color-primary)] text-white shadow-sm"
                 : "text-[#536579]"
-            }`}
+              }`}
           >
             <Eye size={13} className="mr-1 inline" />
             Preview
@@ -374,21 +374,21 @@ const [showApiKey, setShowApiKey] = useState(false);
               </p>
             )}
             {nodeType === "ai_agent" && (
-  <div className="mt-3 space-y-2 text-[11px] text-[#536579]">
-    <p>
-      Provider: {String(config.provider ?? "openai")}
-    </p>
-    <p>
-      Model: {String(config.model ?? "Not configured")}
-    </p>
-    <p>
-      Output: {String(config.outputFormat ?? "json")}
-    </p>
-    <p>
-      Save as: {String(config.outputKey ?? "aiResult")}
-    </p>
-  </div>
-)}
+              <div className="mt-3 space-y-2 text-[11px] text-[#536579]">
+                <p>
+                  Provider: {String(config.provider ?? "openai")}
+                </p>
+                <p>
+                  Model: {String(config.model ?? "Not configured")}
+                </p>
+                <p>
+                  Output: {String(config.outputFormat ?? "json")}
+                </p>
+                <p>
+                  Save as: {String(config.outputKey ?? "aiResult")}
+                </p>
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -544,8 +544,26 @@ const [showApiKey, setShowApiKey] = useState(false);
                     </option>
                   </select>
                 </div>
-
-                {config.messageType !== "custom" && (
+                {provider === "baileys" && config.messageType !== "custom" && (
+                  <div>
+                    <label className={labelClass}>Message Template</label>
+                    <button type="button" onClick={() => setPickerOpen(true)} className={`${fieldClass} text-left`}>
+                      {config.templateName ? String(config.templateName) : "Choose a template…"}
+                    </button>
+                    <p className="mt-1 text-[10px] text-[#8293A8]">
+                      Sent as saved, with its image, video, document, poll or location. Placeholders like {"{{Name}}"} are filled per lead.
+                    </p>
+                    <WhatsAppTemplatePicker
+                      isOpen={pickerOpen}
+                      onClose={() => setPickerOpen(false)}
+                      onSelect={(t) => {
+                        setConfig({ templateId: t._id, templateName: t.name });
+                        setPickerOpen(false);
+                      }}
+                    />
+                  </div>
+                )}
+                {provider !== "baileys" && config.messageType !== "custom" && (
                   <div>
                     <label className={labelClass}>
                       Message Template
@@ -577,95 +595,88 @@ const [showApiKey, setShowApiKey] = useState(false);
                   </div>
                 )}
 
-                <div>
-                  <label className={labelClass}>
-                    {config.messageType === "custom"
-                      ? "Custom Message"
-                      : "Message Preview"}
-                  </label>
+                {!(provider === "baileys" && config.messageType !== "custom") && (
+  <div>
+    <label className={labelClass}>
+      {config.messageType === "custom" ? "Custom Message" : "Message Preview"}
+    </label>
 
-                  <textarea
-                    rows={5}
-                    readOnly={config.messageType !== "custom"}
-                    className={`${textareaClass} ${
-                      config.messageType !== "custom"
-                        ? "cursor-not-allowed bg-[#F8FAFC]"
-                        : ""
-                    }`}
-                    value={message}
-                    onChange={(event) => {
-                      setConfig({
-                        message: event.target.value,
-                      });
-                    }}
-                  />
+    <textarea
+      rows={5}
+      readOnly={config.messageType !== "custom"}
+      className={`${textareaClass} ${
+        config.messageType !== "custom" ? "cursor-not-allowed bg-[#F8FAFC]" : ""
+      }`}
+      value={message}
+      onChange={(event) => {
+        setConfig({ message: event.target.value });
+      }}
+    />
 
-                  <p className="mt-1 text-[10px] text-[#8293A8]">
-                    Personalization: {"{{name}}"}, {"{{city}}"},{" "}
-                    {"{{property_type}}"}
-                  </p>
-                </div>
+    <p className="mt-1 text-[10px] text-[#8293A8]">
+      Personalization: {"{{name}}"}, {"{{city}}"}, {"{{property_type}}"}
+    </p>
+  </div>
+)}
               </>
             )}
 
-         {/* =================================
+            {/* =================================
     EMAIL SETTINGS
 ================================= */}
-{nodeType === "email" && (
-  <>
-    {/* MESSAGE TYPE SWITCH */}
-    <div>
-      <label className={labelClass}>Message Type</label>
+            {nodeType === "email" && (
+              <>
+                {/* MESSAGE TYPE SWITCH */}
+                <div>
+                  <label className={labelClass}>Message Type</label>
 
-      <div className="mt-1 grid grid-cols-2 gap-1 rounded-lg bg-[#F3F6F9] p-1">
-        <button
-          type="button"
-          onClick={() => {
-            if (config.messageType === "template") {
-              // leaving template mode: clear the template data
-              setConfig({
-                messageType: "custom",
-                emailTemplateId: "",
-                emailTemplateName: "",
-                emailTemplateMedia: null,
-                subject: "",
-                message: "",
-              });
-            }
-          }}
-          className={`rounded-md py-2 text-[11px] font-semibold ${
-            config.messageType !== "template"
-              ? "bg-[var(--color-primary)] text-white shadow-sm"
-              : "text-[#536579]"
-          }`}
-        >
-          Custom Message
-        </button>
+                  <div className="mt-1 grid grid-cols-2 gap-1 rounded-lg bg-[#F3F6F9] p-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (config.messageType === "template") {
+                          // leaving template mode: clear the template data
+                          setConfig({
+                            messageType: "custom",
+                            emailTemplateId: "",
+                            emailTemplateName: "",
+                            emailTemplateMedia: null,
+                            subject: "",
+                            message: "",
+                          });
+                        }
+                      }}
+                      className={`rounded-md py-2 text-[11px] font-semibold ${config.messageType !== "template"
+                          ? "bg-[var(--color-primary)] text-white shadow-sm"
+                          : "text-[#536579]"
+                        }`}
+                    >
+                      Custom Message
+                    </button>
 
-        <button
-          type="button"
-          onClick={() => {
-            if (config.messageType !== "template") {
-              setConfig({
-                messageType: "template",
-                subject: "",
-                message: "",
-              });
-            }
-            setShowEmailPicker(true);
-          }}
-          className={`rounded-md py-2 text-[11px] font-semibold ${
-            config.messageType === "template"
-              ? "bg-[var(--color-primary)] text-white shadow-sm"
-              : "text-[#536579]"
-          }`}
-        >
-          Template Message
-        </button>
-      </div>
-    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (config.messageType !== "template") {
+                          setConfig({
+                            messageType: "template",
+                            subject: "",
+                            message: "",
+                          });
+                        }
+                        setShowEmailPicker(true);
+                      }}
+                      className={`rounded-md py-2 text-[11px] font-semibold ${config.messageType === "template"
+                          ? "bg-[var(--color-primary)] text-white shadow-sm"
+                          : "text-[#536579]"
+                        }`}
+                    >
+                      Template Message
+                    </button>
+                  </div>
+                </div>
 
-    {/* <div>
+                {/* <div>
       <label className={labelClass}>Sender Name</label>
       <input
         className={fieldClass}
@@ -677,7 +688,7 @@ const [showApiKey, setShowApiKey] = useState(false);
       />
     </div> */}
 
-    {/* <div>
+                {/* <div>
       <label className={labelClass}>Sender Email</label>
       <input
         type="email"
@@ -690,82 +701,82 @@ const [showApiKey, setShowApiKey] = useState(false);
       />
     </div> */}
 
-    {config.messageType === "template" ? (
-      /* ---------- TEMPLATE MODE ---------- */
-      <div>
-        <label className={labelClass}>
-          Email Template <span className="text-rose-500">*</span>
-        </label>
+                {config.messageType === "template" ? (
+                  /* ---------- TEMPLATE MODE ---------- */
+                  <div>
+                    <label className={labelClass}>
+                      Email Template <span className="text-rose-500">*</span>
+                    </label>
 
-        {config.emailTemplateId ? (
-          <div className="mt-1 rounded-lg border border-[#DDE7F0] bg-[#F8FAFC] p-3">
-            <p className="truncate text-[12px] font-semibold text-[#17324D]">
-              {String(config.emailTemplateName ?? "")}
-            </p>
+                    {config.emailTemplateId ? (
+                      <div className="mt-1 rounded-lg border border-[#DDE7F0] bg-[#F8FAFC] p-3">
+                        <p className="truncate text-[12px] font-semibold text-[#17324D]">
+                          {String(config.emailTemplateName ?? "")}
+                        </p>
 
-            <p className="mt-1 truncate text-[11px] text-[#536579]">
-              Subject: {String(config.subject || "(no subject)")}
-            </p>
+                        <p className="mt-1 truncate text-[11px] text-[#536579]">
+                          Subject: {String(config.subject || "(no subject)")}
+                        </p>
 
-            {config.emailTemplateMedia && (
-              <p className="mt-1 text-[10px] text-[#8293A8]">
-                Attachment: {String(config.emailTemplateMedia.fileName)}
-                {config.emailTemplateMedia.count > 1
-                  ? ` +${config.emailTemplateMedia.count - 1} more`
-                  : ""}
-              </p>
+                        {config.emailTemplateMedia && (
+                          <p className="mt-1 text-[10px] text-[#8293A8]">
+                            Attachment: {String(config.emailTemplateMedia.fileName)}
+                            {config.emailTemplateMedia.count > 1
+                              ? ` +${config.emailTemplateMedia.count - 1} more`
+                              : ""}
+                          </p>
+                        )}
+
+                        <p className="mt-2 text-[10px] text-[#8293A8]">
+                          Placeholders like {"{{Name}}"} are filled in for each
+                          contact when the journey runs.
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="mt-1 text-[11px] text-[#8293A8]">
+                        No template selected yet.
+                      </p>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setShowEmailPicker(true)}
+                      className="mt-2 w-full rounded-lg border border-[var(--color-primary)] py-2 text-[11px] font-semibold text-[var(--color-primary)] transition hover:bg-[var(--color-primary-lighter)]"
+                    >
+                      {config.emailTemplateId ? "Change Template" : "Choose Template"}
+                    </button>
+                  </div>
+                ) : (
+                  /* ---------- CUSTOM MODE (same as before) ---------- */
+                  <>
+                    <div>
+                      <label className={labelClass}>Subject</label>
+                      <input
+                        className={fieldClass}
+                        value={String(config.subject ?? "")}
+                        onChange={(event) => {
+                          setConfig({ subject: event.target.value });
+                        }}
+                        placeholder="Property details and brochure"
+                      />
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Email Content</label>
+                      <textarea
+                        rows={7}
+                        className={textareaClass}
+                        value={message}
+                        onChange={(event) => {
+                          setConfig({ message: event.target.value });
+                        }}
+                        placeholder="Write your email..."
+                      />
+                    </div>
+                  </>
+                )}
+              </>
             )}
-
-            <p className="mt-2 text-[10px] text-[#8293A8]">
-              Placeholders like {"{{Name}}"} are filled in for each
-              contact when the journey runs.
-            </p>
-          </div>
-        ) : (
-          <p className="mt-1 text-[11px] text-[#8293A8]">
-            No template selected yet.
-          </p>
-        )}
-
-        <button
-          type="button"
-          onClick={() => setShowEmailPicker(true)}
-          className="mt-2 w-full rounded-lg border border-[var(--color-primary)] py-2 text-[11px] font-semibold text-[var(--color-primary)] transition hover:bg-[var(--color-primary-lighter)]"
-        >
-          {config.emailTemplateId ? "Change Template" : "Choose Template"}
-        </button>
-      </div>
-    ) : (
-      /* ---------- CUSTOM MODE (same as before) ---------- */
-      <>
-        <div>
-          <label className={labelClass}>Subject</label>
-          <input
-            className={fieldClass}
-            value={String(config.subject ?? "")}
-            onChange={(event) => {
-              setConfig({ subject: event.target.value });
-            }}
-            placeholder="Property details and brochure"
-          />
-        </div>
-
-        <div>
-          <label className={labelClass}>Email Content</label>
-          <textarea
-            rows={7}
-            className={textareaClass}
-            value={message}
-            onChange={(event) => {
-              setConfig({ message: event.target.value });
-            }}
-            placeholder="Write your email..."
-          />
-        </div>
-      </>
-    )}
-  </>
-)}
 
             {/* =================================
                 SMS SETTINGS
@@ -813,11 +824,10 @@ const [showApiKey, setShowApiKey] = useState(false);
                     </p>
 
                     <span
-                      className={`text-[10px] font-semibold ${
-                        messageLength >= 150
+                      className={`text-[10px] font-semibold ${messageLength >= 150
                           ? "text-rose-500"
                           : "text-[#8293A8]"
-                      }`}
+                        }`}
                     >
                       {messageLength}/160
                     </span>
@@ -1042,42 +1052,41 @@ const [showApiKey, setShowApiKey] = useState(false);
                     <option value="groq">Groq</option>
                   </select>
                 </div>
-                    {/* API KEY */}
-<div>
-  <label className={labelClass}>
-    {String(config.provider ?? "openai").toUpperCase()} API Key
-    <span className="text-rose-500"> *</span>
-  </label>
+                {/* API KEY */}
+                <div>
+                  <label className={labelClass}>
+                    {String(config.provider ?? "openai").toUpperCase()} API Key
+                    <span className="text-rose-500"> *</span>
+                  </label>
 
-  <div className="relative mt-1">
-    <input
-      type={showApiKey ? "text" : "password"}
-      className={`${fieldClass} pr-16`}
-      value={apiKey}
-      onChange={(event) => setApiKey(event.target.value)}
-      placeholder={`Enter ${
-        config.provider === "gemini"
-          ? "Google Gemini"
-          : config.provider === "groq"
-            ? "Groq"
-            : "OpenAI"
-      } API Key`}
-      autoComplete="new-password"
-    />
+                  <div className="relative mt-1">
+                    <input
+                      type={showApiKey ? "text" : "password"}
+                      className={`${fieldClass} pr-16`}
+                      value={apiKey}
+                      onChange={(event) => setApiKey(event.target.value)}
+                      placeholder={`Enter ${config.provider === "gemini"
+                          ? "Google Gemini"
+                          : config.provider === "groq"
+                            ? "Groq"
+                            : "OpenAI"
+                        } API Key`}
+                      autoComplete="new-password"
+                    />
 
-    <button
-      type="button"
-      onClick={() => setShowApiKey((previous) => !previous)}
-      className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-[#536579]"
-    >
-      {showApiKey ? "Hide" : "Show"}
-    </button>
-  </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowApiKey((previous) => !previous)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-[#536579]"
+                    >
+                      {showApiKey ? "Hide" : "Show"}
+                    </button>
+                  </div>
 
-  <p className="mt-1 text-[10px] text-[#8293A8]">
-    Secure API key saving will be connected next.
-  </p>
-</div>
+                  <p className="mt-1 text-[10px] text-[#8293A8]">
+                    Secure API key saving will be connected next.
+                  </p>
+                </div>
                 {/* MODEL */}
                 <div>
                   <label className={labelClass}>
@@ -1285,23 +1294,23 @@ const [showApiKey, setShowApiKey] = useState(false);
           Changes update the canvas immediately.
         </div>
       </div>
-             {nodeType === "email" && (
-  <EmailTemplatePicker
-    isOpen={showEmailPicker}
-    onClose={() => setShowEmailPicker(false)}
-    onPick={(t: PickedTemplate) => {
-      setConfig({
-        messageType: "template",
-        emailTemplateId: t.id,
-        emailTemplateName: t.name,
-        emailTemplateMedia: t.media,
-        subject: t.subject,
-        message: t.body, // HTML snapshot of the template
-      });
-      setShowEmailPicker(false);
-    }}
-  />
-)}
+      {nodeType === "email" && (
+        <EmailTemplatePicker
+          isOpen={showEmailPicker}
+          onClose={() => setShowEmailPicker(false)}
+          onPick={(t: PickedTemplate) => {
+            setConfig({
+              messageType: "template",
+              emailTemplateId: t.id,
+              emailTemplateName: t.name,
+              emailTemplateMedia: t.media,
+              subject: t.subject,
+              message: t.body, // HTML snapshot of the template
+            });
+            setShowEmailPicker(false);
+          }}
+        />
+      )}
     </aside>
   );
 }

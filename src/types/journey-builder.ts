@@ -86,6 +86,8 @@ emailTemplateMedia?: {
   fileName: string;
   count: number;
 } | null;
+templateId?: string;
+templateName?: string;
 }
 
 /* =========================================
