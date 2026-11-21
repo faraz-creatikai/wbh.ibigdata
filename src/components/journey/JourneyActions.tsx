@@ -13,6 +13,8 @@ import {
   Loader2,
 } from "lucide-react";
 import type { Journey } from "@/types/journey";
+import { API_ROUTES } from "@/constants/ApiRoute";
+import { apiRequest } from "@/lib/journeyApi";
 
 interface JourneyActionsProps {
   journey: Journey;
@@ -97,34 +99,6 @@ export default function JourneyActions({
     };
   }, [open, close]);
 
-  const handleRun = async () => {
-    if (running) return;
-    setRunning(true);
-
-    try {
-      const res = await fetch(
-        "https://apiwbh.ibigdata.in/api/journey/worker/run",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_JOURNEY_WORKER_TOKEN}`,
-          },
-        }
-      );
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(data?.message || "Failed to run journey");
-      }
-
-      alert(`"${journey.name}" has been started again.`);
-    } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to run journey");
-    } finally {
-      setRunning(false);
-    }
-  };
 
   return (
     <>
