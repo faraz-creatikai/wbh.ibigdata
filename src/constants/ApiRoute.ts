@@ -83,6 +83,7 @@ export const API_ROUTES = {
 
     // Enrollments
     ENROLL: (id: string) => `${BASE_URL}/journey/${id}/enroll`,
+    RUN: (id: string) => `${BASE_URL}/journey/${id}/run`,
     GET_ENROLLMENTS: (id: string) => `${BASE_URL}/journey/${id}/enrollments`,
     GET_ENROLLMENTS_BY_PARAMS: (id: string, params: string) =>
       `${BASE_URL}/journey/${id}/enrollments?${params}`,

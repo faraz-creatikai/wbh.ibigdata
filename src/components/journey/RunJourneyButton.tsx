@@ -3,33 +3,24 @@
 import { useState } from "react";
 import { Loader2, Play } from "lucide-react";
 import type { Journey } from "@/types/journey";
+import { apiRequest } from "@/lib/journeyApi";
+import { API_ROUTES } from "@/constants/ApiRoute";
 
 export default function RunJourneyButton({ journey }: { journey: Journey }) {
   const [running, setRunning] = useState(false);
   const isActive = journey.status === "active";
 
-  const handleRun = async () => {
+   const handleRun = async () => {
     if (running) return;
     setRunning(true);
 
     try {
-      const res = await fetch(
-        "https://apiwbh.ibigdata.in/api/journey/worker/run",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_JOURNEY_WORKER_TOKEN}`,
-          },
-        }
-      );
+      const result = await apiRequest(API_ROUTES.JOURNEY.RUN(journey.id), {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
 
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(data?.message || "Failed to run journey");
-      }
-
-      alert(`"${journey.name}" has been started again.`);
+      alert(result?.message || `"${journey.name}" has been started.`);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Failed to run journey");
     } finally {
