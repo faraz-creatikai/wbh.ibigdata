@@ -27,7 +27,7 @@ import type {
   JourneyFlowEdge,
   JourneyFlowNode,
 } from "@/types/journey-builder";
-
+import DeletableEdge from "../edges/DeletableEdge";
 import JourneyToolbar from "./JourneyToolbar";
 
 import TriggerNode from "./nodes/TriggerNode";
@@ -55,6 +55,10 @@ const nodeTypes = {
   ai_agent: AIAgentNode,
   enrolled_leads: EnrolledLeadsNode,
   end: EndNode,
+};
+const edgeTypes = {
+  default: DeletableEdge,
+  smoothstep: DeletableEdge,
 };
 
 /* =========================================
@@ -246,6 +250,7 @@ function WorkflowCanvasInner(props: WorkflowCanvasProps) {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
 
         /* Node and edge state */
         onNodesChange={onNodesChange}

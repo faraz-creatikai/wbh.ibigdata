@@ -1,6 +1,8 @@
 
 import type { LucideIcon } from "lucide-react";
-import { Handle, Position } from "@xyflow/react";
+import { Trash2 } from "lucide-react";
+
+import { Handle, Position, useNodeId, useReactFlow  } from "@xyflow/react";
 import type { JourneyNodeData } from "@/types/journey-builder";
 
 interface WorkflowNodeCardProps {
@@ -55,9 +57,16 @@ export default function WorkflowNodeCard({
 }: WorkflowNodeCardProps) {
   const colors = toneClasses[tone];
 
+  const nodeId = useNodeId();
+  const { deleteElements } = useReactFlow();
+
+  const handleDelete = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (nodeId) deleteElements({ nodes: [{ id: nodeId }] });
+  };
   return (
     <div
-      className={`
+      className={` group
         relative min-w-[230px] rounded-xl border
         bg-white px-3 py-3
         shadow-[0_3px_12px_rgba(22,50,77,0.07)]
@@ -78,7 +87,16 @@ export default function WorkflowNodeCard({
           className="!h-2.5 !w-2.5 !border-2 !border-white !bg-slate-400"
         />
       )}
-
+      {/* DELETE BUTTON */}
+      <button
+        type="button"
+        onClick={handleDelete}
+        title="Delete node"
+        aria-label="Delete node"
+        className="nodrag absolute -right-2.5 -top-2.5 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-500 opacity-0 shadow-sm transition hover:bg-rose-50 group-hover:opacity-100"
+      >
+        <Trash2 size={12} />
+      </button>
       {/* NODE CONTENT */}
       <div className="flex items-center gap-3">
         <div
