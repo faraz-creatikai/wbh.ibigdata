@@ -927,6 +927,22 @@ export default function NodeSettings({
                     <option value="leadType">Lead Type</option>
                   </select>
                 </div>
+     <div>
+                  <label className={labelClass}>
+                    Customer Comparison Value
+                  </label>
+
+                  <input
+                    className={fieldClass}
+                    value={String(config.value ?? "")}
+                    onChange={(event) => {
+                      setConfig({
+                        value: event.target.value,
+                      });
+                    }}
+                    placeholder="Interested"
+                  />
+                </div>
 
                 <div>
                   <label className={labelClass}>
@@ -950,22 +966,7 @@ export default function NodeSettings({
                   </select>
                 </div>
 
-                <div>
-                  <label className={labelClass}>
-                    Comparison Value
-                  </label>
-
-                  <input
-                    className={fieldClass}
-                    value={String(config.value ?? "")}
-                    onChange={(event) => {
-                      setConfig({
-                        value: event.target.value,
-                      });
-                    }}
-                    placeholder="Interested"
-                  />
-                </div>
+           
 
                 <div className="rounded-lg border border-[#DDE7F0] bg-[#F8FAFC] p-3">
                   <p className="text-[10px] font-semibold text-[#536579]">
