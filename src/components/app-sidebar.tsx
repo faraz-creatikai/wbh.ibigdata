@@ -21,7 +21,8 @@ import {
   ExternalLink,
   PhoneCall,
   Megaphone,
-  Network
+  Network,
+  Folder
 } from "lucide-react";
 
 import { NavMain } from "../components/nav-main";
@@ -118,6 +119,11 @@ const data = {
       title: "Ai Agents",
       url: "/aiagents",
       icon: FaRobot,
+    },
+    {
+      title: "Knowledge Base",
+      url: "/knowledge-base",
+      icon: Folder,
     },
     {
       title: "Sales Script",

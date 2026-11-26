@@ -1,5 +1,5 @@
-export const BASE_URL = "https://apiproperty.ibigdata.in/api";
-export const API_URL = "https://apiproperty.ibigdata.in";
+export const BASE_URL = "https://apiwbh.ibigdata.in/api";
+export const API_URL = "https://apiwbh.ibigdata.in";
 
 
 export const API_ROUTES = {
@@ -235,14 +235,14 @@ export const API_ROUTES = {
 
       //meta campaigns
       META_CAMPAIGNS: `${BASE_URL}/social-auth/meta-campaigns`,
-      START_META_CAMPAIGN: (campaignId:string)=>`${BASE_URL}/social-auth/meta-campaigns/${campaignId}/start`,
-      DELETE_META_CAMPAIGN: (campaignId:string)=>`${BASE_URL}/social-auth/meta-campaigns/${campaignId}`,
+      START_META_CAMPAIGN: (campaignId: string) => `${BASE_URL}/social-auth/meta-campaigns/${campaignId}/start`,
+      DELETE_META_CAMPAIGN: (campaignId: string) => `${BASE_URL}/social-auth/meta-campaigns/${campaignId}`,
 
       //meta inbox
       META_INBOX_SUMMARY: `${BASE_URL}/social-auth/meta-inbox/summary`,
-      META_INBOX_OPENCHAT:(key:string)=>`${BASE_URL}/social-auth/meta-inbox/chat/${key}`,
+      META_INBOX_OPENCHAT: (key: string) => `${BASE_URL}/social-auth/meta-inbox/chat/${key}`,
       META_SEND_MESSAGE: `${BASE_URL}/social-auth/send-meta-message`,
-      META_SEND_TEMPLATE:`${BASE_URL}/social-auth/send-meta-template`
+      META_SEND_TEMPLATE: `${BASE_URL}/social-auth/send-meta-template`
 
 
     },
@@ -625,7 +625,17 @@ export const API_ROUTES = {
     GET_ALL: `${BASE_URL}/user/newusers`,
     ACCEPTREQUEST: (id: String) => `${BASE_URL}/user/newusers/${id}`,
     DENYREQUEST: (id: String) => `${BASE_URL}/user/newusers/${id}`
-  }
+  },
+
+  GDRIVE: {
+    AUTH_URL: `${BASE_URL}/gdrive/auth-url`,
+    STATUS: `${BASE_URL}/gdrive/status`,
+    DISCONNECT: `${BASE_URL}/gdrive/disconnect`,
+    DOCUMENTS: `${BASE_URL}/gdrive/documents`,
+    DELETE_DOCUMENT: (id: string) => `${BASE_URL}/gdrive/documents/${id}`,
+    STREAM_DOCUMENT: (id: string, download = false) =>
+      `${BASE_URL}/gdrive/documents/${id}/stream${download ? "?download=true" : ""}`,
+  },
 };
 
 
