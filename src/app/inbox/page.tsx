@@ -11,6 +11,7 @@
 import React, { useState } from 'react';
 import WhatsAppBaileysInbox from "@/app/component/whatsapp/baileys/WhatsappBaileysInbox"; // 👈 adjust to where you put the file
 import { EmailInboxTabs } from '../component/email/EmailInbox';
+import MetaWhatsAppInbox from '../component/whatsapp/meta/MetaWhatsappInbox';
 
 type InboxProps = { adminId?: string };
 type Provider = { id: string; label: string; Component?: React.ComponentType<InboxProps> };
@@ -30,7 +31,7 @@ const CHANNELS: Channel[] = [
         icon: <Svg><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.7-5.4A8.4 8.4 0 1 1 21 11.5Z" /></Svg>,
         providers: [
             { id: 'baileys', label: 'Baileys WhatsApp', Component: WhatsAppBaileysInbox },
-            { id: 'meta', label: 'Meta WhatsApp' }, // 👈 set Component when the Meta inbox is ready
+            { id: 'meta', label: 'Meta WhatsApp', Component: MetaWhatsAppInbox }, // 👈 set Component when the Meta inbox is ready
         ],
     },
     {

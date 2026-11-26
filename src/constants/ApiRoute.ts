@@ -226,6 +226,25 @@ export const API_ROUTES = {
       CONNECT_META_WHATSAPP: `${BASE_URL}/social-auth/connect-meta-whatsapp`,
       DISCONNECT_META_WHATSAPP: `${BASE_URL}/social-auth/disconnect-meta-whatsapp`,
       CHECK_META_WHATSAPP_STATUS: `${BASE_URL}/social-auth/check-meta-whatsapp`,
+      CONNECT_META_WHATSAPP_ADMIN: `${BASE_URL}/social-auth/connect-meta-whatsapp-admin`,
+
+      //meta templates
+      GET_META_TEMPLATES: `${BASE_URL}/social-auth/meta-templates`,
+      SEND_META_TEMPLATE: `${BASE_URL}/social-auth/send-meta-template`,
+      VERIFY_META_TEMPLATE: `${BASE_URL}/social-auth/verify-meta-template`,
+
+      //meta campaigns
+      META_CAMPAIGNS: `${BASE_URL}/social-auth/meta-campaigns`,
+      START_META_CAMPAIGN: (campaignId:string)=>`${BASE_URL}/social-auth/meta-campaigns/${campaignId}/start`,
+      DELETE_META_CAMPAIGN: (campaignId:string)=>`${BASE_URL}/social-auth/meta-campaigns/${campaignId}`,
+
+      //meta inbox
+      META_INBOX_SUMMARY: `${BASE_URL}/social-auth/meta-inbox/summary`,
+      META_INBOX_OPENCHAT:(key:string)=>`${BASE_URL}/social-auth/meta-inbox/chat/${key}`,
+      META_SEND_MESSAGE: `${BASE_URL}/social-auth/send-meta-message`,
+      META_SEND_TEMPLATE:`${BASE_URL}/social-auth/send-meta-template`
+
+
     },
     AUTOSOCIALAGENT: {
       RUN: `${BASE_URL}/social-auth/auto-social-agent`

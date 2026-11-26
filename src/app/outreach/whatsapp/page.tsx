@@ -7,6 +7,7 @@ import { API_ROUTES } from "@/constants/ApiRoute";
 import MasterProtectedRoute from "@/app/component/MasterProtectedRoutes";
 import BaileysWorkspace, { type BaileysAccount } from "@/app/component/whatsapp/baileys/BaileysWorkspace";
 import MetaWorkspace, { type MetaAccountDetails } from "@/app/component/whatsapp/meta/MetaWorkspace"
+import { AdminWabaPayload, connectMetaWhatsappAdmin } from "@/store/social-media/socialMedia";
 
 /* ────────────────────────────────────────────────────────────────────
  * Types
@@ -371,6 +372,21 @@ function useMetaConnection() {
         phone_number_id: null,
     });
 
+
+   const connectAdmin = async (payload: AdminWabaPayload) => {
+    setIsLoading(true);
+    setNotice(null);
+    try {
+        const data = await connectMetaWhatsappAdmin(payload);
+        setNotice({ type: "success", text: data.message || "Admin WhatsApp connected!" });
+        await refreshStatus();
+    } catch (error: any) {
+        setNotice({ type: "error", text: error.message });
+    } finally {
+        setIsLoading(false);
+    }
+};
+
     const refreshStatus = useCallback(async () => {
         const res = await fetch(API_ROUTES.SOCIALMEDIA.WHATSAPP.CHECK_META_WHATSAPP_STATUS, {
             method: "GET",
@@ -541,6 +557,7 @@ function useMetaConnection() {
         dismissNotice: () => setNotice(null),
         connect,
         disconnect,
+        connectAdmin
     };
 }
 type MetaConn = ReturnType<typeof useMetaConnection>;
@@ -605,11 +622,10 @@ const ChannelTabs = ({
                     <button
                         key={item.id}
                         onClick={() => onChange(item.id)}
-                        className={`relative flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all cursor-pointer ${
-                            isActive
+                        className={`relative flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all cursor-pointer ${isActive
                                 ? "bg-[#128C7E] text-white shadow-md shadow-[#128C7E]/25"
                                 : "bg-[var(--color-primary-lighter)]/70 text-gray-700 hover:bg-[var(--color-primary-lighter)] dark:bg-[var(--color-childbgdark)] dark:text-[var(--color-txtlight)]/80"
-                        }`}
+                            }`}
                     >
                         {item.icon}
                         {item.label}
@@ -782,16 +798,14 @@ const ChannelStatusCard = ({
     onDisconnect: () => void;
 }) => (
     <div
-        className={`flex items-center gap-4 rounded-2xl border p-4 ${
-            connected
+        className={`flex items-center gap-4 rounded-2xl border p-4 ${connected
                 ? "border-[#CFF3DD] bg-[#F3FCF7] dark:bg-[var(--color-childbgdark)] dark:border-[#128C7E]/30"
                 : "border-dashed border-[var(--color-primary-light)] bg-white dark:bg-[var(--color-bgdark)] dark:border-[var(--color-childbgdark)]"
-        }`}
+            }`}
     >
         <div
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
-                channel === "baileys" ? "bg-[#25D366] text-white" : "bg-white text-[var(--color-primary)] border border-[var(--color-primary-light)]"
-            }`}
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${channel === "baileys" ? "bg-[#25D366] text-white" : "bg-white text-[var(--color-primary)] border border-[var(--color-primary-light)]"
+                }`}
         >
             {channel === "baileys" ? <WhatsAppIcon className="h-6 w-6" /> : <MetaIcon className="h-6 w-6" />}
         </div>
@@ -869,11 +883,10 @@ const BaileysConnectPanel = ({ b }: { b: BaileysConn }) => {
                                 b.setMode(m.id);
                                 b.setPairingError(null);
                             }}
-                            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                                b.mode === m.id
+                            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${b.mode === m.id
                                     ? "bg-white dark:bg-[var(--color-bgdark)] text-[var(--color-primary)] shadow-sm"
                                     : "text-gray-500 dark:text-[var(--color-txtlight)]/60"
-                            }`}
+                                }`}
                         >
                             {m.icon}
                             {m.label}
@@ -895,8 +908,8 @@ const BaileysConnectPanel = ({ b }: { b: BaileysConn }) => {
                                 {b.isDisconnecting
                                     ? "Disconnecting your account…"
                                     : b.status === "loading"
-                                      ? "Checking your connection…"
-                                      : "Generating QR code…"}
+                                        ? "Checking your connection…"
+                                        : "Generating QR code…"}
                             </p>
                             <p className="text-xs text-gray-400 mt-1">
                                 {b.isDisconnecting ? "Unlinking this device from WhatsApp." : "This usually takes just a few seconds."}
@@ -1018,37 +1031,147 @@ const BaileysConnectPanel = ({ b }: { b: BaileysConn }) => {
     );
 };
 
-const MetaConnectPanel = ({ m }: { m: MetaConn }) => (
-    <div className="mx-auto w-full max-w-2xl rounded-[1.75rem] border border-[var(--color-primary-light)]/60 dark:border-[var(--color-childbgdark)] bg-white dark:bg-[var(--color-bgdark)] p-10 text-center shadow-[0_20px_60px_-15px_rgba(0,102,204,0.18)]">
-        <div className="w-20 h-20 bg-[#25D366]/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <WhatsAppIcon className="w-10 h-10 text-[#25D366]" />
-        </div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-[var(--color-txtlight)] mb-3">Connect Official WhatsApp</h1>
-        <p className="text-gray-500 dark:text-[var(--color-txtlight)]/70 mb-8 text-base">
-            Sync incoming messages, send broadcasts, and manage client conversations directly from your CRM workspace.
-        </p>
 
-        <button
-            onClick={m.connect}
-            disabled={!m.isSdkLoaded || m.isLoading}
-            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl shadow-md text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary)]/30 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg transition-all cursor-pointer"
-        >
-            {m.isLoading ? (
-                <>
-                    <SpinnerIcon className="h-5 w-5 animate-spin" />
-                    Authenticating with Meta...
-                </>
-            ) : (
-                <>
-                    <MetaIcon className="h-6 w-6" />
-                    Connect via Meta
-                </>
+const DEFAULT_WABA_ID = "1428618155850340";
+const DEFAULT_PHONE_NUMBER_ID = "1348362241695569";
+
+const MetaConnectPanel = ({ m }: { m: MetaConn }) => {
+    const [showManualForm, setShowManualForm] = useState(false);
+    const [wabaId, setWabaId] = useState(DEFAULT_WABA_ID);
+    const [phoneNumberId, setPhoneNumberId] = useState(DEFAULT_PHONE_NUMBER_ID);
+    const [accessToken, setAccessToken] = useState("");
+    const [formError, setFormError] = useState<string | null>(null);
+
+    const handleManualSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const trimmedWaba = wabaId.trim();
+        const trimmedPhone = phoneNumberId.trim();
+        const trimmedToken = accessToken.trim();
+
+        if (!trimmedWaba || !trimmedPhone || !trimmedToken) {
+            setFormError("WABA ID, Phone Number ID, and Access Token are all required.");
+            return;
+        }
+
+        setFormError(null);
+        await m.connectAdmin({
+            wabaId: trimmedWaba,
+            phoneNumberId: trimmedPhone,
+            accessToken: trimmedToken,
+        });
+    };
+
+    return (
+        <div className="mx-auto w-full max-w-2xl rounded-[1.75rem] border border-[var(--color-primary-light)]/60 dark:border-[var(--color-childbgdark)] bg-white dark:bg-[var(--color-bgdark)] p-10 text-center shadow-[0_20px_60px_-15px_rgba(0,102,204,0.18)]">
+            <div className="w-20 h-20 bg-[#25D366]/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <WhatsAppIcon className="w-10 h-10 text-[#25D366]" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-[var(--color-txtlight)] mb-3">Connect Official WhatsApp</h1>
+            <p className="text-gray-500 dark:text-[var(--color-txtlight)]/70 mb-8 text-base">
+                Sync incoming messages, send broadcasts, and manage client conversations directly from your CRM workspace.
+            </p>
+
+            <button
+                type="button"
+                onClick={m.connect}
+                disabled={!m.isSdkLoaded || m.isLoading}
+                className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl shadow-md text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-dark)] focus:outline-none focus:ring-4 focus:ring-[var(--color-primary)]/30 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg transition-all cursor-pointer"
+            >
+                {m.isLoading ? (
+                    <>
+                        <SpinnerIcon className="h-5 w-5 animate-spin" />
+                        Authenticating with Meta...
+                    </>
+                ) : (
+                    <>
+                        <MetaIcon className="h-6 w-6" />
+                        Connect via Meta
+                    </>
+                )}
+            </button>
+
+            <button
+                type="button"
+                onClick={() => {
+                    setFormError(null);
+                    setShowManualForm((prev) => !prev);
+                }}
+                disabled={m.isLoading}
+                className="mt-3 w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary-lighter)]/60 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-base transition-all cursor-pointer"
+            >
+                <KeyIcon className="h-4 w-4" />
+                {showManualForm ? "Hide Manual WABA & Token Form" : "Manual WABA & Token Setup"}
+            </button>
+
+            {showManualForm && (
+                <form
+                    onSubmit={handleManualSubmit}
+                    className="mt-5 rounded-2xl border border-[var(--color-primary-light)]/60 dark:border-[var(--color-childbgdark)] bg-gray-50/70 dark:bg-[var(--color-childbgdark)]/40 p-5 text-left space-y-4"
+                >
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 dark:text-[var(--color-txtlight)] mb-1">
+                            WABA ID
+                        </label>
+                        <input
+                            type="text"
+                            value={wabaId}
+                            onChange={(e) => setWabaId(e.target.value)}
+                            placeholder="Enter WABA ID"
+                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[var(--color-bgdark)] px-3.5 py-2.5 text-sm text-gray-900 dark:text-[var(--color-txtlight)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 dark:text-[var(--color-txtlight)] mb-1">
+                            Phone Number ID
+                        </label>
+                        <input
+                            type="text"
+                            value={phoneNumberId}
+                            onChange={(e) => setPhoneNumberId(e.target.value)}
+                            placeholder="Enter Phone Number ID"
+                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[var(--color-bgdark)] px-3.5 py-2.5 text-sm text-gray-900 dark:text-[var(--color-txtlight)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-700 dark:text-[var(--color-txtlight)] mb-1">
+                            Access Token
+                        </label>
+                        <input
+                            type="password"
+                            value={accessToken}
+                            onChange={(e) => setAccessToken(e.target.value)}
+                            placeholder="Paste Meta access token"
+                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[var(--color-bgdark)] px-3.5 py-2.5 text-sm text-gray-900 dark:text-[var(--color-txtlight)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40"
+                        />
+                    </div>
+
+                    {formError && (
+                        <p className="text-xs font-medium text-[var(--color-destructive)]">{formError}</p>
+                    )}
+
+                    <button
+                        type="submit"
+                        disabled={m.isLoading}
+                        className="w-full flex items-center justify-center gap-2 py-3 px-5 rounded-xl bg-[#128C7E] hover:bg-[#0F7A6E] text-white font-semibold text-sm transition-all disabled:opacity-50 cursor-pointer"
+                    >
+                        {m.isLoading ? (
+                            <>
+                                <SpinnerIcon className="h-4 w-4 animate-spin" />
+                                Saving & Connecting...
+                            </>
+                        ) : (
+                            "Save & Connect Admin WABA"
+                        )}
+                    </button>
+                </form>
             )}
-        </button>
 
-        <p className="mt-6 text-sm text-gray-400">Requires a verified Meta Business Manager account.</p>
-    </div>
-);
+            <p className="mt-6 text-sm text-gray-400">Requires a verified Meta Business Manager account.</p>
+        </div>
+    );
+};
 
 /* ────────────────────────────────────────────────────────────────────
  * Page
@@ -1133,9 +1256,8 @@ export default function WhatsAppConnectionPage() {
                 {/* Meta feedback (connect / disconnect results) */}
                 {meta.notice && (
                     <div
-                        className={`flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-sm ${
-                            meta.notice.type === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"
-                        }`}
+                        className={`flex items-start justify-between gap-3 rounded-xl px-4 py-3 text-sm ${meta.notice.type === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"
+                            }`}
                     >
                         <span>{meta.notice.text}</span>
                         <button onClick={meta.dismissNotice} className="text-xs font-semibold opacity-70 hover:opacity-100 cursor-pointer">

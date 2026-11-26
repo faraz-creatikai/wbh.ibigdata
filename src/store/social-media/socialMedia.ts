@@ -194,3 +194,43 @@ export const runAutoSocialAgent = async (formData: FormData) => {
         return null;
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+// meta whatsapp
+
+export type AdminWabaPayload = {
+    wabaId: string;
+    phoneNumberId: string;
+    accessToken: string;
+};
+
+// 👇 PUT YOUR ACTUAL ADMIN WABA DETAILS HERE
+export const ADMIN_WABA_PAYLOAD: AdminWabaPayload = {
+    wabaId: "1428618155850340",
+    phoneNumberId: "1348362241695569",
+    accessToken: "EAAVP2YekdYoBS62TPK5caZBcRi38ZBImQh1KVZB1WcQ4PLvefoZCnKY2jntuaeXQzZAiNnbQ1UFqMukwZA30fwi0KuzQ9u1JiKoA58uLY14tJO6J9iqZCGnq1102lhpKristJgcoHEMreC0IFBu7n7uhO6ogZCPlEE7GVGiYnQBhK4n3IJCGhZC9MGpd08rzAuvcl5QZDZD",
+};
+
+
+
+export async function connectMetaWhatsappAdmin(payload: AdminWabaPayload) {
+    const res = await fetch(API_ROUTES.SOCIALMEDIA.WHATSAPP.CONNECT_META_WHATSAPP_ADMIN, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to connect admin WhatsApp account");
+    return data;
+}

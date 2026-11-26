@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { getSocket, initSocket } from "@/socket/socket";
 import { getCustomer } from "@/store/customer"; // Adjust import to your CRM logic
 import MetaWhatsAppTemplatePicker from "@/app/component/whatsapp/meta/MetaWhatsappTemplatePicker";
+import { API_ROUTES } from "@/constants/ApiRoute";
 
 type Msg = { id: string; phoneKey: string; waId: string; fromMe: boolean; type: string; body: string; status: string; timestamp: string; mediaUrl?: string | null; };
 type ChatSummary = { phoneKey: string; body: string; type: string; fromMe: boolean; timestamp: string; unread: number; };
@@ -15,7 +16,7 @@ const fmt = (iso: string) => {
     return d.toDateString() === new Date().toDateString() ? t : `${d.toLocaleDateString([], { day: '2-digit', month: 'short' })}, ${t}`;
 };
 
-export default function MetaWhatsAppInbox({ adminId }: { adminId: string }) {
+export default function MetaWhatsAppInbox({ adminId }: { adminId?: string }) {
     const [customers, setCustomers] = useState<Cust[]>([]);
     const [chats, setChats] = useState<Record<string, ChatSummary>>({});
     const [activeKey, setActiveKey] = useState<string | null>(null);
@@ -44,7 +45,7 @@ export default function MetaWhatsAppInbox({ adminId }: { adminId: string }) {
                 setCustomers(mappedCustomers);
 
                 // Fetch Meta Inbox Summary
-                const sumRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/social-auth/meta-inbox/summary`, { credentials: "include" });
+                const sumRes = await fetch(API_ROUTES.SOCIALMEDIA.WHATSAPP.META_INBOX_SUMMARY, { credentials: "include" });
                 const sumData = await sumRes.json();
 
                 const chatMap: Record<string, ChatSummary> = {};
@@ -79,7 +80,7 @@ export default function MetaWhatsAppInbox({ adminId }: { adminId: string }) {
             if (isActive) {
                 setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
                 if (!m.fromMe) {
-                    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/social-auth/meta-inbox/chat/${m.phoneKey}/read`, { method: "POST", credentials: "include" }).catch(() => { });
+                    fetch(`${API_ROUTES}/social-auth/meta-inbox/chat/${m.phoneKey}/read`, { method: "POST", credentials: "include" }).catch(() => { });
                 }
             }
         };
@@ -115,7 +116,7 @@ export default function MetaWhatsAppInbox({ adminId }: { adminId: string }) {
         setChats((prev) => (prev[key] ? { ...prev, [key]: { ...prev[key], unread: 0 } } : prev));
 
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/social-auth/meta-inbox/chat/${key}`, { credentials: "include" });
+            const res = await fetch(API_ROUTES.SOCIALMEDIA.WHATSAPP.META_INBOX_OPENCHAT(key), { credentials: "include" });
             const data = await res.json();
             if (activeRef.current === key) setMessages(data.messages || []);
         } catch (err) {
@@ -124,25 +125,59 @@ export default function MetaWhatsAppInbox({ adminId }: { adminId: string }) {
     };
 
     const handleSend = async () => {
-        if (!text.trim() || !activeKey || sending) return;
+        const trimmed = text.trim();
+        if (!trimmed || !activeKey || sending) return;
         setSending(true);
+        setText("");
 
-        const activeCust = customers.find(c => c.key === activeKey);
-        const toPhone = activeCust?.phone || activeKey; // Fallback to key if phone missing
+        const activeCust = customers.find((c) => c.key === activeKey);
+        const toPhone = activeCust?.phone || activeKey;
 
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/social-auth/send-meta-message`, {
+            const res = await fetch(API_ROUTES.SOCIALMEDIA.WHATSAPP.META_SEND_MESSAGE, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
-                body: JSON.stringify({ toPhone, messageBody: text }),
+                body: JSON.stringify({ toPhone, messageBody: trimmed }),
             });
+            const data = await res.json().catch(() => ({}));
 
-            if (res.ok) {
-                setText("");
-            }
+            const saved: Msg = data.message ?? {
+                id: `local-${Date.now()}`,
+                phoneKey: activeKey,
+                waId: `failed-${Date.now()}`,
+                fromMe: true,
+                type: "text",
+                body: trimmed,
+                status: res.ok && data.success !== false ? "sent" : "failed",
+                timestamp: new Date().toISOString(),
+            };
+
+            setMessages((prev) => (prev.some((x) => x.id === saved.id) ? prev : [...prev, saved]));
+            setChats((prev) => ({
+                ...prev,
+                [activeKey]: {
+                    phoneKey: activeKey,
+                    body: saved.body,
+                    type: saved.type,
+                    fromMe: true,
+                    timestamp: saved.timestamp,
+                    unread: 0,
+                },
+            }));
         } catch (err) {
             console.error("Failed to send", err);
+            const failedMsg: Msg = {
+                id: `local-${Date.now()}`,
+                phoneKey: activeKey,
+                waId: `failed-${Date.now()}`,
+                fromMe: true,
+                type: "text",
+                body: trimmed,
+                status: "failed",
+                timestamp: new Date().toISOString(),
+            };
+            setMessages((prev) => [...prev, failedMsg]);
         } finally {
             setSending(false);
         }
@@ -261,8 +296,8 @@ export default function MetaWhatsAppInbox({ adminId }: { adminId: string }) {
                                             <p className="text-[10px] text-gray-500 text-right mt-1 flex items-center justify-end gap-1">
                                                 {fmt(m.timestamp)}
                                                 {m.fromMe && (
-                                                    <span className={m.status === 'read' ? 'text-sky-500' : 'text-gray-400'}>
-                                                        {m.status === 'sent' ? '✓' : '✓✓'}
+                                                    <span className={m.status === "failed" ? "text-red-600 font-bold" : m.status === "read" ? "text-sky-500" : "text-gray-400"}>
+                                                        {m.status === "failed" ? "✕ Failed" : m.status === "sent" ? "✓" : "✓✓"}
                                                     </span>
                                                 )}
                                             </p>
@@ -315,7 +350,7 @@ export default function MetaWhatsAppInbox({ adminId }: { adminId: string }) {
 
                     const formattedPhone = `91${activeCust.key}`;
 
-                    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/social-auth/send-meta-template`, {
+                    await fetch(API_ROUTES.SOCIALMEDIA.WHATSAPP.META_SEND_TEMPLATE, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         credentials: "include",

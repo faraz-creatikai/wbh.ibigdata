@@ -3,7 +3,8 @@
 
 import React, { useEffect, useState } from "react";
 import { getFilteredWhatsapp } from "@/store/masters/whatsapp/whatsapp";
-import { getFilteredCustomer } from "@/store/customer"; // Adjust path if needed based on your CRM
+import { getFilteredCustomer } from "@/store/customer";
+import { API_ROUTES } from "@/constants/ApiRoute";
 
 type CampaignSession = {
     id: string;
@@ -24,6 +25,27 @@ type Campaign = {
     createdAt: string;
     templateId: string;
     sessions: CampaignSession[];
+};
+
+const metaParts = (t: any) => {
+    const comps: any[] = t?.components || [];
+    const header = comps.find((c) => c.type === "HEADER");
+    return {
+        headerFormat: (header?.format as string) ?? null,
+        headerText: header?.format === "TEXT" ? (header.text as string) : null,
+        headerImage: header?.format === "IMAGE" ? ((header.example?.header_handle?.[0] as string) ?? null) : null,
+        body: (comps.find((c) => c.type === "BODY")?.text as string) ?? "",
+        footer: (comps.find((c) => c.type === "FOOTER")?.text as string) ?? "",
+    };
+};
+
+const firstImage = (field: any): string | null => {
+    try {
+        const parsed = typeof field === "string" ? JSON.parse(field) : field;
+        return Array.isArray(parsed) && typeof parsed[0] === "string" && parsed[0] ? parsed[0] : null;
+    } catch {
+        return typeof field === "string" && field.startsWith("http") ? field : null;
+    }
 };
 
 export default function MetaWhatsAppCampaigns({ adminId }: { adminId: string }) {
@@ -49,15 +71,20 @@ export default function MetaWhatsAppCampaigns({ adminId }: { adminId: string }) 
 
     // --- Template State ---
     const [verifiedTemplates, setVerifiedTemplates] = useState<any[]>([]);
+    const [templatesLoading, setTemplatesLoading] = useState(false);
+    const [headerMediaUrl, setHeaderMediaUrl] = useState(""); // public link for image/video/document headers of Meta-only templates
+    const [metaOnlyTemplates, setMetaOnlyTemplates] = useState<any[]>([]); // approved in Meta, but no CRM template with that name
     
     // Compute selected template for preview
     const activeTemplate = verifiedTemplates.find(t => (t.id || t._id) === selectedTemplateId);
+    const activeMeta = selectedTemplateId.startsWith("meta:") ? metaOnlyTemplates.find((t) => `meta:${t.name}` === selectedTemplateId) : null;
+    const mp = activeMeta ? metaParts(activeMeta) : null;
 
     // 1. Fetch Main Dashboard
     const loadDashboard = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/social-auth/meta-campaigns`, { credentials: "include" });
+            const res = await fetch(API_ROUTES.SOCIALMEDIA.WHATSAPP.META_CAMPAIGNS, { credentials: "include" });
             const data = await res.json();
             if (data.success) setCampaigns(data.campaigns);
         } catch (err) {
@@ -73,11 +100,12 @@ export default function MetaWhatsAppCampaigns({ adminId }: { adminId: string }) 
 
     // 2. Fetch Templates (Cross-referencing CRM with Meta APPROVED status)
     const loadTemplates = async () => {
+        setTemplatesLoading(true);
         try {
             const crmData = await getFilteredWhatsapp("?type=whatsapp&limit=100");
             const crmTemplates = crmData?.data || [];
 
-            const metaRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/social-auth/meta-templates`, { credentials: "include" });
+            const metaRes = await fetch(API_ROUTES.SOCIALMEDIA.WHATSAPP.GET_META_TEMPLATES, { credentials: "include" });
             const metaData = await metaRes.json();
 
             // Extract names of templates that Meta explicitly marks as APPROVED
@@ -94,8 +122,13 @@ export default function MetaWhatsAppCampaigns({ adminId }: { adminId: string }) 
             });
 
             setVerifiedTemplates(approvedTemplates);
+
+            const crmMetaNames = new Set(crmTemplates.map((t: any) => t.name.toLowerCase().replace(/[^a-z0-9_]/g, '_')));
+            setMetaOnlyTemplates((metaData.metaTemplates || []).filter((t: any) => t.status === "APPROVED" && !crmMetaNames.has(t.name)));
         } catch (err) {
             console.error("Failed to load templates", err);
+        } finally {
+            setTemplatesLoading(false);
         }
     };
 
@@ -134,6 +167,7 @@ export default function MetaWhatsAppCampaigns({ adminId }: { adminId: string }) 
     const handleOpenCreateModal = () => {
         setName("");
         setSelectedTemplateId("");
+        setHeaderMediaUrl("");
         setSelectedCustomerIds(new Set());
         setCustSearch("");
         setCustPage(0);
@@ -145,21 +179,32 @@ export default function MetaWhatsAppCampaigns({ adminId }: { adminId: string }) 
     const handleCreateDraft = async () => {
         if (!name || !selectedTemplateId) return alert("Please provide a name and select a verified template.");
         if (selectedCustomerIds.size === 0) return alert("Please select at least one recipient.");
-        
+        const needsMedia = !!activeMeta && !!mp?.headerFormat && mp.headerFormat !== "TEXT";
+        if (needsMedia && !/^https?:\/\//i.test(headerMediaUrl.trim())) {
+            return alert("Enter a public https link for the template's media header.");
+        }
+
         setIsSubmitting(true);
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/social-auth/meta-campaigns`, {
+            const res = await fetch(API_ROUTES.SOCIALMEDIA.WHATSAPP.META_CAMPAIGNS, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
-                body: JSON.stringify({ 
-                    name, 
-                    templateId: selectedTemplateId, 
-                    targetIds: Array.from(selectedCustomerIds) 
-                })
+                body: JSON.stringify({
+                    name,
+                    // CRM templates are sent by id; templates that only exist in Meta are sent by name
+                    ...(activeMeta
+                        ? { templateName: activeMeta.name, ...(needsMedia ? { headerMediaUrl: headerMediaUrl.trim(), headerFormat: mp!.headerFormat } : {}) }
+                        : { templateId: selectedTemplateId }),
+                    targetIds: Array.from(selectedCustomerIds),
+                }),
             });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || data.success === false) return alert(data.message || "Could not create the campaign draft.");
             setIsCreateModalOpen(false);
             loadDashboard();
+        } catch {
+            alert("Could not create the campaign draft. Check your connection and try again.");
         } finally {
             setIsSubmitting(false);
         }
@@ -168,7 +213,7 @@ export default function MetaWhatsAppCampaigns({ adminId }: { adminId: string }) 
     const handleStartCampaign = async (campaignId: string) => {
         if (!confirm("Are you sure you want to execute this campaign now?")) return;
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/social-auth/meta-campaigns/${campaignId}/start`, {
+            await fetch(API_ROUTES.SOCIALMEDIA.WHATSAPP.START_META_CAMPAIGN(campaignId), {
                 method: "POST", credentials: "include"
             });
             loadDashboard();
@@ -180,7 +225,7 @@ export default function MetaWhatsAppCampaigns({ adminId }: { adminId: string }) 
     const handleDelete = async (campaignId: string) => {
         if (!confirm("Delete this draft permanently?")) return;
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/social-auth/meta-campaigns/${campaignId}`, {
+            await fetch(API_ROUTES.SOCIALMEDIA.WHATSAPP.DELETE_META_CAMPAIGN(campaignId), {
                 method: "DELETE", credentials: "include"
             });
             loadDashboard();
@@ -323,14 +368,53 @@ export default function MetaWhatsAppCampaigns({ adminId }: { adminId: string }) 
                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Template (Meta Verified) *</label>
                                     <select 
                                         value={selectedTemplateId} 
-                                        onChange={e => setSelectedTemplateId(e.target.value)} 
+                                        onChange={e => {
+                                            const v = e.target.value;
+                                            setSelectedTemplateId(v);
+                                            const m = v.startsWith("meta:") ? metaOnlyTemplates.find((t) => `meta:${t.name}` === v) : null;
+                                            setHeaderMediaUrl(m ? metaParts(m).headerImage ?? "" : "");
+                                        }} 
                                         className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#25D366] focus:ring-2 focus:ring-[#25D366]/20 transition-all shadow-sm appearance-none font-medium text-gray-700"
                                     >
-                                        <option value="" disabled>-- Select an Approved Template --</option>
-                                        {verifiedTemplates.map(t => (
-                                            <option key={t.id || t._id} value={t.id || t._id}>{t.name}</option>
-                                        ))}
+                                        <option value="" disabled>{templatesLoading ? "Loading templates..." : verifiedTemplates.length + metaOnlyTemplates.length === 0 ? "No approved templates found" : "-- Select an Approved Template --"}</option>
+                                        {verifiedTemplates.length > 0 && (
+                                            <optgroup label="Your templates">
+                                                {verifiedTemplates.map(t => (
+                                                    <option key={t.id || t._id} value={t.id || t._id}>{t.name}</option>
+                                                ))}
+                                            </optgroup>
+                                        )}
+                                        {metaOnlyTemplates.length > 0 && (
+                                            <optgroup label="Approved in Meta">
+                                                {metaOnlyTemplates.map(t => (
+                                                    <option key={t.name} value={`meta:${t.name}`}>{t.name}</option>
+                                                ))}
+                                            </optgroup>
+                                        )}
                                     </select>
+                                    {!templatesLoading && verifiedTemplates.length + metaOnlyTemplates.length === 0 && (
+                                        <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-800">
+                                            <p className="font-semibold">Meta has no approved templates for this account yet.</p>
+                                            <p className="mt-1">Submit a template from the Templates tab and wait for approval.</p>
+                                        </div>
+                                    )}
+                                    {mp && mp.headerFormat && mp.headerFormat !== "TEXT" && (
+                                        <div className="mt-3">
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                                                {mp.headerFormat.charAt(0) + mp.headerFormat.slice(1).toLowerCase()} header links *
+                                            </label>
+                                            <input
+                                                value={headerMediaUrl}
+                                                onChange={e => setHeaderMediaUrl(e.target.value)}
+                                                placeholder="https://..."
+                                                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#25D366] focus:ring-2 focus:ring-[#25D366]/20 transition-all shadow-sm"
+                                            />
+                                            <p className="mt-1.5 text-xs text-gray-500">
+                                                This template needs a public link to its {mp.headerFormat.toLowerCase()}.
+                                                {mp.headerImage ? " It is prefilled with Meta's sample image; replace it with your own." : ""}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Customer Selection with Search & Pagination */}
@@ -400,11 +484,24 @@ export default function MetaWhatsAppCampaigns({ adminId }: { adminId: string }) 
                             <div className="w-full md:w-80 shrink-0 flex flex-col">
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Message Preview</label>
                                 <div className="flex-1 bg-[#efeae2] border border-gray-200 rounded-2xl p-4 shadow-inner relative" style={{ backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.04) 1px, transparent 1px)', backgroundSize: '16px 16px' }}>
-                                    {activeTemplate ? (
+                                    {mp ? (
                                         <div className="bg-white rounded-2xl rounded-tl-sm p-1.5 shadow-sm inline-block w-full">
-                                            {activeTemplate.whatsappMediaType === "image" && activeTemplate.whatsappImage?.length > 0 && (
+                                            {mp.headerFormat === "IMAGE" && (headerMediaUrl || mp.headerImage) && (
+                                                <div className="w-full h-32 bg-gray-100 rounded-xl mb-2 overflow-hidden">
+                                                    <img src={headerMediaUrl || (mp.headerImage as string)} alt="Template header" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                                                </div>
+                                            )}
+                                            {mp.headerText && <p className="px-1.5 pb-1 text-[14px] font-bold text-gray-900">{mp.headerText}</p>}
+                                            <div className="px-1.5 pb-1 text-[13px] text-gray-800 whitespace-pre-wrap leading-relaxed break-words">
+                                                {mp.body.replace(/\{\{.+?\}\}/g, "[Customer Name]")}
+                                            </div>
+                                            {mp.footer && <p className="px-1.5 pb-1 text-[11px] text-gray-400">{mp.footer}</p>}
+                                        </div>
+                                    ) : activeTemplate ? (
+                                        <div className="bg-white rounded-2xl rounded-tl-sm p-1.5 shadow-sm inline-block w-full">
+                                            {activeTemplate.whatsappMediaType === "image" && firstImage(activeTemplate.whatsappImage) && (
                                                 <div className="w-full h-32 bg-gray-100 rounded-xl mb-2 flex items-center justify-center overflow-hidden">
-                                                    <span className="text-xs text-gray-400 font-bold uppercase">Image Header</span>
+                                                    <img src={firstImage(activeTemplate.whatsappImage) as string} alt="Template header" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
                                                 </div>
                                             )}
                                             {activeTemplate.whatsappMediaType === "document" && (

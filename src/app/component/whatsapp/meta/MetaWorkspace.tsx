@@ -445,7 +445,7 @@ export default function MetaWorkspace({ accountDetails, isDisconnecting, onDisco
             )}
 
             {tab === "templates" && (
-                <div className={`${cardCls} h-[70vh] min-h-[520px] overflow-hidden flex flex-col`}>
+                <div className={`${cardCls} min-h-[520px]  flex flex-col`}>
                     <MetaWhatsAppTemplates adminId={accountDetails.adminId} />
                 </div>
             )}
