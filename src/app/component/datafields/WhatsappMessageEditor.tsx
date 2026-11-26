@@ -32,11 +32,17 @@ export interface WhatsappVariable {
 }
 
 export const DEFAULT_WA_VARIABLES: WhatsappVariable[] = [
-    { key: "customerName", label: "Customer name", sample: "Priya" },
-    { key: "customerPhone", label: "Customer phone", sample: "+91 98765 43210" },
-    { key: "companyName", label: "Company name", sample: "Acme Pvt Ltd" },
-    { key: "amount", label: "Amount", sample: "₹4,999" },
-    { key: "dueDate", label: "Due date", sample: "30 Nov 2026" },
+    { key: "Name", label: "Customer Name", sample: "Priya" },
+    { key: "Campaign", label: "Campaign", sample: "Real Estate" },
+    { key: "CustomerType", label: "Customer Type", sample: "1 BHK Lead" },
+    { key: "ContactNumber", label: "Customer Number", sample: "+91 98765 43210" },
+    { key: "Email", label: "Email", sample: "priya@gmail.com" },
+    { key: "Description", label: "Description", sample: "This lead showed interest in flat around new atish market area." },
+    { key: "URL", label: "URL", sample: "https://creatikai.com" },
+    { key: "City", label: "City", sample: "Jaipur" },
+    { key: "Location", label: "Location", sample: "New Atish Market" },
+    { key: "SubLocation", label: "Sub Location", sample: "Gujar Ki Thadi" },
+
 ];
 
 export const defaultFormatVariable = (key: string) => `{{${key}}}`;
