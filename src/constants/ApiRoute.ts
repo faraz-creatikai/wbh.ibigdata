@@ -636,6 +636,11 @@ export const API_ROUTES = {
     STREAM_DOCUMENT: (id: string, download = false) =>
       `${BASE_URL}/gdrive/documents/${id}/stream${download ? "?download=true" : ""}`,
   },
+
+  RAG: {
+    REINDEX_DOCUMENT: (id: string) => `${BASE_URL}/rag/documents/${id}/reindex`,
+    RAG_ASK: `${BASE_URL}/rag/ai/ask`,
+  }
 };
 
 

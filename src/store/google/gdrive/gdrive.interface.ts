@@ -1,10 +1,36 @@
 export type GDriveStatusType = "CONNECTED" | "DISCONNECTED" | "REVOKED";
 
+export interface GDriveAccountInfo {
+  displayName: string | null;
+  email: string | null;
+  photoUrl: string | null;
+}
+
+export interface GDriveStorageQuota {
+  limit: number | null; // null for unlimited Google Workspace accounts
+  usage: number;
+  usageInDrive: number;
+  usageInTrash: number;
+  remaining: number | null;
+  percentUsed: number | null;
+}
+
+export interface GDriveCrmStats {
+  documentCount: number;
+  totalBytes: number;
+  folderName: string;
+}
+
 export interface GDriveStatusData {
   connected: boolean;
   status: GDriveStatusType;
   googleEmail: string | null;
+  connectedAt?: string | null;
   updatedAt: string | null;
+  account?: GDriveAccountInfo | null;
+  storage?: GDriveStorageQuota | null;
+  crmStats?: GDriveCrmStats | null;
+  tokenError?: boolean;
 }
 
 export interface GDriveAuthUrlData {

@@ -48,7 +48,7 @@ export default function GDriveSettingsButton() {
         className={`inline-flex items-center gap-2.5 rounded-xl border px-4 py-2.5 text-sm font-medium shadow-xs transition ${
           isConnected
             ? "border-gray-200 bg-white text-gray-800 hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-lighter)]"
-            : "border-[var(--color-primary)] bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-dark)]"
+            : "border-[var(--color-primary)] bg-white text-gray-800 hover:bg-[var(--color-primary-lighter)]"
         }`}
       >
         {/* Status Dot */}
@@ -71,7 +71,7 @@ export default function GDriveSettingsButton() {
         {/* Settings Gear Icon */}
         <svg
           className={`h-4 w-4 shrink-0 ${
-            isConnected ? "text-gray-500" : "text-white/90"
+            isConnected ? "text-gray-500" : "text-gray-500"
           }`}
           fill="none"
           viewBox="0 0 24 24"
