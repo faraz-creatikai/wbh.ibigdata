@@ -1,5 +1,5 @@
-export const BASE_URL = "https://apiwbh.ibigdata.in/api";
-export const API_URL = "https://apiwbh.ibigdata.in";
+export const BASE_URL = "https://apidomain.ibigdata.in/api";
+export const API_URL = "https://apidomain.ibigdata.in";
 
 
 export const API_ROUTES = {

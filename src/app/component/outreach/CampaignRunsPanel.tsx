@@ -65,6 +65,7 @@ const P = {
   down: "M6 9l6 6 6-6",
   mail: "M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM3 7l9 6 9-6",
   phone: "M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z",
+  chat: "M21 11.5a8.5 8.5 0 0 1-12.4 7.5L3 20.5l1.6-5.4A8.5 8.5 0 1 1 21 11.5z", // own icon, so nothing depends on ICONS.chat
 };
 
 /* ───────────── channel profiles: what each channel shows ───────────── */
@@ -114,7 +115,7 @@ const PROFILES: Record<Profile["id"], Profile> = {
   whatsapp: {
     id: "whatsapp",
     name: "WhatsApp",
-    icon: ICONS.chat,
+    icon: P.chat,
     metrics: [
       { ...BASE.sent, hint: "Accepted by WhatsApp for sending" },
       BASE.failed,
@@ -154,6 +155,8 @@ const STATUS_TABS: { v: string; l: string }[] = [
   { v: "skipped", l: "Skipped" },
 ];
 const CH_ORDER: CampaignChannel[] = CAMPAIGN_CHANNELS.map((c) => c.id);
+/** channels that can run today (same list as the backend's RUNNABLE); used before a run has any summary */
+const RUNNABLE: string[] = ["email", "whatsapp_baileys"];
 
 /* ───────────── helpers ───────────── */
 
@@ -196,7 +199,7 @@ const channelUntracked = (r: RunT, ch: string) => {
 /** One strip per channel the run used. Falls back to the campaign's runnable channels while the summary is still empty. */
 const runRows = (r: RunT, fallback: CampaignChannel[]): StripRow[] => {
   let ids = CH_ORDER.filter((id) => !!r.summary?.[id]);
-  if (!ids.length) ids = CAMPAIGN_CHANNELS.filter((c) => c.runnable && fallback.includes(c.id)).map((c) => c.id);
+  if (!ids.length) ids = CH_ORDER.filter((id) => fallback.includes(id) && RUNNABLE.includes(id));
   return ids.map((id) => ({ channel: id, stats: channelStats(r, id), untracked: channelUntracked(r, id) }));
 };
 
@@ -232,11 +235,16 @@ const groupByCustomer = (items: LogItem[]): CustomerGroup[] => {
   const out = [...map.values()];
   out.forEach((g) => {
     g.stats = logStats(g.items);
-    g.rows = CH_ORDER.filter((ch) => g.items.some((l) => l.channel === ch)).map((ch) => ({
-      channel: ch,
-      stats: logStats(g.items.filter((l) => l.channel === ch)),
-      untracked: false,
-    }));
+    g.rows = CH_ORDER.filter((ch) => g.items.some((l) => l.channel === ch)).map((ch) => {
+      const mine = g.items.filter((l) => l.channel === ch);
+      const sent = mine.filter((l) => l.status === "sent");
+      const stats = logStats(mine);
+      // sent but no tracking row: the tracked numbers are unknown (shown as "—"), same rule as the run summary
+      const untracked = sent.length > 0 && sent.every((l) => !l.tracking);
+      // email "delivered" is sent minus bounced even without tracking rows (same rule as the run totals)
+      if (untracked && profileOf(ch).id === "email") stats.delivered = stats.sent;
+      return { channel: ch, stats, untracked };
+    });
   });
   return out;
 };

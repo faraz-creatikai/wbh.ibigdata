@@ -7,6 +7,11 @@
  *  - selection is kept across pages and filters (it lives in the parent as a Map)
  *  - "Select all matching" adds up to the campaign cap in one go
  *  - "Selected" view lets you review / remove picks
+ *
+ * FIX: when editing a campaign only the customer IDs are known (Map value = null). Names used to be filled in
+ * only for people who happened to be on the current "All customers" page, so most rows stayed as
+ * "Previously saved customer". Now every unknown ID is looked up in the background, and a placeholder is never
+ * stored in the selection (that used to block the lookup for that row for good).
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchCustomerPage } from "@/store/masters/outreachcampaign/outreachcampaign";
@@ -31,9 +36,12 @@ interface Props {
 
 type Row = CustomerLite & { unknown?: boolean };
 
-const placeholder = (id: string): Row => ({
+const RESOLVE_PAGE_SIZE = 500; // same size "Select all matching" already uses
+const RESOLVE_MAX_PAGES = 20; // safety stop
+
+const placeholder = (id: string, notFound: boolean): Row => ({
   id,
-  customerName: "Previously saved customer",
+  customerName: notFound ? "Customer not found (removed or no access)" : "Loading customer…",
   ContactNumber: "",
   CountryCode: "",
   Email: "",
@@ -44,6 +52,9 @@ const placeholder = (id: string): Row => ({
   CustomerType: "",
   unknown: true,
 });
+
+/** never keep a placeholder in the selection: store null so the lookup can still fill it in */
+const keep = (c: Row): CustomerLite | null => (c.unknown ? null : c);
 
 const FILTER_FIELDS: { key: keyof CustomerFilters; label: string; placeholder: string }[] = [
   { key: "city", label: "City", placeholder: "e.g. Jaipur" },
@@ -70,7 +81,20 @@ export default function CustomerSelector({ selected, onChange, max = MAX_CAMPAIG
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: "info" | "warn"; text: string } | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [lookupTick, setLookupTick] = useState(0);
   const reqId = useRef(0);
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
+  const mounted = useRef(true);
+  const resolving = useRef(false);
+  const tried = useRef(new Set<string>()); // ids we already looked for
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   /* ───── load a page ───── */
   useEffect(() => {
@@ -86,7 +110,7 @@ export default function CustomerSelector({ selected, onChange, max = MAX_CAMPAIG
     });
   }, [debounced, page, limit, view]);
 
-  /* ───── edit mode: fill in names for ids that came from the saved campaign ───── */
+  /* ───── edit mode, quick path: names for ids that are on the page we just loaded ───── */
   useEffect(() => {
     let next: SelectedCustomers | null = null;
     for (const c of data.items) {
@@ -98,10 +122,49 @@ export default function CustomerSelector({ selected, onChange, max = MAX_CAMPAIG
     if (next) onChange(next);
   }, [data.items, selected, onChange]);
 
+  /* ───── edit mode, full path: look up EVERY id that still has no name ───── */
+  useEffect(() => {
+    if (resolving.current) return;
+    const need = new Set<string>();
+    selected.forEach((c, id) => {
+      if (c === null && !tried.current.has(id)) need.add(id);
+    });
+    if (!need.size) return;
+
+    resolving.current = true;
+    (async () => {
+      const found = new Map<string, CustomerLite>();
+      let failed = false;
+      for (let p = 1; p <= RESOLVE_MAX_PAGES && found.size < need.size; p++) {
+        const r = await fetchCustomerPage(EMPTY_CUSTOMER_FILTERS, p, RESOLVE_PAGE_SIZE);
+        if (!r.ok) {
+          failed = true;
+          break;
+        }
+        for (const c of r.data.items) if (need.has(c.id)) found.set(c.id, c);
+        if (!r.data.hasMore || r.data.items.length === 0) break;
+      }
+      resolving.current = false;
+      if (!mounted.current) return;
+
+      if (!failed) need.forEach((id) => tried.current.add(id)); // whatever is still missing really is gone / not allowed
+      if (found.size) {
+        const next = new Map(selectedRef.current);
+        found.forEach((c, id) => {
+          if (next.get(id) === null) next.set(id, c);
+        });
+        onChange(next);
+      }
+      if (failed) setNotice({ tone: "warn", text: "Couldn't load some customer names. Close and reopen this step to try again." });
+      setLookupTick((n) => n + 1);
+    })();
+  }, [selected, onChange]);
+
   /* ───── rows for the current view ───── */
   const selectedRows = useMemo<Row[]>(
-    () => [...selected.entries()].map(([id, c]) => c ?? placeholder(id)),
-    [selected]
+    () => [...selected.entries()].map(([id, c]) => c ?? placeholder(id, tried.current.has(id))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selected, lookupTick]
   );
   const selTotalPages = Math.max(1, Math.ceil(selectedRows.length / limit));
   const curSelPage = Math.min(selPage, selTotalPages);
@@ -129,7 +192,7 @@ export default function CustomerSelector({ selected, onChange, max = MAX_CAMPAIG
     if (next.has(c.id)) next.delete(c.id);
     else {
       if (next.size >= max) return capNotice();
-      next.set(c.id, c);
+      next.set(c.id, keep(c));
     }
     setNotice(null);
     onChange(next);
@@ -149,7 +212,7 @@ export default function CustomerSelector({ selected, onChange, max = MAX_CAMPAIG
           capped = true;
           break;
         }
-        next.set(r.id, r);
+        next.set(r.id, keep(r));
       }
     if (capped) capNotice();
     else setNotice(null);
